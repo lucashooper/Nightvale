@@ -3365,6 +3365,25 @@
     var rows = [[6, 13], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [6, 13]];
     rows.forEach(function (r, k) { for (var x = r[0]; x <= r[1]; x++) S.put(x, y0 + k, mats.skin); });
     var E = sp.eyeCol || OUT, e2 = sp.eyeCol2 != null ? sp.eyeCol2 : H('#2a2238');
+    var V = ROOT.__sprFace || 0;
+    if (V) {
+      var soft = sp.eyeCol == null || sp.eyeCol === OUT, sk = sp.skin, dk = Math.max(0, Math.min(0.6, (0.5 - lum(sk.b)) * 2.2));
+      var lash = mix(mix(H('#3a1a24'), e2, 0.25), H('#140a12'), dk), irisD = mix(mix(e2, H('#1a0e18'), 0.55), H('#140a12'), dk * 0.5), glint = mix(e2, WHITE, 0.55);
+      var top = !soft ? E : V >= 2 && V !== 3 ? irisD : lash, bl = soft ? mix(sk.b, sk.blush, sp.blush ? 0.8 : 0.5) : -1;
+      if (d === 'down') {
+        S.dot(7, y0 + 5, top); S.dot(7, y0 + 6, e2); S.dot(12, y0 + 5, top); S.dot(12, y0 + 6, e2);
+        if (V === 3 && soft) { S.dot(8, y0 + 5, top); S.dot(8, y0 + 6, glint); S.dot(11, y0 + 5, top); S.dot(11, y0 + 6, glint); }
+        if (bl >= 0) { S.dot(6, y0 + 7, bl); S.dot(13, y0 + 7, bl); }
+      } else if (d !== 'up') {
+        S.dot(12, y0 + 5, top); S.dot(12, y0 + 6, e2);
+        if (V === 3 && soft) { S.dot(13, y0 + 5, top); S.dot(13, y0 + 6, glint); }
+        if ((V === 5 || V >= 7) && soft) S.dot(13, y0 + 5, mix(WHITE, sk.l, 0.35));
+        if (V === 6 && soft) S.dot(13, y0 + 6, mix(WHITE, sk.l, 0.35));
+        S.put(15, y0 + 6, mats.skin); // nose
+        if (bl >= 0) S.dot(13, y0 + 7, bl);
+      }
+      return;
+    }
     if (d === 'down') {
       S.dot(7, y0 + 5, E); S.dot(7, y0 + 6, e2); S.dot(12, y0 + 5, E); S.dot(12, y0 + 6, e2);
       if (sp.blush) { S.dot(6, y0 + 7, sp.skin.blush); S.dot(13, y0 + 7, sp.skin.blush); }
@@ -3375,10 +3394,10 @@
     }
   }
   function sprMats(S, sp) {
-    var sk = sp.skin, skR = [sk.s, sk.b, sk.l];
+    var sk = sp.skin, skR = [sk.s, sk.b, sk.l], skF = (ROOT.__sprFace || 0) >= 7 ? [mix(sk.s, sk.b, 0.4), sk.b, sk.l] : skR;
     var top = sp.top, arm = sp.arm || sp.top, leg = sp.leg || HS(['#2a2238', '#3a3050', '#4e4468']), shoe = sp.shoe || HS(['#281d21', '#3e2d2b', '#574039']);
     return {
-      skin: S.mat('skin', skR, { topDark: true }), hand: S.mat('hand', sp.handRamp || skR, { noTop: true }), handFar: S.mat('handF', sp.handRamp ? [sp.handRamp[0], sp.handRamp[0], sp.handRamp[1]] : [sk.d, sk.s, sk.s], { flat: true }),
+      skin: S.mat('skin', skF, { topDark: true }), hand: S.mat('hand', sp.handRamp || skR, { noTop: true }), handFar: S.mat('handF', sp.handRamp ? [sp.handRamp[0], sp.handRamp[0], sp.handRamp[1]] : [sk.d, sk.s, sk.s], { flat: true }),
       top: S.mat('top', top, { botDark: !sp.gown }), arm: S.mat('arm', arm, { noTop: true }), armFar: S.mat('armF', [arm[0], arm[0], arm[0]], { flat: true }),
       leg: S.mat('leg', leg), leg2: S.mat('leg2', leg), legFar: S.mat('legF', [leg[0], leg[0], leg[1]]), shoe: S.mat('shoe', shoe, { noTop: true }), shoe2: S.mat('shoe2', shoe, { noTop: true }), shoeFar: S.mat('shoeF', [shoe[0], shoe[0], shoe[1]], { noTop: true }),
       gown: sp.gown ? S.mat('gown', sp.gown, { noTop: true }) : -1, tails: sp.tails ? S.mat('tails', sp.tails, { noTop: true }) : -1,
