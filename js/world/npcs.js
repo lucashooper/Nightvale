@@ -87,8 +87,8 @@
         ? [[h(6), null], [h(9), 'guild', 5.5, 4.6, 'up'], [h(13), 'laura_home', 5.5, 6.6, 'down'], [h(18), 'tavern', 17, 12.7, 'left'], [h(22), 'laura_home', 3.5, 5.6, 'up', { hide: true }]]
         : [[h(6), null], [h(9), 'woods', 20, 30.6, 'left'], [h(12, 30), 'guild', 5.5, 4.6, 'up'], [h(15), 'village', 26.5, 48.6, 'down'], [h(18), 'tavern', 17, 12.7, 'left'], [h(21, 30), 'laura_home', 5.5, 6.6, 'down'], [h(23), 'laura_home', 3.5, 5.6, 'up', { hide: true }]];
       case 'jasmine': return (day === 'Moonday' || day === 'Thornsday') && !rain
-        ? [[h(6), null], [h(8, 30), 'village', 26, 27.6, 'down'], [h(16), 'village', 16, 12.6, 'down'], [h(18), 'jasmine_home', 9.5, 6.6, 'left'], [h(21), 'jasmine_home', 2.5, 5.6, 'up', { hide: true }]]
-        : [[h(6), null], [h(8), 'jasmine_home', 7, 4.6, 'up'], [h(11), 'village', 16, 12.6, 'down'], [h(14), 'village', 44.5, 37.6, 'down'], [h(17), 'jasmine_home', 9.5, 6.6, 'left'], [h(21), 'jasmine_home', 2.5, 5.6, 'up', { hide: true }]];
+        ? [[h(6), null], [h(8, 30), 'village', 26, 27.6, 'down'], [h(16), 'village', 16, 12.6, 'down'], [h(18), 'jasmine_home', 10.5, 6.6, 'left'], [h(21), 'jasmine_home', 2.5, 5.6, 'up', { hide: true }]]
+        : [[h(6), null], [h(8), 'jasmine_home', 7, 4.6, 'up'], [h(11), 'village', 16, 12.6, 'down'], [h(14), 'village', 44.5, 37.6, 'down'], [h(17), 'jasmine_home', 10.5, 6.6, 'left'], [h(21), 'jasmine_home', 2.5, 5.6, 'up', { hide: true }]];
       case 'amara': return [[h(6), null], [h(8), 'amara_home', 3, 5.6, 'up'], [h(11), 'ridge', 37.5, 9.6, 'up'], [h(16), 'village', 43.5, 40.4, 'down'],
         G.World.weather === 'starfall' ? [h(19), 'village', 31, 22.6, 'up'] : [h(19), 'amara_home', 9.5, 5.6, 'up'], [h(23, 30), 'amara_home', 7.5, 7.4, 'up', { hide: true }]];
       case 'nightmerchant': return G.NightMarket && G.NightMarket.tonight() ? [[0, null], [h(18, 30), 'village', 60.5, 22.6, 'down'], [h(26), null]] : [[0, null]];
