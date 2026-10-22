@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Gothic styles</title>
+<style>body{background:#1a1622;color:#ddd;font:14px system-ui;padding:12px;margin:0} canvas{image-rendering:pixelated;display:block;border-radius:10px} .row{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}</style></head>
+<body>
+<div class="row" id="btns"></div>
+<canvas id="scene" width="1140" height="570" style="width:760px"></canvas>
+<p id="cap"></p>
+<script src="../js/art/gothic.js"></script>
+<script>
+const W = 380, H = 190, S = 3;
+const SPECS = {
+  townhouse: { w: 56, wallH: 48, floors: 2, roofH: 24, steep: 0.2, gables: [{ cx: 30, hw: 14, h: 26, win: 'lancet' }], turret: { side: 'left', w: 16, h: 76, coneH: 30, windows: 2 }, chimneys: [44], windows: [{ x: 8, y: 6, w: 7, h: 11 }, { x: 40, y: 6, w: 7, h: 11 }, { x: 8, y: 30, w: 7, h: 10 }], door: { x: 36, w: 11, h: 17 }, lanterns: [{ x: 31, y: 32 }], seed: 11 },
+  tavern: { w: 108, wallH: 52, floors: 2, roofH: 26, steep: 0.18, gables: [{ cx: 24, hw: 16, h: 28, win: 'lancet' }, { cx: 84, hw: 16, h: 28, win: 'round' }], dormers: [54], chimneys: [6, 98], windows: [{ x: 6, y: 7, w: 7, h: 11 }, { x: 36, y: 7, w: 7, h: 11 }, { x: 64, y: 7, w: 7, h: 11 }, { x: 94, y: 7, w: 7, h: 11 }, { x: 10, y: 31, w: 9, h: 11 }, { x: 88, y: 31, w: 9, h: 11 }], door: { x: 48, w: 13, h: 20 }, sign: { x: 70, y: 27, icon: 'owl' }, lanterns: [{ x: 44, y: 34 }, { x: 65, y: 34 }], seed: 21 },
+  chapel: { w: 72, wallH: 58, floors: 1, roofH: 26, steep: 0.12, gables: [{ cx: 36, hw: 36, h: 44, win: 'rose' }], tower: { x: 54, w: 22, h: 110, spireH: 44 }, buttresses: [0, 20, 48, 68], windows: [{ x: 7, y: 10, w: 9, h: 26 }, { x: 56, y: 10, w: 9, h: 26 }], door: { x: 29, w: 15, h: 24 }, gargoyles: true, seed: 31 },
+};
+const keys = Object.keys(GothicArt.STYLES);
+let style = 'cathedral', night = false;
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H; const b = buf.getContext('2d');
+const lc = document.createElement('canvas'); lc.width = W; lc.height = H; const l = lc.getContext('2d');
+const cache = {};
+function built(st) {
+  if (cache[st]) return cache[st];
+  const out = {};
+  for (const k in SPECS) out[k] = GothicArt.makeBuilding(SPECS[k], st);
+  return (cache[st] = out);
+}
+function ground() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const n = GothicArt.noise(x / 9, y / 9, 3);
+    let c;
+    if (y > 152) { const cx = Math.floor(x / 6), cy = Math.floor(y / 5), h = GothicArt.hash(cx, cy, 5); c = (x + (cy % 2) * 3) % 6 === 0 || y % 5 === 0 ? '#2a2638' : h < 0.4 ? '#4a4463' : h < 0.85 ? '#5b5478' : '#6e6690'; }
+    else c = n < 0.4 ? '#1f4e3c' : n < 0.7 ? '#296246' : '#377a53';
+    b.fillStyle = c; b.fillRect(x, y, 1, 1);
+  }
+}
+function lamp(x, y) { b.fillStyle = '#2d2c3e'; b.fillRect(x, y - 26, 2, 26); b.fillStyle = '#1d1724'; b.fillRect(x - 2, y - 32, 6, 6); b.fillStyle = '#ffbc62'; b.fillRect(x - 1, y - 31, 4, 4); }
+function frame(t) {
+  const s = built(style);
+  ground();
+  const placed = [['townhouse', 24], ['tavern', 118], ['chapel', 258]];
+  const lights = [];
+  for (const [k, x] of placed) {
+    const B = s[k], img = night ? B.night : B.day;
+    const dx = x - B.padL, dy = 156 - B.ay;
+    b.drawImage(img, dx, dy);
+    for (const L of B.lights) lights.push({ x: dx + L.x, y: dy + L.y, r: L.r, c: L.color, i: L.i });
+  }
+  for (const x of [102, 240, 362]) { lamp(x, 170); lights.push({ x: x + 1, y: 141, r: 60, c: [255, 190, 100], i: 1 }); }
+  ctx.imageSmoothingEnabled = false; ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(buf, 0, 0, W * S, H * S);
+  if (night) {
+    l.globalCompositeOperation = 'source-over'; l.fillStyle = 'rgb(60,54,120)'; l.fillRect(0, 0, W, H);
+    l.globalCompositeOperation = 'lighter';
+    for (const L of lights) { const g = l.createRadialGradient(L.x, L.y, 0, L.x, L.y, L.r); g.addColorStop(0, `rgba(${L.c},${L.i})`); g.addColorStop(0.5, `rgba(${L.c},${L.i * 0.35})`); g.addColorStop(1, `rgba(${L.c},0)`); l.fillStyle = g; l.fillRect(L.x - L.r, L.y - L.r, L.r * 2, L.r * 2); }
+    ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true; ctx.drawImage(lc, 0, 0, W * S, H * S);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const L of lights) { const r = L.r * 0.5 * S; const g = ctx.createRadialGradient(L.x * S, L.y * S, 0, L.x * S, L.y * S, r); g.addColorStop(0, `rgba(${L.c},${0.22 * L.i})`); g.addColorStop(1, `rgba(${L.c},0)`); ctx.fillStyle = g; ctx.fillRect(L.x * S - r, L.y * S - r, r * 2, r * 2); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+function render() { frame(0); document.getElementById('cap').textContent = GothicArt.STYLES[style].name + ' — ' + GothicArt.STYLES[style].blurb; }
+const bt = document.getElementById('btns');
+keys.forEach((k) => { const e = document.createElement('button'); e.textContent = GothicArt.STYLES[k].name; e.onclick = () => { style = k; render(); }; bt.appendChild(e); });
+const n = document.createElement('button'); n.textContent = 'Day / Night'; n.onclick = () => { night = !night; render(); }; bt.appendChild(n);
+render();
+</script></body></html>

@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Wild pieces</title>
+<style>body{background:#1a1622;color:#ddd;font:12px system-ui;margin:0;padding:6px} canvas{image-rendering:pixelated;display:block}</style></head>
+<body>
+<canvas id="cv"></canvas>
+<script src="../js/art/wild.js"></script>
+<script>
+const S = 3, night = location.hash.includes('night'), only = (location.hash.match(/only=([\w,]+)/) || [])[1];
+const bg = location.hash.includes('grass') ? '#296246' : '#0f2a25';
+const items = [];
+for (const id of (only ? only.split(',') : WildArt.ids)) for (let v = 0; v < (WildArt.variants[id] || 1); v++) items.push([id, v, WildArt.piece(id, v)]);
+const W = 260, rows = []; let row = [], rw = 0;
+for (const it of items) { const w = Math.max(it[2].c.width, 24) + 10; if (rw + w > W && row.length) { rows.push(row); row = []; rw = 0; } row.push([...it, rw]); rw += w; }
+if (row.length) rows.push(row);
+const rh = rows.map((r) => Math.max(...r.map((x) => x[2].c.height)) + 16), H = rh.reduce((a, b) => a + b, 0);
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H; const b = buf.getContext('2d');
+b.fillStyle = bg; b.fillRect(0, 0, W, H);
+let y = 0;
+rows.forEach((r, k) => {
+  const base = y + rh[k] - 12;
+  for (const [id, v, s, x] of r) {
+    const img = night && s.n ? s.n : s.c;
+    b.drawImage(img, x + 4, base - s.ay);
+    b.fillStyle = 'rgba(255,255,255,0.5)'; b.fillRect(x + 4 + s.ax, base + 1, 1, 2);
+    b.fillStyle = '#ccc'; b.font = '6px monospace'; b.fillText(id.slice(0, 12) + v, x + 2, base + 9);
+  }
+  y += rh[k];
+});
+const cv = document.getElementById('cv'); cv.width = W * S; cv.height = H * S; cv.style.width = W * S / (devicePixelRatio || 1) * 1 + 'px';
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(buf, 0, 0, W * S, H * S);
+</script></body></html>

@@ -1,0 +1,529 @@
+<title>Nightvale Building Styles</title>
+<link href="https://fonts.googleapis.com/css2?family=Jacquard+24&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #14101f; --panel: #1f1830; --edge: #4a3b6d; --text: #efe8fb; --muted: #b1a4cf; --gold: #f2c45a; --display: 'Jacquard 24', Georgia, serif; --font: 'Pixelify Sans', 'Trebuchet MS', system-ui, sans-serif; color-scheme: dark; }
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--font); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(38px, 6vw, 60px); line-height: 1; margin: 0 0 6px; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0 0 16px; max-width: 70ch; }
+.styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.st { text-align: left; cursor: pointer; padding: 10px 12px 12px; border-radius: 8px; background: var(--panel); border: 2px solid #120c1c; box-shadow: inset 0 0 0 1px var(--edge); color: var(--text); font: inherit; min-width: 0; }
+.st b { display: block; font-size: 16px; margin-bottom: 4px; }
+.st span { font-size: 13px; color: var(--muted); }
+.st[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); }
+.st:focus-visible, .tog:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.tog { cursor: pointer; font: inherit; color: var(--text); background: var(--panel); border: 2px solid #120c1c; box-shadow: inset 0 0 0 1px var(--edge); border-radius: 6px; padding: 6px 14px; }
+.tog[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
+canvas { width: 100%; max-width: 100%; height: auto; image-rendering: pixelated; display: block; border-radius: 10px; border: 2px solid #120c1c; }
+.cap { color: var(--muted); font-size: 14px; margin-top: 8px; }
+</style>
+<div class="wrap">
+<h1>Pick a building style</h1>
+<p class="sub">The same Hollowmere street drawn five ways: a turreted townhouse, the Gilded Owl tavern, and a chapel with a rose window and spire. Try day and night: windows, stained glass and lanterns light up after dark.</p>
+<div class="styles" id="styles"></div>
+<div class="bar"><button class="tog" id="day" aria-pressed="true">Day</button><button class="tog" id="night" aria-pressed="false">Night</button></div>
+<canvas id="scene" width="1140" height="570"></canvas>
+<p class="cap" id="cap"></p>
+</div>
+<script>
+// Nightvale — Gothic building generator: steep fish-scale roofs, cross gables, turrets and spires,
+// lancet & rose windows with stained glass, buttresses, gargoyles, timber jetties, leaning facades.
+// Self-contained (own pixel painter) so it can also run in previews. Defines window.GothicArt.
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------ painter
+  function hash(x, y, s) {
+    let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul((s | 0) + 1, 1442695041)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296;
+  }
+  function noise(x, y, s) {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  const hexCache = new Map();
+  function rgb(c) { if (Array.isArray(c)) return c; let v = hexCache.get(c); if (!v) { const n = parseInt(c.slice(1), 16); v = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; hexCache.set(c, v); } return v; }
+  function pack(c, a) { c = rgb(c); return (((a === undefined ? 255 : a) << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0; }
+  function mixc(a, b, t) { a = rgb(a); b = rgb(b); return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)]; }
+
+  class Pix {
+    constructor(w, h) { this.w = w | 0; this.h = h | 0; this.d = new Uint32Array(this.w * this.h); this.tag = new Uint8Array(this.w * this.h); }
+    set(x, y, c, a, tag) { x = Math.round(x); y = Math.round(y); if (x < 0 || y < 0 || x >= this.w || y >= this.h || c == null) return; const i = y * this.w + x; this.d[i] = pack(c, a); this.tag[i] = tag || 0; }
+    has(x, y) { return x >= 0 && y >= 0 && x < this.w && y < this.h && (this.d[y * this.w + x] >>> 24) > 0; }
+    rect(x, y, w, h, c) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, c); }
+    hline(x0, x1, y, c) { for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) this.set(x, y, c); }
+    vline(x, y0, y1, c) { for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) this.set(x, y, c); }
+    line(x0, y0, x1, y1, c) {
+      x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+      const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let e = dx + dy;
+      for (;;) { this.set(x0, y0, c); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } }
+    }
+    disc(cx, cy, rx, ry, c) { for (let y = -Math.ceil(ry); y <= ry; y++) for (let x = -Math.ceil(rx); x <= rx; x++) if ((x * x) / (rx * rx + 0.01) + (y * y) / (ry * ry + 0.01) <= 1) this.set(cx + x, cy + y, c); }
+    shade(x, y, t) { // darken an existing pixel toward the outline colour
+      if (!this.has(x, y)) return; const i = y * this.w + x, v = this.d[i];
+      const c = [v & 255, (v >>> 8) & 255, (v >>> 16) & 255], m = mixc(c, '#120c1c', t); this.d[i] = pack(m, v >>> 24) ; }
+    outline(c) {
+      const add = [];
+      for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+        if (this.has(x, y)) continue;
+        if (this.has(x - 1, y) || this.has(x + 1, y) || this.has(x, y - 1) || this.has(x, y + 1)) add.push(x, y);
+      }
+      for (let i = 0; i < add.length; i += 2) this.set(add[i], add[i + 1], c);
+    }
+    clone() { const p = new Pix(this.w, this.h); p.d.set(this.d); p.tag.set(this.tag); return p; }
+    shear(lean) { // lean the top of the image to the right by `lean` px (crooked buildings)
+      if (!lean) return;
+      const n = new Uint32Array(this.d.length), t = new Uint8Array(this.d.length);
+      for (let y = 0; y < this.h; y++) {
+        const k = 1 - y / (this.h - 1), dx = Math.round(lean * Math.pow(k, 1.35));
+        for (let x = 0; x < this.w; x++) { const sx = x - dx; if (sx < 0 || sx >= this.w) continue; n[y * this.w + x] = this.d[y * this.w + sx]; t[y * this.w + x] = this.tag[y * this.w + sx]; }
+      }
+      this.d = n; this.tag = t;
+    }
+    canvas() {
+      const c = document.createElement('canvas'); c.width = this.w; c.height = this.h;
+      const x = c.getContext('2d'), img = x.createImageData(this.w, this.h);
+      new Uint32Array(img.data.buffer).set(this.d); x.putImageData(img, 0, 0); return c;
+    }
+  }
+
+  // ------------------------------------------------------------------ styles
+  const OUT = '#120c1c';
+  const STYLES = {
+    crooked: {
+      name: 'Hogsmeade Crooked', blurb: 'Leaning timber-and-plaster houses with jettied upper floors, crooked chimneys and indigo fish-scale roofs. Warm, cosy, a little wonky.',
+      wall: 'timber', plaster: ['#4b3f4c', '#6c5d6c', '#8f7f8b', '#b2a2a8', '#d2c4c2'], timber: ['#1e1518', '#2e2124', '#45322f'],
+      stone: ['#2d2b3a', '#45435a', '#605e78', '#7e7c97', '#9e9cb6', '#c0bed2'], roof: ['#100e20', '#1a1733', '#26224a', '#343062', '#46417e'], scales: true,
+      trim: ['#1e1518', '#3e2d2b', '#574039'], metal: ['#2a2733', '#6a6680'], glass: 'warm', lean: 4, jetty: true, crooked: true, gargoyles: false, crest: false,
+    },
+    cathedral: {
+      name: 'Cathedral Gothic', blurb: 'Dark weathered stone, buttresses, gargoyles, iron cresting and blazing stained glass. Grand and sacred, like an old cathedral town.',
+      wall: 'stone', stone: ['#17151f', '#24212f', '#332f42', '#454057', '#5b5571', '#77708f'], roof: ['#0e0e16', '#161624', '#212134', '#2d2d46', '#3c3c5c'], scales: false,
+      trim: ['#17151f', '#332f42', '#5b5571'], metal: ['#14121c', '#4a4660'], glass: 'stained', lean: 0, jetty: false, gargoyles: true, crest: true, buttress: true,
+    },
+    moonstone: {
+      name: 'Moonstone Gothic', blurb: 'Pale moonstone walls, verdigris-teal slate, silver trims and crescent finials, with cool blue and violet glass. Elegant and ethereal.',
+      wall: 'stone', stone: ['#4a4c64', '#6b6e88', '#9194ae', '#b4b7cf', '#d3d6e8', '#eef0fa'], roof: ['#10282f', '#183a44', '#22505c', '#2f6a77', '#448795'], scales: true,
+      trim: ['#3a3d55', '#8a8fa8', '#c8cce0'], metal: ['#8a8fa8', '#e8eeff'], glass: 'cool', lean: 0, jetty: false, gargoyles: false, crest: true, moonFinial: true,
+    },
+    witchwood: {
+      name: 'Witchwood Gothic', blurb: 'Black timber, plum roofs gone mossy, twisted spires and windows glowing witch-green. Spooky-cosy, lanterns everywhere.',
+      wall: 'timber', plaster: ['#2a2230', '#3a2f40', '#4b3e52', '#5e4f66', '#73637b'], timber: ['#0c090e', '#18121a', '#261c28'],
+      stone: ['#1c1a24', '#2b2836', '#3b374a', '#4e495f', '#645e78', '#7c7592'], roof: ['#150b18', '#231226', '#341b38', '#47264c', '#5d3262'], scales: true, mossy: true,
+      trim: ['#0c090e', '#261c28', '#3b2b3e'], metal: ['#1a1620', '#3fd88a'], glass: 'witch', lean: 3, jetty: true, crooked: true, twisted: true, gargoyles: false, crest: false,
+    },
+    victorian: {
+      name: 'Victorian Gothic Revival', blurb: 'Dark red brick, cream stone dressings, verdigris copper roofs, iron cresting and tall chimneys. A wizarding-London feel.',
+      wall: 'brick', brick: ['#2e1418', '#45202a', '#5e2c34', '#7a3a3e', '#95504c'], stone: ['#4a4440', '#6e675f', '#958c80', '#b9ae9c', '#d8ceb8', '#efe6d2'],
+      roof: ['#0f2a26', '#163c36', '#1f5048', '#2b675c', '#3e8274'], scales: true,
+      trim: ['#3a3430', '#958c80', '#d8ceb8'], metal: ['#15141a', '#4a4858'], glass: 'stained', lean: 0, jetty: false, gargoyles: true, crest: true,
+    },
+  };
+  const GLASS = {
+    warm: { day: ['#1b2246', '#2a3a6a', '#4a64a0', '#8aa8d8'], night: ['#b06a2a', '#ffbc62', '#ffd690', '#fff1c8'] },
+    witch: { day: ['#13241f', '#1f3a33', '#2f5a4c', '#5a8a78'], night: ['#1f6a4a', '#3fd88a', '#8affc0', '#e0ffe8'] },
+    cool: { day: ['#16243e', '#22385e', '#36568a', '#7a9cc8'], night: ['#3a6ad0', '#5cc8ff', '#a8e6ff', '#f0faff'], mosaic: ['#5cc8ff', '#8f6cff', '#5dffd0', '#b9a0ff', '#e4d2ff'] },
+    stained: { day: ['#1a1830', '#2a2448', '#3e3466', '#6a5a98'], night: ['#802070', '#ff4fa8', '#ffd24f', '#ffffff'], mosaic: ['#ff4fa8', '#4fb4ff', '#ffd24f', '#8f6cff', '#4fffc8', '#ff7a4f', '#ff6fd0'] },
+  };
+
+  // ------------------------------------------------------------------ materials
+  function wallFill(P, x0, y0, w, h, st, seed, mat, opts) {
+    opts = opts || {};
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
+      const lx = x - x0, ly = y - y0;
+      let c;
+      if (mat === 'stone') {
+        const course = Math.floor(ly / 5), off = (course % 2) * 4, bx = Math.floor((lx + off) / 8);
+        const s = st.stone;
+        if (ly % 5 === 4 || (lx + off) % 8 === 0) c = s[1];
+        else { const hv = hash(bx, course, seed); c = s[hv < 0.25 ? 2 : hv < 0.8 ? 3 : 4]; if (ly % 5 === 0) c = s[Math.min(s.length - 1, (hv < 0.25 ? 2 : 3) + 1)]; }
+        if (hash(x, y, seed + 3) < 0.04) c = s[1];
+      } else if (mat === 'brick') {
+        const course = Math.floor(ly / 3), off = (course % 2) * 3;
+        const b = st.brick;
+        if (ly % 3 === 2 || (lx + off) % 6 === 0) c = st.stone[1];
+        else { const hv = hash(Math.floor((lx + off) / 6), course, seed); c = b[hv < 0.3 ? 2 : hv < 0.85 ? 3 : 4]; }
+      } else if (mat === 'boards') {
+        const b = Math.floor(lx / 4); c = st.timber[lx % 4 === 0 ? 0 : hash(b, 3, seed) < 0.5 ? 1 : 2];
+      } else { // plaster with timber framing
+        const p = st.plaster;
+        c = p[noise(x / 5, y / 5, seed) > 0.62 ? 2 : 3];
+        if (hash(x, y, seed + 1) < 0.06) c = p[2];
+      }
+      P.set(x, y, c);
+    }
+    if (mat === 'timber' || mat === 'plaster') {
+      const t = st.timber;
+      // frame: posts, rails and braces
+      const posts = opts.posts || [];
+      P.hline(x0, x0 + w - 1, y0, t[1]); P.hline(x0, x0 + w - 1, y0 + 1, t[0]); P.hline(x0, x0 + w - 1, y0 + h - 1, t[1]);
+      P.vline(x0, y0, y0 + h - 1, t[2]); P.vline(x0 + w - 1, y0, y0 + h - 1, t[0]);
+      for (const px of posts) { P.vline(x0 + px, y0, y0 + h - 1, t[1]); P.vline(x0 + px + 1, y0, y0 + h - 1, t[0]); }
+      if (opts.braces) for (const [bx0, bx1] of opts.braces) P.line(x0 + bx0, y0 + h - 2, x0 + bx1, y0 + 2, t[1]);
+      if (opts.rail != null) P.hline(x0, x0 + w - 1, y0 + opts.rail, t[1]);
+    }
+  }
+  function scalesRoof(P, x0, y, w, st, seed, k, kind) {
+    // one row of a roof at height y spanning x0..x0+w-1; k = row index from the ridge
+    const r = st.roof;
+    for (let x = x0; x < x0 + w; x++) {
+      let c;
+      if (st.scales) {
+        const row = Math.floor(k / 3), off = (row % 2) * 2, cell = (x - x0 + off) % 4, sub = k % 3;
+        c = r[sub === 2 ? (cell === 1 || cell === 2 ? 2 : 0) : sub === 0 && cell === 1 ? 3 : 2];
+      } else {
+        const row = Math.floor(k / 3), off = (row % 2) * 3;
+        c = r[k % 3 === 2 ? 1 : (x - x0 + off) % 6 === 0 ? 1 : hash(x, row, seed) < 0.18 ? 3 : 2];
+      }
+      if (st.mossy && noise(x / 4, y / 3, seed + 9) > 0.66) c = hash(x, y, seed) < 0.5 ? '#2f5a36' : '#3b6e42';
+      P.set(x, y, c);
+    }
+  }
+
+  // ------------------------------------------------------------------ openings
+  // pointed (lancet) window; returns nothing, records glass pixels with tag 1
+  function lancet(P, x, y, w, h, st, seed, opts) {
+    opts = opts || {};
+    const hw = (w - 1) / 2, archH = Math.max(2, Math.round(hw + 2));
+    const inside = (i, j) => { if (j < 0 || j >= h || i < 0 || i >= w) return false; if (j >= archH) return true; const half = hw * Math.sqrt(j / archH); return Math.abs(i - hw) <= half + 0.35; };
+    const tr = st.trim;
+    for (let j = -1; j <= h; j++) for (let i = -1; i <= w; i++) {
+      if (inside(i, j)) continue;
+      if (inside(i - 1, j) || inside(i + 1, j) || inside(i, j - 1) || inside(i, j + 1) || (j === h && i >= 0 && i < w)) P.set(x + i, y + j, j === h ? tr[2] : tr[i < hw ? 1 : 0]);
+    }
+    const g = GLASS[opts.glass || st.glass];
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      if (!inside(i, j)) continue;
+      const lead = (w >= 5 && i === Math.round(hw)) || (j > archH && (j - archH) % 5 === 4);
+      if (lead) { P.set(x + i, y + j, tr[0]); continue; }
+      let c = g.day[(i + j < 3) ? 3 : (i - j) % 4 === 1 ? 2 : 1];
+      if (g.mosaic) c = mixc(g.mosaic[Math.floor(hash(Math.floor(i / 2), Math.floor(j / 2), seed) * g.mosaic.length)], g.day[0], 0.55);
+      P.set(x + i, y + j, c, 255, 1);
+    }
+    if (opts.sill !== false) P.hline(x - 1, x + w, y + h + 1, st.stone ? st.stone[st.stone.length - 2] : tr[2]);
+  }
+  function rose(P, cx, cy, r, st, seed) {
+    const g = GLASS[st.glass === 'warm' ? 'stained' : st.glass], s = st.stone || st.trim;
+    for (let y = -r - 1; y <= r + 1; y++) for (let x = -r - 1; x <= r + 1; x++) {
+      const d = Math.hypot(x, y);
+      if (d > r + 1.2) continue;
+      if (d > r - 0.6) { P.set(cx + x, cy + y, s[d > r + 0.4 ? 1 : 4]); continue; }
+      const a = Math.atan2(y, x), seg = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 8);
+      const spoke = Math.abs(Math.sin(a * 4)) < 0.18 && d > 1.5;
+      if (spoke || Math.abs(d - r * 0.5) < 0.5) { P.set(cx + x, cy + y, st.trim[0]); continue; }
+      const mos = g.mosaic || g.night;
+      const c = d < r * 0.5 ? mos[(seg + 3) % mos.length] : mos[seg % mos.length];
+      P.set(cx + x, cy + y, mixc(c, g.day[0], 0.55), 255, d < 1.5 ? 2 : 1);
+    }
+  }
+  function door(P, x, y, w, h, st, seed) { // pointed arch door; (x,y) = top-left of the opening
+    const hw = (w - 1) / 2, archH = Math.round(hw + 2);
+    const inside = (i, j) => { if (j < 0 || j >= h || i < 0 || i >= w) return false; if (j >= archH) return true; return Math.abs(i - hw) <= hw * Math.sqrt(j / archH) + 0.35; };
+    const s = st.stone || st.trim;
+    for (let j = -2; j < h; j++) for (let i = -2; i <= w + 1; i++) {
+      if (inside(i, j)) continue;
+      const near = inside(i - 1, j) || inside(i + 1, j) || inside(i, j + 1) || inside(i - 2, j) || inside(i + 2, j) || inside(i, j + 2);
+      if (near) P.set(x + i, y + j, (Math.floor((i + j + 20) / 2) % 2) ? s[s.length - 2] : s[s.length - 3]);
+    }
+    const wd = ['#2a1810', '#4a2c1c', '#6a4028', '#8a5a3a'];
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      if (!inside(i, j)) continue;
+      let c = wd[i % 3 === 0 ? 0 : i < hw ? 2 : 1];
+      if (j === Math.round(h * 0.35) || j === Math.round(h * 0.75)) c = '#1a1416';
+      P.set(x + i, y + j, c);
+    }
+    P.set(x + w - 3, y + Math.round(h * 0.55), '#f2c45a');
+    for (const j of [Math.round(h * 0.35), Math.round(h * 0.75)]) for (let i = 1; i < w - 1; i += 3) P.set(x + i, y + j, '#6a6680');
+    P.hline(x - 2, x + w + 1, y + h, s[s.length - 2]); P.hline(x - 2, x + w + 1, y + h + 1, s[2]);
+  }
+  function roundWin(P, cx, cy, r, st, seed) {
+    for (let y = -r - 1; y <= r + 1; y++) for (let x = -r - 1; x <= r + 1; x++) {
+      const d = Math.hypot(x, y); if (d > r + 1) continue;
+      if (d > r - 0.3) P.set(cx + x, cy + y, st.trim[1]);
+      else if (x === 0 || y === 0) P.set(cx + x, cy + y, st.trim[0]);
+      else P.set(cx + x, cy + y, GLASS[st.glass].day[x + y < 0 ? 2 : 1], 255, 1);
+    }
+  }
+
+  // ------------------------------------------------------------------ roof pieces
+  // side-gabled main roof: trapezoid from ridge (top) to eave (bottom)
+  function mainRoof(P, x0, x1, top, eave, st, seed, steep) {
+    const rows = eave - top, inset = Math.round(rows * (steep || 0.3));
+    for (let y = top; y <= eave; y++) {
+      const k = y - top, ins = Math.round(inset * (1 - k / rows));
+      scalesRoof(P, x0 + ins, y, x1 - x0 - 2 * ins + 1, st, seed, k);
+      // hip shading: lighter left end, darker right end
+      for (let x = x0 + ins; x < x0 + ins + 3; x++) P.shade(x, y, -0.0);
+      P.set(x0 + ins, y, st.roof[3]); P.set(x1 - ins, y, st.roof[0]);
+    }
+    P.hline(x0 + inset, x1 - inset, top, st.roof[4]);
+    P.hline(x0 - 1, x1 + 1, eave, st.trim[1]); P.hline(x0 - 1, x1 + 1, eave + 1, st.trim[0]);
+    if (st.crest) for (let x = x0 + inset + 2; x < x1 - inset - 1; x += 3) { P.set(x, top - 1, st.metal[0]); if ((x / 3) % 2 < 1) P.set(x, top - 2, st.metal[1]); }
+  }
+  // front-facing cross gable: triangle wall + bargeboards, apex at (cx, apex), base at baseY
+  function crossGable(P, cx, apexY, baseY, halfW, st, seed, mat, win) {
+    const H = baseY - apexY;
+    for (let y = apexY; y <= baseY; y++) {
+      const half = Math.round((halfW * (y - apexY)) / H);
+      for (let x = cx - half; x <= cx + half; x++) {
+        if (mat === 'stone') { const s = st.stone, course = Math.floor(y / 5), off = (course % 2) * 4; P.set(x, y, y % 5 === 4 || (x + off) % 8 === 0 ? s[1] : s[hash(Math.floor((x + off) / 8), course, seed) < 0.3 ? 2 : 3]); }
+        else if (mat === 'brick') { const b = st.brick, course = Math.floor(y / 3), off = (course % 2) * 3; P.set(x, y, y % 3 === 2 || (x + off) % 6 === 0 ? st.stone[1] : b[hash(Math.floor((x + off) / 6), course, seed) < 0.3 ? 2 : 3]); }
+        else { const p = st.plaster; P.set(x, y, p[noise(x / 5, y / 5, seed) > 0.6 ? 2 : 3]); }
+      }
+      if (mat === 'timber') { P.set(cx, y, st.timber[1]); if ((y - apexY) % 7 === 0) P.hline(cx - half, cx + half, y, st.timber[1]); }
+    }
+    // bargeboards (roof edge) 3px thick, extending past the base
+    for (let k = -1; k <= H + 3; k++) {
+      const y = apexY + k, half = Math.round((halfW * k) / H);
+      for (let t = 0; t < 4; t++) {
+        const c = t === 0 ? st.trim[2] : t === 3 ? st.roof[0] : st.roof[t === 1 ? 3 : 2];
+        P.set(cx - half - 1 - t, y + t * 0, c); P.set(cx + half + 1 + t, y, t === 0 ? st.trim[1] : c);
+      }
+    }
+    // finial
+    if (st.moonFinial) { P.set(cx, apexY - 3, '#f2c45a'); P.set(cx - 1, apexY - 4, '#f2c45a'); P.set(cx - 1, apexY - 5, '#f2c45a'); P.set(cx, apexY - 6, '#f2c45a'); P.vline(cx, apexY - 2, apexY - 1, st.metal[0]); }
+    else { P.vline(cx, apexY - 4, apexY - 1, st.metal[0]); P.set(cx, apexY - 5, st.metal[1]); P.set(cx - 1, apexY - 3, st.metal[0]); P.set(cx + 1, apexY - 3, st.metal[0]); }
+    if (win === 'lancet') lancet(P, cx - 3, apexY + Math.round(H * 0.35), 7, Math.max(7, Math.round(H * 0.5)), st, seed + cx, { sill: false });
+    else if (win === 'round') roundWin(P, cx, apexY + Math.round(H * 0.58), 3, st, seed);
+    else if (win === 'rose') rose(P, cx, apexY + Math.round(H * 0.6), Math.max(4, Math.round(halfW * 0.42)), st, seed);
+  }
+  function dormer(P, cx, baseY, st, seed) {
+    // small gabled window box on the roof
+    P.rect(cx - 4, baseY - 9, 9, 9, st.wall === 'stone' ? st.stone[3] : st.wall === 'brick' ? st.brick[3] : st.plaster[3]);
+    lancet(P, cx - 2, baseY - 8, 5, 7, st, seed + cx, { sill: false });
+    for (let k = 0; k <= 6; k++) { P.hline(cx - k - 1, cx - k + 0, baseY - 15 + k, st.roof[3]); P.hline(cx + k, cx + k + 1, baseY - 15 + k, st.roof[1]); }
+    P.set(cx, baseY - 16, st.metal[0]);
+  }
+  function chimney(P, x, top, bottom, st, seed, crooked) {
+    const s = st.wall === 'brick' ? st.brick : st.stone;
+    for (let y = top; y <= bottom; y++) {
+      const off = crooked ? Math.round(Math.sin((y - top) / 6) * 1.2) : 0;
+      for (let i = 0; i < 6; i++) P.set(x + i + off, y, (y % 3 === 2 || (i + Math.floor(y / 3)) % 3 === 0) ? s[1] : s[i < 2 ? 4 : 3]);
+    }
+    P.hline(x - 1, x + 6, top - 1, s[4]); P.hline(x - 1, x + 6, top, s[2]);
+    P.set(x + 2, top - 2, st.trim[0]); P.set(x + 3, top - 2, st.trim[0]);
+    return { x: x + 3, y: top - 3 };
+  }
+  // round turret with a conical roof
+  function turret(P, x0, w, top, bottom, coneH, st, seed, opts) {
+    opts = opts || {};
+    const s = st.wall === 'brick' ? st.brick : st.stone;
+    for (let y = top; y <= bottom; y++) for (let x = x0; x < x0 + w; x++) {
+      const t = (x - x0) / (w - 1), light = Math.cos((t - 0.3) * Math.PI);
+      const course = Math.floor((y - top) / 4), off = course % 2 ? 3 : 0;
+      let k = light > 0.8 ? 4 : light > 0.45 ? 3 : light > 0.05 ? 2 : 1;
+      if ((y - top) % 4 === 3 || (x + off) % 6 === 0) k = Math.max(0, k - 1);
+      P.set(x, y, s[Math.min(s.length - 1, k)]);
+    }
+    if (opts.windows) for (let i = 0; i < opts.windows; i++) lancet(P, x0 + Math.round(w / 2) - 2, top + 8 + i * 18, 5, 9, st, seed + i, { sill: false });
+    // cone
+    const cx = x0 + (w - 1) / 2, eaveW = w / 2 + 2, twist = st.twisted ? 3 : 0;
+    for (let y = 0; y <= coneH; y++) {
+      const k = y / coneH, half = eaveW * Math.pow(k, 0.92), yy = top - coneH + y, cxx = cx + twist * Math.pow(1 - k, 2);
+      for (let x = Math.round(cxx - half); x <= Math.round(cxx + half); x++) {
+        const rel = (x - (cxx - half)) / (2 * half + 0.01);
+        let c = st.roof[rel < 0.3 ? 3 : rel < 0.7 ? 2 : 1];
+        if (st.scales && y % 3 === 2 && x % 2 === 0) c = st.roof[0];
+        if (st.mossy && noise(x / 3, yy / 3, seed) > 0.7) c = '#2f5a36';
+        P.set(x, yy, c);
+      }
+    }
+    P.hline(Math.round(cx - eaveW) - 1, Math.round(cx + eaveW) + 1, top + 1, st.trim[1]);
+    const ax = Math.round(cx + twist), ay = top - coneH;
+    if (st.moonFinial) { P.set(ax, ay - 2, '#f2c45a'); P.set(ax - 1, ay - 3, '#f2c45a'); P.set(ax - 1, ay - 4, '#f2c45a'); P.set(ax, ay - 5, '#f2c45a'); }
+    else { P.vline(ax, ay - 4, ay - 1, st.metal[0]); P.set(ax, ay - 5, st.metal[1]); }
+  }
+  // square tower with a tall spire and pinnacles
+  function tower(P, x0, w, top, bottom, spireH, st, seed) {
+    const s = st.wall === 'brick' ? st.brick : st.stone;
+    for (let y = top; y <= bottom; y++) for (let x = x0; x < x0 + w; x++) {
+      const course = Math.floor((y - top) / 5), off = (course % 2) * 4;
+      let c = (y - top) % 5 === 4 || (x + off) % 8 === 0 ? s[1] : s[x < x0 + 3 ? 4 : x > x0 + w - 4 ? 2 : 3];
+      if (st.wall === 'brick' && (y - top) % 12 === 0) c = st.stone[4];
+      P.set(x, y, c);
+    }
+    // belfry: tall dark louvred opening
+    const bx = x0 + Math.round(w / 2) - 3;
+    lancet(P, bx, top + 6, 7, 14, st, seed, { sill: true, glass: 'warm' });
+    for (let j = 0; j < 14; j += 3) for (let i = 1; i < 6; i++) P.set(bx + i, top + 10 + j, st.trim[0]);
+    // clock / rose
+    rose(P, x0 + Math.round(w / 2), top + 30, 4, st, seed + 7);
+    // cornice + pinnacles
+    P.hline(x0 - 1, x0 + w, top, st.stone ? st.stone[4] : st.trim[2]); P.hline(x0 - 1, x0 + w, top + 1, st.trim[0]);
+    for (const px of [x0, x0 + w - 2]) { P.rect(px, top - 6, 2, 6, s[3]); P.set(px, top - 7, st.metal[1]); P.set(px + 1, top - 7, s[4]); }
+    // spire
+    const cx = x0 + (w - 1) / 2;
+    for (let y = 0; y <= spireH; y++) {
+      const k = y / spireH, half = (w / 2 - 2) * k, yy = top - spireH + y;
+      for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) {
+        const rel = (x - (cx - half)) / (2 * half + 0.01);
+        P.set(x, yy, st.roof[rel < 0.45 ? 3 : 1]);
+      }
+      if (y % 6 === 5) P.hline(Math.round(cx - half), Math.round(cx + half), yy, st.roof[0]);
+    }
+    if (st.moonFinial) { const ax = Math.round(cx), ay = top - spireH; P.set(ax, ay - 2, '#f2c45a'); P.set(ax - 1, ay - 3, '#f2c45a'); P.set(ax - 1, ay - 4, '#f2c45a'); P.set(ax, ay - 5, '#f2c45a'); }
+    else { const ax = Math.round(cx), ay = top - spireH; P.vline(ax, ay - 6, ay - 1, st.metal[0]); P.hline(ax - 2, ax + 2, ay - 4, st.metal[0]); P.set(ax, ay - 7, '#f2c45a'); }
+  }
+  function buttress(P, x, wallTop, baseY, st) {
+    const s = st.stone || st.trim, h = baseY - wallTop, cap = baseY - Math.round(h * 0.78);
+    for (let y = cap; y <= baseY; y++) for (let i = 0; i < 4; i++) P.set(x + i, y, s[i === 0 ? 4 : i === 3 ? 1 : (y % 5 === 4 ? 1 : 3)]);
+    for (let k = 0; k < 4; k++) P.hline(x + k, x + 3, cap - 3 + k, s[k === 0 ? 4 : 3]);
+    P.set(x + 1, cap - 4, st.metal[1]);
+  }
+  function gargoyle(P, x, y, st, flip) {
+    const c = st.stone ? st.stone[1] : st.trim[0];
+    const d = flip ? -1 : 1;
+    P.set(x, y, c); P.set(x + d, y, c); P.set(x + 2 * d, y - 1, c); P.set(x + d, y - 1, c); P.set(x - d, y - 1, c); P.set(x + 2 * d, y, '#ff5a5a');
+    P.set(x - d, y - 2, c); P.set(x, y + 1, c);
+  }
+  function ivy(P, x, baseY, h, seed) {
+    for (let y = 0; y < h; y++) { const yy = baseY - y; if (!P.has(x, yy)) continue; P.set(x, yy, y % 3 ? '#245a40' : '#337450'); if (y % 3 === 1) P.set(x + (y % 2 ? 1 : -1), yy, '#4c9061'); if (hash(y, x, seed) < 0.2) x += hash(x, y, seed) < 0.5 ? 1 : -1; }
+  }
+  function lantern(P, x, y, st, color) {
+    P.set(x, y - 2, st.metal[0]); P.rect(x - 1, y - 1, 3, 4, st.trim[0]); P.set(x, y, color || '#ffbc62'); P.set(x, y + 1, '#fff1c8');
+  }
+  function signBoard(P, x, y, icon, st) {
+    P.hline(x - 2, x + 9, y, st.metal[0]); P.set(x, y + 1, st.metal[0]); P.set(x + 7, y + 1, st.metal[0]);
+    P.rect(x - 1, y + 2, 10, 9, st.trim[0]); P.rect(x, y + 3, 8, 7, '#7a5a48');
+    const glyph = { owl: ['.#....#.', '.######.', '#o#..#o#', '.######.', '..####..', '..#..#..'], potion: ['...##...', '...##...', '..####..', '.######.', '.######.', '..####..'], hat: ['...##...', '..####..', '..####..', '.######.', '########', '........'], book: ['........', '.##..##.', '#..##..#', '#..##..#', '#..##..#', '.##..##.'], star: ['...#....', '...#....', '#######.', '..###...', '.#...#..', '........'] }[icon];
+    if (glyph) for (let j = 0; j < 6; j++) for (let i = 0; i < 8; i++) { const ch = glyph[j][i]; if (ch === '#') P.set(x + i, y + 3 + j, icon === 'owl' || icon === 'star' ? '#f2c45a' : icon === 'potion' ? '#b99aee' : '#e8dcc8'); else if (ch === 'o') P.set(x + i, y + 3 + j, OUT); }
+  }
+
+  // ------------------------------------------------------------------ building assembly
+  // spec: { w, wallH, roofH, floors, mat?, steep, gables:[{cx,hw,h,win}], dormers:[cx], chimneys:[x], turret:{side,w,h,coneH,windows},
+  //         tower:{x,w,h,spireH}, buttresses:[x], door:{x,w,h}, windows:[{x,y,w,h,type}], sign:{x,y,icon}, lanterns:[{x,y,color}], ivy:n, gargoyles }
+  function makeBuilding(spec, styleKey) {
+    const st = STYLES[styleKey] || STYLES.cathedral, seed = spec.seed || 7;
+    const mat = spec.mat || st.wall;
+    const extraTop = Math.max(spec.turret ? spec.turret.h + spec.turret.coneH + 8 - spec.wallH : 0, spec.tower ? spec.tower.h + spec.tower.spireH + 10 - spec.wallH : 0, spec.roofH + 10, ...(spec.gables || []).map((g) => g.h + 10));
+    const padL = 4 + (spec.turret && spec.turret.side === 'left' ? Math.max(0, spec.turret.w - 6) : 0), padR = 4 + (st.lean || 0) + (spec.turret && spec.turret.side === 'right' ? Math.max(0, spec.turret.w - 6) : 0);
+    const W = spec.w + padL + padR, H = spec.wallH + extraTop + 2;
+    const P = new Pix(W, H);
+    const bx = padL, baseY = H - 1, wallTop = baseY - spec.wallH;
+    const lights = [], smoke = [];
+    const jetty = st.jetty && spec.floors >= 2;
+    const floorY = wallTop + Math.round(spec.wallH * 0.48);
+    // tower behind the main block
+    if (spec.tower) tower(P, bx + spec.tower.x, spec.tower.w, baseY - spec.tower.h, baseY - spec.wallH + 4, spec.tower.spireH, st, seed);
+    // main roof
+    const roofTop = wallTop - spec.roofH;
+    mainRoof(P, bx - 2, bx + spec.w + 1, roofTop, wallTop + 1, st, seed, spec.steep || 0.22);
+    // chimneys (behind gables)
+    for (const cxp of spec.chimneys || []) smoke.push(chimney(P, bx + cxp, roofTop - 8 - (hash(cxp, 1, seed) * 6 | 0), wallTop - 2, st, seed + cxp, st.crooked));
+    // walls
+    if (jetty) {
+      wallFill(P, bx + 2, floorY, spec.w - 4, baseY - floorY - 2, st, seed, mat === 'timber' ? 'timber' : mat, { posts: [Math.round(spec.w * 0.33), Math.round(spec.w * 0.66)], braces: [] });
+      wallFill(P, bx, wallTop, spec.w, floorY - wallTop, st, seed + 1, mat, { posts: [Math.round(spec.w * 0.25), Math.round(spec.w * 0.5), Math.round(spec.w * 0.75)], braces: [[3, 10], [spec.w - 4, spec.w - 11]] });
+      P.hline(bx, bx + spec.w - 1, floorY, st.trim[1]); P.hline(bx + 2, bx + spec.w - 3, floorY + 1, OUT);
+    } else wallFill(P, bx, wallTop, spec.w, spec.wallH - 2, st, seed, mat, { posts: mat === 'timber' ? [Math.round(spec.w * 0.33), Math.round(spec.w * 0.66)] : [], rail: spec.floors >= 2 ? floorY - wallTop : null });
+    // plinth
+    const s = st.stone;
+    P.hline(bx, bx + spec.w - 1, baseY - 2, s[4]); P.hline(bx, bx + spec.w - 1, baseY - 1, s[2]); P.hline(bx, bx + spec.w - 1, baseY, s[1]);
+    // eave shadow
+    for (let x = bx; x < bx + spec.w; x++) { P.shade(x, wallTop + 2, 0.4); P.shade(x, wallTop + 3, 0.2); }
+    // cross gables (in front of the roof)
+    for (const g of spec.gables || []) crossGable(P, bx + g.cx, wallTop - g.h, wallTop + 1, g.hw, st, seed + g.cx, mat === 'boards' ? 'timber' : mat, g.win || 'lancet');
+    for (const dx of spec.dormers || []) dormer(P, bx + dx, wallTop - 1, st, seed + dx);
+    // buttresses
+    if (st.buttress || spec.buttresses) for (const x of spec.buttresses || []) buttress(P, bx + x, wallTop, baseY, st);
+    // windows
+    for (const w of spec.windows || []) {
+      const y = wallTop + w.y;
+      if (w.type === 'rose') rose(P, bx + w.x, y, w.r || 6, st, seed + w.x);
+      else if (w.type === 'round') roundWin(P, bx + w.x, y, w.r || 3, st, seed);
+      else lancet(P, bx + w.x, y, w.w || 7, w.h || 11, st, seed + w.x * 3 + w.y);
+    }
+    if (spec.door) door(P, bx + spec.door.x, baseY - 2 - spec.door.h, spec.door.w, spec.door.h, st, seed);
+    // turret (in front, at a corner)
+    if (spec.turret) {
+      const t = spec.turret, tx = t.side === 'left' ? bx - t.w + 6 : bx + spec.w - 6;
+      turret(P, tx, t.w, baseY - t.h, baseY - 1, t.coneH, st, seed + 31, { windows: t.windows || 2 });
+      P.hline(tx, tx + t.w - 1, baseY - 1, s[2]); P.hline(tx, tx + t.w - 1, baseY, s[1]);
+    }
+    if (st.gargoyles || spec.gargoyles) { gargoyle(P, bx + 1, wallTop + 1, st, true); gargoyle(P, bx + spec.w - 2, wallTop + 1, st, false); }
+    for (let k = 0; k < (spec.ivy != null ? spec.ivy : st.mossy ? 6 : 3); k++) ivy(P, bx + 3 + Math.floor(hash(k, 1, seed) * (spec.w - 6)), baseY - 3, 8 + Math.floor(hash(k, 2, seed) * spec.wallH * 0.7), seed + k);
+    for (const L of spec.lanterns || []) { lantern(P, bx + L.x, wallTop + L.y, st, st.glass === 'witch' ? '#5dffb0' : undefined); }
+    if (spec.sign) signBoard(P, bx + spec.sign.x, wallTop + spec.sign.y, spec.sign.icon, st);
+    P.outline(OUT);
+    // night version: light the glass
+    const N = P.clone();
+    const g = GLASS[st.glass];
+    for (let i = 0; i < N.d.length; i++) {
+      if (!N.tag[i]) continue;
+      const x = i % W, y = (i / W) | 0;
+      let c;
+      if (g.mosaic) { c = g.mosaic[Math.floor(hash(x >> 1, y >> 1, seed) * g.mosaic.length)]; if (hash(x, y, seed + 5) < 0.2) c = mixc(c, '#ffffff', 0.45); }
+      else c = g.night[hash(x, y, seed) < 0.25 ? 3 : hash(x, y, seed + 1) < 0.5 ? 2 : 1];
+      N.d[i] = pack(c);
+    }
+    P.shear(st.lean || 0); N.shear(st.lean || 0);
+    // light sources at the glass, in sprite coordinates
+    const glassPts = [];
+    for (let i = 0; i < N.d.length; i += 1) if (N.tag[i] && hash(i, 0, seed) < 0.06) glassPts.push([i % W, (i / W) | 0]);
+    const nightCol = st.glass === 'witch' ? [93, 255, 160] : st.glass === 'cool' ? [120, 200, 255] : [255, 188, 98];
+    for (const [x, y] of glassPts) {
+      // stained glass throws light the colour of its own pane
+      const v = N.d[y * W + x], c = g.mosaic ? [v & 255, (v >>> 8) & 255, (v >>> 16) & 255] : nightCol;
+      lights.push({ x, y, r: g.mosaic ? 18 : 22, color: c, i: g.mosaic ? 0.45 : 0.55, night: true, flicker: 1 });
+    }
+    for (const L of spec.lanterns || []) lights.push({ x: bx + L.x, y: wallTop + L.y, r: 46, color: st.glass === 'witch' ? [93, 255, 160] : [255, 188, 98], i: 0.9, night: true, flicker: 1 });
+    return { day: P.canvas(), night: N.canvas(), dayPix: P, nightPix: N, W, H, ax: bx + spec.w / 2, ay: baseY, lights, smoke, door: spec.door ? { x: bx + spec.door.x + spec.door.w / 2, y: baseY } : null, padL, padR };
+  }
+
+  window.GothicArt = { STYLES, GLASS, makeBuilding, Pix, hash, noise };
+})();
+
+</script>
+<script>
+const W = 380, H = 190, S = 3;
+const SPECS = {
+  townhouse: { w: 56, wallH: 48, floors: 2, roofH: 24, steep: 0.2, gables: [{ cx: 30, hw: 14, h: 26, win: 'lancet' }], turret: { side: 'left', w: 16, h: 76, coneH: 30, windows: 2 }, chimneys: [44], windows: [{ x: 8, y: 6, w: 7, h: 11 }, { x: 40, y: 6, w: 7, h: 11 }, { x: 8, y: 30, w: 7, h: 10 }], door: { x: 36, w: 11, h: 17 }, lanterns: [{ x: 31, y: 32 }], seed: 11 },
+  tavern: { w: 108, wallH: 52, floors: 2, roofH: 26, steep: 0.18, gables: [{ cx: 24, hw: 16, h: 28, win: 'lancet' }, { cx: 84, hw: 16, h: 28, win: 'round' }], dormers: [54], chimneys: [6, 98], windows: [{ x: 6, y: 7, w: 7, h: 11 }, { x: 36, y: 7, w: 7, h: 11 }, { x: 64, y: 7, w: 7, h: 11 }, { x: 94, y: 7, w: 7, h: 11 }, { x: 10, y: 31, w: 9, h: 11 }, { x: 88, y: 31, w: 9, h: 11 }], door: { x: 48, w: 13, h: 20 }, sign: { x: 70, y: 27, icon: 'owl' }, lanterns: [{ x: 44, y: 34 }, { x: 65, y: 34 }], seed: 21 },
+  chapel: { w: 72, wallH: 58, floors: 1, roofH: 26, steep: 0.12, gables: [{ cx: 36, hw: 36, h: 44, win: 'rose' }], tower: { x: 54, w: 22, h: 110, spireH: 44 }, buttresses: [0, 20, 48, 68], windows: [{ x: 7, y: 10, w: 9, h: 26 }, { x: 56, y: 10, w: 9, h: 26 }], door: { x: 29, w: 15, h: 24 }, gargoyles: true, seed: 31 },
+};
+const KEYS = ['crooked', 'cathedral', 'moonstone', 'witchwood', 'victorian'];
+let style = 'cathedral', night = false;
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H; const b = buf.getContext('2d');
+const lc = document.createElement('canvas'); lc.width = W; lc.height = H; const l = lc.getContext('2d');
+const cache = {};
+function built(st) { if (cache[st]) return cache[st]; const out = {}; for (const k in SPECS) out[k] = GothicArt.makeBuilding(SPECS[k], st); return (cache[st] = out); }
+let groundImg = null;
+function ground() {
+  if (groundImg) { b.drawImage(groundImg, 0, 0); return; }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const n = GothicArt.noise(x / 9, y / 9, 3); let c;
+    if (y > 152) { const cx = Math.floor(x / 6), cy = Math.floor(y / 5), h = GothicArt.hash(cx, cy, 5); c = (x + (cy % 2) * 3) % 6 === 0 || y % 5 === 0 ? '#2a2638' : h < 0.4 ? '#4a4463' : h < 0.85 ? '#5b5478' : '#6e6690'; }
+    else c = n < 0.4 ? '#1f4e3c' : n < 0.7 ? '#296246' : '#377a53';
+    b.fillStyle = c; b.fillRect(x, y, 1, 1);
+  }
+  groundImg = document.createElement('canvas'); groundImg.width = W; groundImg.height = H; groundImg.getContext('2d').drawImage(buf, 0, 0);
+}
+function lamp(x, y) { b.fillStyle = '#2d2c3e'; b.fillRect(x, y - 26, 2, 26); b.fillStyle = '#1d1724'; b.fillRect(x - 2, y - 32, 6, 6); b.fillStyle = '#ffbc62'; b.fillRect(x - 1, y - 31, 4, 4); }
+function render() {
+  const s = built(style); ground();
+  const placed = [['townhouse', 24], ['tavern', 118], ['chapel', 258]], lights = [];
+  for (const [k, x] of placed) { const B = s[k], dx = x - B.padL, dy = 156 - B.ay; b.drawImage(night ? B.night : B.day, dx, dy); for (const L of B.lights) lights.push({ x: dx + L.x, y: dy + L.y, r: L.r, c: L.color, i: L.i }); }
+  for (const x of [102, 240, 362]) { lamp(x, 170); lights.push({ x: x + 1, y: 141, r: 60, c: [255, 190, 100], i: 1 }); }
+  ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, W * S, H * S);
+  if (night) {
+    l.globalCompositeOperation = 'source-over'; l.fillStyle = 'rgb(60,54,120)'; l.fillRect(0, 0, W, H); l.globalCompositeOperation = 'lighter';
+    for (const L of lights) { const g = l.createRadialGradient(L.x, L.y, 0, L.x, L.y, L.r); g.addColorStop(0, `rgba(${L.c},${L.i})`); g.addColorStop(0.5, `rgba(${L.c},${L.i * 0.35})`); g.addColorStop(1, `rgba(${L.c},0)`); l.fillStyle = g; l.fillRect(L.x - L.r, L.y - L.r, L.r * 2, L.r * 2); }
+    ctx.globalCompositeOperation = 'multiply'; ctx.imageSmoothingEnabled = true; ctx.drawImage(lc, 0, 0, W * S, H * S);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const L of lights) { const r = L.r * 0.5 * S, g = ctx.createRadialGradient(L.x * S, L.y * S, 0, L.x * S, L.y * S, r); g.addColorStop(0, `rgba(${L.c},${0.22 * L.i})`); g.addColorStop(1, `rgba(${L.c},0)`); ctx.fillStyle = g; ctx.fillRect(L.x * S - r, L.y * S - r, r * 2, r * 2); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  document.getElementById('cap').textContent = GothicArt.STYLES[style].name + '. ' + GothicArt.STYLES[style].blurb;
+  document.querySelectorAll('.st').forEach((e) => e.setAttribute('aria-pressed', e.dataset.k === style));
+  document.getElementById('day').setAttribute('aria-pressed', !night); document.getElementById('night').setAttribute('aria-pressed', night);
+}
+const box = document.getElementById('styles');
+KEYS.forEach((k, i) => { const e = document.createElement('button'); e.className = 'st'; e.dataset.k = k; e.innerHTML = `<b>${String.fromCharCode(65 + i)} · ${GothicArt.STYLES[k].name}</b><span>${GothicArt.STYLES[k].blurb}</span>`; e.onclick = () => { style = k; render(); }; box.appendChild(e); });
+document.getElementById('day').onclick = () => { night = false; render(); };
+document.getElementById('night').onclick = () => { night = true; render(); };
+render();
+</script>

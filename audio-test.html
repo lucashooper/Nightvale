@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audio Audition</title>
+<style>
+  :root {
+    --bg: #17111f; --panel: #221a2e; --panel2: #2b2139; --line: #3a2d4d;
+    --text: #e9e2f3; --muted: #a497b8; --accent: #9fe3b0; --accent2: #c9a8ff; --warn: #ffb4a8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; letter-spacing: .3px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  h3 { font-size: 12px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+  h3:first-of-type { margin-top: 0; }
+  p.sub { margin: 0 0 18px; color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; font: inherit; cursor: pointer; text-align: left; }
+  button:hover { border-color: var(--accent2); }
+  button:active { transform: translateY(1px); }
+  button.on { background: #35284a; border-color: var(--accent2); color: #fff; }
+  button.big { background: #2d4a37; border-color: #4f8a60; color: #eafff0; font-weight: 600; padding: 10px 16px; }
+  button.big.done { background: var(--panel2); border-color: var(--line); color: var(--muted); }
+  label { color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+  input[type=range] { width: 160px; accent-color: var(--accent2); }
+  select { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit; }
+  .val { color: var(--text); min-width: 42px; display: inline-block; font-variant-numeric: tabular-nums; }
+  pre { margin: 0; background: #120d18; border: 1px solid var(--line); border-radius: 8px; padding: 10px; color: var(--accent); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .warn { color: var(--warn); }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } input[type=range] { width: 120px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Audio audition</h1>
+  <p class="sub">Procedural music, ambience, SFX, jingles and voice blips from <code>js/audio.js</code>. Music is deliberately rare: most zones wait or stay silent; use "Play now" to skip the wait.</p>
+
+  <section>
+    <div class="row">
+      <button id="unlock" class="big">Enable audio</button>
+      <span id="status" class="note">Audio is locked until you click.</span>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section>
+      <h2>Zone</h2>
+      <div class="row" id="zones"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="night">Night: off</button>
+        <label>Hour <input id="hour" type="range" min="6" max="26" step="0.25" value="12"><span class="val" id="hourv">12</span></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Dungeon floor <input id="depth" type="range" min="1" max="60" step="1" value="1"><span class="val" id="depthv">1</span></label>
+        <label>Deepwood depth <input id="wdepth" type="range" min="0" max="1" step="0.05" value="0"><span class="val" id="wdepthv">0.00</span></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Weather
+          <select id="weather"><option>clear</option><option>rain</option><option>mist</option><option>starfall</option></select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="playnow">Play now</button>
+        <button id="resend">Re-send same zone (idempotence)</button>
+      </div>
+      <div class="note">The floor slider is used in "depths"; the deepwood slider (0 = edge, 1 = the Hollows) in "deepwood".</div>
+    </section>
+
+    <section>
+      <h2>Live state</h2>
+      <pre id="state">-</pre>
+    </section>
+  </div>
+
+  <section>
+    <h2>Mix</h2>
+    <div class="row">
+      <label>Master <input data-vol="Master" type="range" min="0" max="1" step="0.01" value="0.8"><span class="val">0.80</span></label>
+      <label>Music <input data-vol="Music" type="range" min="0" max="1" step="0.01" value="0.55"><span class="val">0.55</span></label>
+      <label>SFX <input data-vol="Sfx" type="range" min="0" max="1" step="0.01" value="0.7"><span class="val">0.70</span></label>
+      <label>Ambience <input data-vol="Ambience" type="range" min="0" max="1" step="0.01" value="0.5"><span class="val">0.50</span></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="mute">Muted: off</button>
+      <button id="pause">Menu open (paused): off</button>
+      <button id="duck">Duck music 6 dB for 3 s</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Jingles</h2>
+    <div class="grid" id="jingles"></div>
+  </section>
+
+  <section>
+    <h2>Dialogue blips</h2>
+    <div class="row" style="margin-bottom:10px">
+      <label>Pitch <input id="bpitch" type="range" min="0.5" max="2" step="0.05" value="1"><span class="val" id="bpitchv">1.00</span></label>
+      <span class="note">Each button "speaks" a short sentence (one blip every ~2 characters).</span>
+    </div>
+    <div class="grid" id="blips"></div>
+  </section>
+
+  <section>
+    <h2>Sound effects</h2>
+    <div id="sfx"></div>
+    <div class="note">Hold <b>Shift</b> while clicking to play a sound five times in a row (checks the per-play variation).</div>
+  </section>
+</main>
+
+<script src="js/audio.js"></script>
+<script>
+(function () {
+  var AE = window.AudioEngine;
+  var $ = function (id) { return document.getElementById(id); };
+  var ZONES = ['title', 'sanctum', 'village', 'woods', 'lake', 'ridge', 'depths', 'interior',
+    'tavern', 'cathedral', 'boutique', 'deepwood', 'glade', 'festival', 'home', 'none'];
+  var SFX_GROUPS = [
+    ['Farming & walking', ['footstep_grass', 'footstep_stone', 'footstep_wood', 'hoe', 'water_pour', 'plant_seed', 'harvest', 'mandrake_scream', 'dig', 'dance_step']],
+    ['Mining, wood & combat', ['pickaxe_hit', 'rock_break', 'gem_found', 'axe_chop', 'tree_fall', 'sword_swing', 'wand_cast', 'magic_bolt_hit',
+      'enemy_hit', 'enemy_die', 'player_hurt', 'player_die', 'golem_stomp', 'wizard_cast']],
+    ['Creatures & critters', ['slime_hop', 'spider_skitter', 'bat_flap', 'ghost_wail', 'cat_meow', 'animal_purr', 'owl_hoot_soft', 'frog_croak',
+      'beetle_click', 'web_snap', 'wisp_chime', 'wolf_howl_far', 'critter_squeak', 'mimic_snap']],
+    ['Items, money & interface', ['pickup', 'coin', 'buy', 'sell', 'error', 'menu_open', 'menu_close', 'ui_click', 'ui_hover', 'coin_flip', 'dice_roll']],
+    ['Home, brewing & fishing', ['door_open', 'door_creak', 'ladder_descend', 'brew_start', 'brew_bubble', 'brew_done', 'splash', 'fish_bite', 'reel_tick',
+      'fish_catch', 'fish_escape', 'sleep', 'eat', 'drink_potion', 'fizz_drink', 'furniture_place', 'furniture_pickup']],
+    ['Magic, rewards & places', ['teleport', 'heart_up', 'level_up', 'quest_complete', 'chest_open', 'treasure', 'altar_offer', 'fairy_chime', 'discovery',
+      'mystery_chime', 'pray', 'bell_toll', 'shop_bell', 'page_turn', 'cloth_rustle']],
+    ['Spells & familiars', ['cast_lumen', 'cast_verdance', 'cast_blink', 'cast_frost', 'frost_hit', 'fam_owl', 'fam_fox', 'fam_moth', 'fam_happy']],
+    ['Lantern Moon festival', ['lantern_release', 'wisp_catch', 'applause']]
+  ];
+  var JINGLES = ['new_day', 'potion_brewed', 'quest_complete', 'heart_up', 'level_up', 'discovery', 'level_down', 'rune_gate', 'altar_restored', 'death'];
+  var TIMBRES = ['soft', 'bright', 'deep', 'raspy', 'squeaky', 'airy'];
+  var st = { zone: 'none', night: false, hour: 12, depth: 1, wdepth: 0, weather: 'clear' };
+
+  function opts() {
+    return { night: st.night, hour: st.hour, depth: st.zone === 'deepwood' ? st.wdepth : st.depth, weather: st.weather };
+  }
+  function send() { AE.setZone(st.zone, opts()); }
+  function btn(parent, label, fn) {
+    var b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    parent.appendChild(b);
+    return b;
+  }
+
+  $('unlock').addEventListener('click', function () {
+    var ok = AE.unlock();
+    $('unlock').textContent = ok ? 'Audio enabled' : 'Web Audio unavailable';
+    $('unlock').classList.add('done');
+    $('status').textContent = ok ? 'Running. Pick a zone.' : 'This browser has no Web Audio; every call is a silent no-op.';
+    if (!ok) $('status').className = 'note warn';
+  });
+  /* the game calls unlock() from its first gesture; the page does the same */
+  document.addEventListener('keydown', function () { AE.unlock(); }, { once: true });
+
+  var zoneBtns = {};
+  ZONES.forEach(function (z) {
+    zoneBtns[z] = btn($('zones'), z, function () {
+      st.zone = z;
+      for (var k in zoneBtns) zoneBtns[k].classList.toggle('on', k === z);
+      send();
+    });
+  });
+  zoneBtns.none.classList.add('on');
+  $('night').addEventListener('click', function () {
+    st.night = !st.night;
+    this.textContent = 'Night: ' + (st.night ? 'on' : 'off');
+    this.classList.toggle('on', st.night);
+    send();
+  });
+  $('hour').addEventListener('input', function () { st.hour = +this.value; $('hourv').textContent = st.hour; send(); });
+  $('depth').addEventListener('input', function () { st.depth = +this.value; $('depthv').textContent = st.depth; send(); });
+  $('wdepth').addEventListener('input', function () { st.wdepth = +this.value; $('wdepthv').textContent = st.wdepth.toFixed(2); send(); });
+  $('weather').addEventListener('change', function () { st.weather = this.value; send(); });
+  $('playnow').addEventListener('click', function () {
+    var ok = AE._debugPlayNow();
+    if (!ok) $('status').textContent = AE.isUnlocked() ? 'No music in this zone right now (try night, or hour 18+ in the village).' : 'Enable audio first.';
+  });
+  $('resend').addEventListener('click', send);
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[data-vol]'), function (el) {
+    el.addEventListener('input', function () {
+      AE['set' + el.getAttribute('data-vol') + 'Volume'](+el.value);
+      el.nextElementSibling.textContent = (+el.value).toFixed(2);
+    });
+  });
+  var muted = false, paused = false;
+  $('mute').addEventListener('click', function () { muted = !muted; AE.setMuted(muted); this.textContent = 'Muted: ' + (muted ? 'on' : 'off'); this.classList.toggle('on', muted); });
+  $('pause').addEventListener('click', function () { paused = !paused; AE.setPaused(paused); this.textContent = 'Menu open (paused): ' + (paused ? 'on' : 'off'); this.classList.toggle('on', paused); });
+  $('duck').addEventListener('click', function () { AE.duck(0.5, 3); });
+
+  JINGLES.forEach(function (j) { btn($('jingles'), j, function () { AE.jingle(j); }); });
+  $('bpitch').addEventListener('input', function () { $('bpitchv').textContent = (+this.value).toFixed(2); });
+  var talking = null;
+  TIMBRES.forEach(function (tb) {
+    btn($('blips'), tb, function () {
+      if (talking) clearInterval(talking);
+      var n = 0, text = 'Welcome back, little witch... the moon is kind tonight.';
+      talking = setInterval(function () {
+        n += 2;
+        if (n > text.length) { clearInterval(talking); talking = null; return; }
+        if (text.charAt(n) !== ' ') AE.blip({ pitch: +$('bpitch').value, timbre: tb });
+      }, 55);
+    });
+  });
+  SFX_GROUPS.forEach(function (grp) {
+    var h = document.createElement('h3'); h.textContent = grp[0]; $('sfx').appendChild(h);
+    var grid = document.createElement('div'); grid.className = 'grid'; $('sfx').appendChild(grid);
+    grp[1].forEach(function (s) {
+      var b = btn(grid, s, function (ev) {
+        var times = ev.shiftKey ? 5 : 1;
+        for (var i = 0; i < times; i++) setTimeout(function () { AE.sfx(s); }, i * 380);
+      });
+      if (s === 'ui_hover') b.addEventListener('mouseenter', function () { AE.sfx('ui_hover'); });
+    });
+  });
+
+  setInterval(function () {
+    var d = AE.debugState(), v = AE.getVolumes();
+    var lines = [];
+    for (var k in d) lines.push(k + ': ' + (typeof d[k] === 'number' ? d[k] : JSON.stringify(d[k])));
+    lines.push('volumes: ' + JSON.stringify(v));
+    $('state').textContent = lines.join('\n');
+  }, 250);
+})();
+</script>
+</body>
+</html>
