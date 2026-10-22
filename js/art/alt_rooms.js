@@ -1939,11 +1939,11 @@
       }
       const moss = fbm(x / 26, y / 18, seed + 5), gap = d2 - d1;
       let c;
-      if (gap < 1.6) c = moss > 0.46 ? MOSS[2] : ROSEROCK[1];
-      else if (gap < 4 && moss > 0.5) c = rampAt(MOSS, 0.3 + (moss - 0.5) * 1.6 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
+      if (gap < 1.4) c = moss > 0.44 ? MOSS[3] : ROSEROCK[2];
+      else if (gap < 4.5 && moss > 0.46) c = rampAt(MOSS, 0.34 + (moss - 0.46) * 1.6 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
       else {
-        const sh = clamp(0.55 + lit(dx1 / 14, dy1 / 10) * 0.35 - (gap < 3 ? 0.12 : 0), 0, 1);
-        c = rampAt(ROSEROCK, 0.28 + best * 0.18 + sh * 0.45 + (noise(x / 6, y / 6, seed + 3) - 0.5) * 0.12, x, y);
+        const sh = clamp(0.55 + lit(dx1 / 14, dy1 / 10) * 0.3 - (gap < 3 ? 0.08 : 0), 0, 1);
+        c = rampAt(ROSEROCK, 0.36 + best * 0.14 + sh * 0.38 + (noise(x / 6, y / 6, seed + 3) - 0.5) * 0.1, x, y);
         if (moss > 0.64) c = rampAt(MOSS, 0.4 + (moss - 0.64) * 2 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
       }
       P.set(x, y, c);
@@ -2042,7 +2042,7 @@
   const STREAM = [[184, 70], [160, 92], [134, 118], [112, 140], [86, 160], [62, 186], [40, 224]];
   function floorEmerald(w, h, seed) {
     const P = new Pix(w, h), shimmer = [];
-    const STONE2 = ['#1a2226', '#262f34', '#353f44', '#455054', '#566264', '#6a7674'];
+    const STONE2 = ['#323c38', '#46524c', '#5a6862', '#6e7c74', '#849088', '#9ca69c'];
     // a deep moss carpet, soft and even, with old round stones peeping through and a brook running from the spring
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const m = fbm(x / 24, y / 18, seed);
@@ -2050,10 +2050,10 @@
       if (noise(x / 10, y / 8, seed + 12) > 0.74) c = rampAt(MOSS, 0.62 + (noise(x / 2, y / 2, seed + 13) - 0.5) * 0.2, x, y); // brighter tufts
       P.set(x, y, c);
     }
-    for (let k = 0; k < (w * h) / 1800; k++) {
+    for (let k = 0; k < (w * h) / 2600; k++) {
       const sx = 8 + hash(k, 1, seed + 20) * (w - 16), sy = 8 + hash(k, 2, seed + 20) * (h - 16), rx = 4 + hash(k, 3, seed + 20) * 5, ry = rx * 0.7;
-      P.ell(sx, sy, rx, ry, (x, y, nx, ny) => { const d = nx * nx + ny * ny; P.set(x, y, d > 0.75 ? (ny < 0 ? MOSS[4] : STONE2[1]) : rampAt(STONE2, 0.45 + lit(nx, ny) * 0.4, x, y)); });
-      P.set(Math.round(sx - rx * 0.4), Math.round(sy - ry * 0.5), STONE2[5]);
+      P.ell(sx, sy, rx, ry, (x, y, nx, ny) => { const d = nx * nx + ny * ny; P.set(x, y, d > 0.72 ? (ny < 0.1 ? MOSS[5] : STONE2[1]) : rampAt(STONE2, 0.4 + lit(nx, ny) * 0.45, x, y)); });
+      P.set(Math.round(sx - rx * 0.4), Math.round(sy - ry * 0.5), STONE2[5]); P.set(Math.round(sx - rx * 0.4) + 1, Math.round(sy - ry * 0.5), STONE2[4]);
     }
     // the brook
     const segD = (x, y) => { let d = 1e9; for (let k = 0; k + 1 < STREAM.length; k++) { const [x0, y0] = STREAM[k], [x1, y1] = STREAM[k + 1], vx = x1 - x0, vy = y1 - y0, t = clamp(((x - x0) * vx + (y - y0) * vy) / (vx * vx + vy * vy), 0, 1); d = Math.min(d, Math.hypot(x - x0 - vx * t, y - y0 - vy * t)); } return d; };
