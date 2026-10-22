@@ -19,7 +19,8 @@
  *       light  null, or { x, y, r, color:[r,g,b] } — x, y in PIXELS FROM THE TOP-LEFT OF
  *              THE SPRITE CANVAS (the glowing core), r = suggested radius in world pixels.
  *              World position = sprite draw position + (x, y).
- *       price  glimmer; seller one of 'brann','isolde','mirabel','fennick','orvyn','depths'
+ *       price  glimmer; seller one of 'brann','isolde','mirabel','fennick','orvyn','depths',
+ *              or 'reward' (crafted, or given by a quest or milestone; never sold)
  *   FurnitureArt.sprite(id)  canvas, width = w*16, height = h*16 + headroom (tall pieces).
  *       Bottom-anchored: the bottom-left of the footprint is the bottom-left of the canvas,
  *       i.e. draw at (tileX*16, (tileY + h)*16 - canvas.height).
@@ -2256,6 +2257,237 @@
   def({ id: 'furn_trophy_crown', name: "Archon's Crown Replica", w: 1, h: 1, hr: 6, price: 0, seller: 'depths',
     light: { x: 7, y: 6, r: 26, color: L_VIOLET } }, drawTrophyCrown, null);
 
+  // ---------------------------------------------------------------------------
+  // Rewards: the Guild's Bounty Trophy Case (crafted) and Ronan's Mineral Cabinet
+  // ---------------------------------------------------------------------------
+  var GRIMF = ['#100e14', '#1e1a24', '#302a38', '#463e4e', '#605868', '#847c8c'];  // Old Grimjaw's charcoal fur
+  var MOSS = ['#1a4434', '#245a40', '#337450', '#4c9061', '#74b46e', '#a8d878'];   // ...and the moss on his back
+  var CRY = ['#2a1650', '#4a2f7a', '#8f6cd1', '#b99aee', '#e4d2ff', '#ffffff'];    // Vorrakh's violet crystal
+  var RUBY = ['#5a1420', '#a02a30', '#e0503e', '#ff9a86'];
+  var MAH = ['#1f1015', '#371a1d', '#522623', '#6e3529', '#8c4a33', '#ad6541'];    // mahogany
+
+  // ---- the four bounty trophies, each standing on its base row yb ----------------
+  // Gloopgarr's dented crown on a plum cushion (11 wide), a drop of slime still clinging to it
+  function tcCrown(im, x, yb) {
+    rrect(im, x, yb - 2, 11, 3, 1, function (X, Y, i, j) { return j === 0 ? PLV[5] : j === 1 ? PLV[4] : PLV[2]; });
+    px(im, x, yb, GLD[3]); px(im, x + 10, yb, GLD[2]);
+    stamp(im, x + 1, yb - 7, [
+      '5...5....',
+      '541545133',
+      '554444332',
+      '4r44e43r2',
+      '433333322'
+    ], legend(['012345', GLD], { r: RUBY[2], e: '#5dffb0' }));
+    px(im, x + 7, yb - 5, GLD[2]); px(im, x + 6, yb - 4, GLD[2]);      // the dent
+    px(im, x + 3, yb - 2, '#5dffb0'); px(im, x + 3, yb - 1, alpha('#2fbf7f', 0.85));
+  }
+  // a violet crystal shard of Vorrakh's in a brass mount (9 wide)
+  function tcShard(im, x, yb) {
+    prism(im, x + 2, 4, yb - 7, yb - 1, 0.6, CRY);
+    prism(im, x, 3, yb - 4, yb - 1, -0.9, CRY);
+    prism(im, x + 6, 2, yb - 3, yb - 1, 0.8, CRY);
+    hline(im, x, x + 8, yb, BRS[3]); px(im, x, yb, BRS[4]); px(im, x + 8, yb, BRS[2]);
+    px(im, x + 1, yb - 1, BRS[4]); px(im, x + 7, yb - 1, BRS[2]);
+  }
+  // the Lantern Thief's stolen lantern, a wisp still burning inside (7 wide)
+  function tcLantern(im, x, yb) {
+    stamp(im, x, yb - 7, [
+      '..bBb..',
+      '.b...b.',
+      '.BBBBb.',
+      'BBBBBbd',
+      'B2343bd',
+      'B3454bd',
+      'B2343bd',
+      'BBBBbdd'
+    ], { b: BRS[3], B: BRS[4], d: BRS[1], 2: TEAL[3], 3: TEAL[4], 4: TEAL[5], 5: WHITE });
+  }
+  // Old Grimjaw's great fang, set in a tuft of his mossy pelt (a pink toadstool still growing in it) (11 wide)
+  function tcFang(im, x, yb) {
+    tube(im, [[x + 4.5, yb - 2.5, 1.9], [x + 5.2, yb - 5.2, 1.35], [x + 6.5, yb - 7.2, 0.7], [x + 8.2, yb - 8.4, 0.1]], [BN[1], BN[2], BN[3], BN[4], BN[5]], { bias: 0.1 });
+    px(im, x + 5, yb - 5, BN[2]); px(im, x + 6, yb - 6, BN[2]);                    // an old crack
+    stamp(im, x, yb - 3, [
+      '..mMMm.mm..',
+      '.mMmffmmMm.',
+      'fFfFffFffFd',
+      '.dfdfddfdd.'
+    ], { m: MOSS[3], M: MOSS[4], f: GRIMF[4], F: GRIMF[5], d: GRIMF[2] });
+    px(im, x + 1, yb - 4, RSE[3]); px(im, x + 2, yb - 4, RSE[2]); px(im, x + 1, yb - 3, CRM[4]);
+    px(im, x + 9, yb - 3, '#f6d27a');
+  }
+
+  // ---- Bounty Trophy Case (2x1, tall, soft inner glow) 32x44 — a glass-fronted vitrine of the four bounties
+  function drawTrophyCase(im) {
+    var R = DW, V = QLT, x, y;
+    // crest: a shallow gable carrying the medal of the Silver Crescent (the Guild)
+    stamp(im, 9, 2, [
+      '....554433....',
+      '..4443333322..',
+      '44333333333322'
+    ], rampLeg('012345', R));
+    stamp(im, 13, 0, [
+      '.4443.',
+      '4vsvv2',
+      '4svvw2',
+      '3svww2',
+      '3vsww1',
+      '.2211.'
+    ], legend(['012345', GLD], { v: VIO[3], w: VIO[2], s: SLV[4] }));
+    px(im, 14, 1, VIO[4]);
+    cornice(im, 1, 30, 5, R);
+    // stiles + top rail
+    woodV(im, 2, 9, 2, 24, R, 61, 3); vline(im, 2, 9, 32, R[4]);
+    woodV(im, 28, 9, 2, 24, R, 62, 2); vline(im, 29, 9, 32, R[1]);
+    rect(im, 4, 9, 24, 2, R[3]); hline(im, 4, 27, 9, R[4]); hline(im, 4, 27, 10, R[2]);
+    // interior: midnight velvet, a shelf, the floor of the case
+    var PLEAT = mix(V[1], V[2], 0.55);
+    for (y = 11; y <= 31; y++) for (x = 4; x <= 27; x++) px(im, x, y, y < 12 ? V[0] : (x % 4 === 1 ? PLEAT : V[1]));
+    hline(im, 4, 27, 19, R[4]); hline(im, 4, 27, 20, R[2]); hline(im, 4, 27, 21, V[0]);
+    hline(im, 4, 27, 30, R[4]); hline(im, 4, 27, 31, R[2]);
+    spill(im, 22, 14, 8, CRY[3], 0.34);
+    spill(im, 9, 26, 7, TEAL[4], 0.3);
+    // the trophies
+    tcCrown(im, 4, 18);
+    tcShard(im, 18, 18);
+    tcLantern(im, 6, 29);
+    tcFang(im, 17, 30);
+    sparkle(im, 25, 12, CRY[4], false);
+    // centre stiles + lock plate
+    vline(im, 15, 11, 31, R[3]); vline(im, 16, 11, 31, R[2]);
+    px(im, 15, 21, BRS[4]); px(im, 16, 21, BRS[3]); px(im, 15, 22, BRS[2]); px(im, 16, 22, BRS[1]);
+    // glass: a cool sheen and highlight streaks
+    [[4, 14], [17, 27]].forEach(function (p) {
+      for (var yy = 11; yy <= 31; yy++) for (var xx = p[0]; xx <= p[1]; xx++) px(im, xx, yy, alpha('#c8d8f0', 0.06));
+      line(im, p[0], 18, p[0] + 7, 11, alpha(WHITE, 0.42));
+      line(im, p[0], 19, p[0] + 8, 11, alpha(WHITE, 0.2));
+      line(im, p[0] + 2, 31, p[0] + 10, 23, alpha(WHITE, 0.16));
+      px(im, p[0], 11, alpha(WHITE, 0.75));
+    });
+    // base with the brass plaque
+    rect(im, 1, 32, 30, 8, R[3]);
+    hline(im, 1, 30, 32, R[4]); hline(im, 1, 8, 32, R[5]); hline(im, 1, 30, 33, R[2]);
+    vline(im, 1, 32, 39, R[4]); vline(im, 30, 33, 39, R[1]);
+    inset(im, 4, 35, 6, 3, R, 2); inset(im, 22, 35, 6, 3, R, 2);
+    stamp(im, 11, 34, [
+      'hHHHHHHHHg',
+      'Hbkbkbbkbg',
+      'gggggggggd'
+    ], { h: BRS[5], H: BRS[4], b: BRS[2], g: BRS[3], d: BRS[1], k: BRS[0] });
+    hline(im, 1, 30, 38, R[2]); hline(im, 1, 30, 39, R[1]);
+    stamp(im, 2, 40, ['.33.', '2332', '.22.'], rampLeg('0123', [R[0], R[1], R[3], R[4]]));
+    stamp(im, 26, 40, ['.22.', '1221', '.11.'], rampLeg('0123', [R[0], R[1], R[2], R[3]]));
+    outline(im, 'sel');
+    floorShadow(im, 2, 29, 39, 43, 0.34);
+    return im;
+  }
+  function iconTrophyCase() {
+    var im = img(16, 16), R = DW, V = QLT;
+    hline(im, 1, 14, 1, R[4]); hline(im, 1, 6, 1, R[5]); hline(im, 1, 14, 2, R[2]);
+    px(im, 7, 0, GLD[4]); px(im, 8, 0, GLD[3]);
+    rect(im, 2, 3, 12, 13, R[3]); vline(im, 2, 3, 15, R[4]); vline(im, 13, 3, 15, R[1]);
+    rect(im, 3, 4, 10, 8, V[1]);
+    hline(im, 3, 12, 8, R[4]); hline(im, 3, 12, 11, R[4]);
+    stamp(im, 3, 5, ['5.5.', '4434', '3r32'], legend(['012345', GLD], { r: RUBY[2] }));
+    px(im, 10, 5, CRY[4]); px(im, 10, 6, CRY[3]); px(im, 11, 6, CRY[2]); px(im, 10, 7, CRY[3]); px(im, 11, 7, CRY[1]);
+    stamp(im, 4, 9, ['B3d', 'BBd'], { B: BRS[4], d: BRS[2], 3: TEAL[5] });
+    stamp(im, 9, 9, ['mMm.', 'f55f'], { m: MOSS[3], M: MOSS[4], f: GRIMF[3], 5: BN[5] });
+    vline(im, 7, 4, 11, R[3]); vline(im, 8, 4, 11, R[2]);
+    line(im, 3, 7, 6, 4, alpha(WHITE, 0.45)); line(im, 9, 7, 12, 4, alpha(WHITE, 0.45));
+    hline(im, 6, 9, 13, BRS[4]); px(im, 9, 13, BRS[2]);
+    hline(im, 2, 13, 15, R[1]);
+    outline(im, 'sel');
+    return im;
+  }
+  def({ id: 'furn_trophy_case', name: 'Bounty Trophy Case', w: 2, h: 1, hr: 28, price: 0, seller: 'reward',
+    light: { x: 21, y: 13, r: 26, color: L_VIOLET } }, drawTrophyCase, iconTrophyCase);
+
+  // ---- Mineral Cabinet (2x1, moonlit specimen) 32x37 — Ronan's thanks for fourteen minerals (drawn 40 tall, trimmed)
+  // a little cluster of lunarite: pale moon crystals with a crescent caught inside (9 wide)
+  var LUN = [SLV[0], SLV[1], SLV[2], SLV[3], SLV[4], WHITE];
+  function lunarite(im, x, yb) {
+    prism(im, x + 1, 2, yb - 6, yb, -0.9, LUN);
+    prism(im, x + 6, 3, yb - 8, yb, 0.9, LUN);
+    prism(im, x + 2, 4, yb - 12, yb, 0.1, LUN);
+    stamp(im, x + 3, yb - 7, ['.m', 'm.', '.m'], { m: '#7aa0e8' });
+  }
+  var SPECIMENS = [   // [light, mid, dark] tiny minerals for the specimen tray
+    ['#ff9a86', '#e0503e', '#a02a30'], ['#ffbc62', '#e8843c', '#8a2a32'], ['#fff1c8', '#f2c45a', '#c88a3a'],
+    ['#cfeeea', '#5dffb0', '#3c9688'], ['#8ac8ec', '#2e72b0', '#1e4e86'],
+    ['#d4ccf6', '#7a6ac0', '#4a3a8a'], ['#ffc8ff', '#e07af0', '#9a4ac8'], ['#eaf8ff', '#7ab4e8', '#3a6aa8'],
+    ['#d8cce6', '#a898b8', '#4a3a5a'], ['#c8c8ff', '#3a3a9a', '#1e1a5a']
+  ];
+  // one tiny specimen in a 3x2 cell: a crystal point, a pebble or a flat slice
+  function specimen(im, x, y, S, k) {
+    if (k % 3 === 0) { px(im, x + 1, y, S[0]); px(im, x, y + 1, S[1]); px(im, x + 1, y + 1, S[1]); px(im, x + 2, y + 1, S[2]); }
+    else if (k % 3 === 1) { px(im, x, y, S[0]); px(im, x + 1, y, S[1]); px(im, x, y + 1, S[1]); px(im, x + 1, y + 1, S[2]); }
+    else { px(im, x, y + 1, S[1]); px(im, x + 1, y + 1, S[1]); px(im, x + 2, y + 1, S[2]); px(im, x + 1, y, S[0]); px(im, x, y, alpha(S[1], 0.7)); }
+  }
+  function drawMineralCabinet(im) {
+    var R = MAH, V = QLT, x;
+    // carcass top (seen from above) + its front edge
+    woodH(im, 1, 14, 30, 7, R, 81, 3);
+    hline(im, 1, 30, 14, R[4]); hline(im, 1, 8, 14, R[5]); vline(im, 1, 14, 20, R[4]); vline(im, 30, 15, 20, R[2]);
+    hline(im, 1, 30, 21, R[3]); hline(im, 1, 30, 22, R[2]); px(im, 1, 21, R[4]); hline(im, 2, 7, 21, R[4]);
+    // glass-lidded specimen tray: ten minerals in velvet cells
+    rect(im, 2, 13, 21, 7, R[3]);
+    hline(im, 2, 22, 13, R[4]); vline(im, 2, 13, 19, R[4]); vline(im, 22, 14, 19, R[2]); hline(im, 3, 22, 19, R[1]);
+    rect(im, 3, 14, 19, 5, V[1]);
+    hline(im, 3, 21, 16, R[2]);
+    for (var k = 0; k < 10; k++) {
+      var cx = 3 + (k % 5) * 4, cy = 14 + Math.floor(k / 5) * 3;
+      if (k % 5) { px(im, cx - 1, cy, R[2]); px(im, cx - 1, cy + 1, R[2]); }
+      specimen(im, cx, cy, SPECIMENS[k], k);
+    }
+    line(im, 3, 18, 8, 13, alpha(WHITE, 0.4)); line(im, 4, 18, 9, 13, alpha(WHITE, 0.16));
+    line(im, 13, 18, 17, 14, alpha(WHITE, 0.22));
+    px(im, 2, 13, BRS[4]); px(im, 22, 13, BRS[3]); px(im, 2, 19, BRS[3]); px(im, 22, 19, BRS[2]);
+    // the moonlit lunarite on a rough little rock
+    ellipse(im, 26, 18, 3.4, 1.2, function (X, Y, nx, ny) { return ny < -0.2 ? STN[4] : nx > 0.4 ? STN[2] : STN[3]; });
+    lunarite(im, 22, 17);
+    spill(im, 25, 13, 7, SLV[4], 0.3);
+    // drawer bank: two columns of three, brass label holders and cup pulls
+    woodV(im, 2, 23, 28, 12, R, 82, 3);
+    vline(im, 2, 23, 34, R[4]); vline(im, 29, 23, 34, R[1]);
+    function drawerFront(x0, x1, y0) {     // y0 = the lit top edge; label below it, pull below that
+      var mx = Math.floor((x0 + x1) / 2);
+      rect(im, x0, y0, x1 - x0 + 1, 3, R[3]);
+      hline(im, x0, x1, y0, R[4]); vline(im, x0, y0, y0 + 2, R[4]); vline(im, x1, y0 + 1, y0 + 2, R[2]);
+      px(im, mx - 1, y0 + 1, BRS[3]); px(im, mx, y0 + 1, PAP[5]); px(im, mx + 1, y0 + 1, PAP[4]); px(im, mx + 2, y0 + 1, BRS[2]);
+      px(im, mx, y0 + 2, BRS[4]); px(im, mx + 1, y0 + 2, BRS[2]);
+    }
+    [[4, 14], [17, 27]].forEach(function (c) {
+      for (var r = 0; r < 3; r++) { hline(im, c[0], c[1], 23 + r * 4, R[1]); drawerFront(c[0], c[1], 24 + r * 4); }
+    });
+    vline(im, 15, 23, 34, R[2]); vline(im, 16, 23, 34, R[1]);
+    // plinth + bracket feet
+    rect(im, 1, 35, 30, 2, R[2]); hline(im, 1, 30, 35, R[4]); hline(im, 1, 30, 36, R[1]); px(im, 1, 35, R[5]);
+    stamp(im, 2, 37, ['443', '43.'], rampLeg('012345', R)); stamp(im, 27, 37, ['221', '.21'], rampLeg('012345', R));
+    // ...and the bottom-left drawer stands a little open: more minerals on velvet inside
+    rect(im, 5, 31, 9, 2, V[1]); hline(im, 5, 13, 31, V[0]);
+    vline(im, 4, 31, 32, R[4]); vline(im, 14, 31, 32, R[2]);
+    [[6, 4], [8, 2], [10, 6], [12, 3]].forEach(function (s) { var S = SPECIMENS[s[1]]; px(im, s[0], 32, S[1]); px(im, s[0] + 1, 32, S[2]); px(im, s[0], 31, S[0]); });
+    drawerFront(4, 14, 33); hline(im, 4, 14, 36, R[1]);
+    for (x = 4; x <= 14; x++) tint(im, x, 37, OUT, 0.5);
+    outline(im, 'sel');
+    floorShadow(im, 2, 29, 36, 39, 0.32);
+    halo(im, 26, 8, 5.5, SLV[4], 0.2);
+    sparkle(im, 21, 7, SLV[4], false); px(im, 31, 9, alpha(SLV[4], 0.7));
+    return im;
+  }
+  function iconMineralCabinet() {
+    var im = img(16, 16), R = MAH;
+    prism(im, 10, 3, 0, 6, 0, LUN); prism(im, 8, 2, 3, 6, -0.6, LUN); prism(im, 13, 2, 3, 6, 0.6, LUN);
+    rect(im, 1, 6, 14, 3, R[3]); hline(im, 1, 14, 6, R[4]); hline(im, 1, 14, 8, R[2]);
+    rect(im, 2, 6, 6, 2, QLT[1]); px(im, 3, 6, '#e0503e'); px(im, 5, 6, '#5dffb0'); px(im, 3, 7, '#7a6ac0'); px(im, 5, 7, '#f2c45a'); px(im, 7, 7, '#2e72b0');
+    rect(im, 2, 9, 12, 6, R[3]); vline(im, 2, 9, 14, R[4]); vline(im, 13, 9, 14, R[1]);
+    [10, 12].forEach(function (y) { hline(im, 3, 12, y - 1, R[1]); px(im, 5, y, BRS[4]); px(im, 10, y, BRS[4]); px(im, 6, y, CRM[4]); px(im, 11, y, CRM[4]); });
+    hline(im, 1, 14, 15, R[2]);
+    outline(im, 'sel');
+    return im;
+  }
+  def({ id: 'furn_mineral_cabinet', name: 'Mineral Cabinet', w: 2, h: 1, hr: 21, trim: 3, price: 0, seller: 'reward',
+    light: { x: 26, y: 7, r: 32, color: L_MOON } }, drawMineralCabinet, iconMineralCabinet);
+
   // ===========================================================================
   // Inventory icons (16x16 miniatures)
   // ===========================================================================
@@ -2782,7 +3014,7 @@
     'furn_chair_oak furn_armchair furn_bookshelf furn_potion_shelf furn_candelabra furn_crystal_lamp furn_lantern_stand furn_fern ' +
     'furn_moonflower_pot furn_potted_tree furn_painting_moon furn_portrait_morwenna furn_star_map furn_tapestry furn_wall_clock ' +
     'furn_crystal_ball furn_globe furn_telescope furn_cauldron_decor furn_music_box furn_harp furn_owl_perch furn_cat_bed ' +
-    'furn_wardrobe furn_mirror furn_trophy_slime furn_trophy_spider furn_trophy_crown').split(' ');
+    'furn_wardrobe furn_mirror furn_trophy_slime furn_trophy_spider furn_trophy_crown furn_trophy_case furn_mineral_cabinet').split(' ');
   DEFS.sort(function (a, b) {
     var i = ORDER.indexOf(a.id), j = ORDER.indexOf(b.id);
     return (i < 0 ? 999 : i) - (j < 0 ? 999 : j);

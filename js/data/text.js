@@ -3760,7 +3760,9 @@
     furn_mirror: "A standing mirror in a gilded frame. Check your hat before you face the valley.",
     furn_trophy_slime: "A mounted slime trophy, still slightly wobbly. A reminder of humble beginnings.",
     furn_trophy_spider: "A broodmother's fang on a plaque. Brave, impressive, and a little unsettling.",
-    furn_trophy_crown: "The Archon's broken crown on a velvet stand. The valley's greatest victory, on your shelf."
+    furn_trophy_crown: "The Archon's broken crown on a velvet stand. The valley's greatest victory, on your shelf.",
+    furn_trophy_case: "Four bounties behind glass: a dented crown, a mossy fang, a stolen lantern and a shard of Vorrakh. Gideon would be proud.",
+    furn_mineral_cabinet: "Ronan's thank-you: little drawers of glittering stones, and a lunarite on top that glows like a pocket moon."
   };
   for (var fu in FU) T.items[fu] = FU[fu];
 
