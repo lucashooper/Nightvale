@@ -14,9 +14,9 @@ A cosy 2D Stardew-like game (vanilla JS, canvas). Open `index.html` through a lo
 ## Where things stand
 Done: Guild contracts + 4 bounty bosses, Runesmithy + Collection Cabinet (specimen drawer; niches via `G.prefs.cabinetStyle`), pets/horses/flying dragons (R), romance (Laura, Jasmine, Amara, Ronan, Caspian), homes, rare cave floors, Night Market, Handbook/Crafting tabs, tester mode, Golden Hour default look. Round 4: portrait styles 'human' (64 px) and 'human_hd' (96 px); B/C alternatives for horses, dragons, Gloopgarr, Grimjaw, Vorrakh, Jasmine's and Amara's homes, the Observatory and the Crystal Garden; the Designs menu; the trophy case and mineral cabinet furniture.
 
-Pending:
-1. Apply the round 4 picks: page https://claude.ai/artifact/YRsM8kGpPNhrTq4BpSvZZq, picks in its db doc `picks/round4` (`choice[key]` = 'a' | 'b' | 'c', portraits 'a' | 'human' | 'human_hd'; `more[key]` = wants more alternatives; `notes[key]`). Make each chosen look the default (e.g. default `G.prefs.alts` in `core.js`; keep the others switchable in Designs), draw more options where `more` is set, then soften the walking-sprite faces to match the chosen portrait style. If a 96 px style wins, consider pre-rendering portraits while loading (about 19 ms each the first time).
-2. All defaults are still look A until the user picks.
+Round 4 picks (page https://claude.ai/artifact/YRsM8kGpPNhrTq4BpSvZZq, db doc `picks/round4`) are applied as `G.ALT_DEFAULTS` in `core.js`: faces Human HD, horses B (Shire Giant), dragons C (Cloud Serpent), Gloopgarr C (Jelly Glutton), Grimjaw B (Old Silvermane), Vorrakh A, Jasmine B (Honey Bakery), Amara B (Attic Stargazer), Observatory C (Sunstone Hall), Crystal Garden B (Rose Quartz Hollow). Settings saved earlier adopt them once (`prefs.altsV`); Designs still switches any of them. Walking-sprite faces were softened to match (coloured eyes, a hint of blush). HD portraits are drawn ahead in idle time (`UI.warmPortraits`).
+
+Pending: nothing from the user's list. If they ask for more options on something, add `__d`-style ids or a new key the same way.
 
 ## User preferences
 - Sounds must be subtle and soft, never jarring.

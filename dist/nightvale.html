@@ -635,9 +635,11 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
   // Tiny event bus
   const listeners = {};
   // player preferences that live outside the save (settings store): the colour grade and tester mode
-  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer', alts: {} };
+  // the designs chosen on the round 4 pick page; Settings > Designs switches any of them (missing = 'a', the first design)
+  G.ALT_DEFAULTS = { portraits: 'human_hd', horses: 'b', dragons: 'c', gloopgarr: 'c', grimjaw: 'b', home_jasmine: 'b', home_amara: 'b', rare_observatory: 'c', rare_crystal: 'b' };
+  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer', altsV: 1, alts: Object.assign({}, G.ALT_DEFAULTS) };
   G.admin = (k) => G.prefs.admin && !!G.prefs[k];
-  // design alternatives (Settings > Designs): key -> 'a' (the original design) | 'b' | 'c'
+  // design alternatives (Settings > Designs): key -> 'a' | 'b' | 'c'; portraits -> 'a' (classic) | 'human' | 'human_hd'
   G.alt = (key) => (G.prefs.alts && G.prefs.alts[key]) || 'a';
   // the MobArt id to draw for a monster or mount: its `__b` / `__c` alternative when that design is chosen and drawn
   const ALT_ART = { horse_midnight: 'horses', horse_silver: 'horses', horse_chestnut: 'horses', dragon_amethyst: 'dragons', dragon_emerald: 'dragons', dragon_ember: 'dragons',
@@ -15458,24 +15460,29 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
   }
   // head skull + face (eyes) in logical coordinates
   function drawHead(S, sp, L, mats) {
-    var y0 = L.headY, d = S.dir;
+    var y0 = L.headY, d = S.dir, sk = sp.skin;
     var rows = [[6, 13], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [5, 14], [6, 13]];
     rows.forEach(function (r, k) { for (var x = r[0]; x <= r[1]; x++) S.put(x, y0 + k, mats.skin); });
-    var E = sp.eyeCol || OUT, e2 = sp.eyeCol2 != null ? sp.eyeCol2 : H('#2a2238');
+    // soft eyes to match the portraits: a deep shade of the eye colour over the eye colour (never near-black), a little
+    // eye white in profile and a hint of blush. Designs with their own eye colours (glowing, witchy) keep them.
+    var e2 = sp.eyeCol2 != null ? sp.eyeCol2 : H('#2a2238'), soft = sp.eyeCol == null || sp.eyeCol === OUT;
+    var deep = Math.max(0, Math.min(0.6, (0.5 - lum(sk.b)) * 2.2)), E = soft ? mix(mix(e2, H('#1a0e18'), 0.55), H('#140a12'), deep * 0.5) : sp.eyeCol;
+    var k = (sp.blushK != null ? sp.blushK : 1) * (sp.blush ? 0.8 : 0.5), bl = soft && k > 0.05 ? mix(sk.b, sk.blush, Math.min(1, k)) : -1;
     if (d === 'down') {
       S.dot(7, y0 + 5, E); S.dot(7, y0 + 6, e2); S.dot(12, y0 + 5, E); S.dot(12, y0 + 6, e2);
-      if (sp.blush) { S.dot(6, y0 + 7, sp.skin.blush); S.dot(13, y0 + 7, sp.skin.blush); }
+      if (bl >= 0) { S.dot(6, y0 + 7, bl); S.dot(13, y0 + 7, bl); }
     } else if (d !== 'up') {
       S.dot(12, y0 + 5, E); S.dot(12, y0 + 6, e2);
+      if (soft) S.dot(13, y0 + 5, mix(WHITE, sk.l, 0.35)); // the eye white in front of the iris
       S.put(15, y0 + 6, mats.skin); // nose
-      if (sp.blush) S.dot(13, y0 + 7, sp.skin.blush);
+      if (bl >= 0) S.dot(13, y0 + 7, bl);
     }
   }
   function sprMats(S, sp) {
-    var sk = sp.skin, skR = [sk.s, sk.b, sk.l];
+    var sk = sp.skin, skR = [sk.s, sk.b, sk.l], skF = [mix(sk.s, sk.b, 0.4), sk.b, sk.l]; // the face takes a gentler shadow edge than the hands
     var top = sp.top, arm = sp.arm || sp.top, leg = sp.leg || HS(['#2a2238', '#3a3050', '#4e4468']), shoe = sp.shoe || HS(['#281d21', '#3e2d2b', '#574039']);
     return {
-      skin: S.mat('skin', skR, { topDark: true }), hand: S.mat('hand', sp.handRamp || skR, { noTop: true }), handFar: S.mat('handF', sp.handRamp ? [sp.handRamp[0], sp.handRamp[0], sp.handRamp[1]] : [sk.d, sk.s, sk.s], { flat: true }),
+      skin: S.mat('skin', skF, { topDark: true }), hand: S.mat('hand', sp.handRamp || skR, { noTop: true }), handFar: S.mat('handF', sp.handRamp ? [sp.handRamp[0], sp.handRamp[0], sp.handRamp[1]] : [sk.d, sk.s, sk.s], { flat: true }),
       top: S.mat('top', top, { botDark: !sp.gown }), arm: S.mat('arm', arm, { noTop: true }), armFar: S.mat('armF', [arm[0], arm[0], arm[0]], { flat: true }),
       leg: S.mat('leg', leg), leg2: S.mat('leg2', leg), legFar: S.mat('legF', [leg[0], leg[0], leg[1]]), shoe: S.mat('shoe', shoe, { noTop: true }), shoe2: S.mat('shoe2', shoe, { noTop: true }), shoeFar: S.mat('shoeF', [shoe[0], shoe[0], shoe[1]], { noTop: true }),
       gown: sp.gown ? S.mat('gown', sp.gown, { noTop: true }) : -1, tails: sp.tails ? S.mat('tails', sp.tails, { noTop: true }) : -1,
@@ -15730,7 +15737,7 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     hairD: [6, ['......H..H.V........', '....HHHHHHVVVV......', '....HHHHHHVVVVVV....', '...HHHHHHHVVVVVVV...', '....HHHHHHVVVVVV....', '....HHHHHHVVVVVV....', '....HH.H.H.V.V.VV...', '...HH..........VV...', '...HH..........VV...', '...H.H........V.V...', '..H..H........V..V..']],
     hairR: [6, ['.....H..H.H.........', '....HHHHHHHHH.......', '...HHHHHHHHHHHH.....', '..HHHHHHHHHHHHHH....', '...HHHHHHHHHHHHH....', '...HHHHHHHHHH.HH....', '..HHHHHHHH..H.......', '..HHHHHHHS..........', '..HHHHHHH...........', '.H.HHHHH............', '..H.H.H.............']],
     hairU: [6, ['......V..H.H........', '....VVVVVVHHHH......', '....VVVVVVHHHHHH....', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '..V.VVVVVVHHHHHH.H..', '..V..V.V.H.H.H..H...']],
-    head: function (S, dir, f, L) { var y = L.headY; if (dir === 'down') { S.dot(6, y + 4, OUT); S.dot(13, y + 4, OUT); S.dot(9, y + 8, H('#6a1e4a')); S.dot(10, y + 8, H('#6a1e4a')); } else if (dir !== 'up') { S.dot(13, y + 4, OUT); S.dot(14, y + 8, H('#6a1e4a')); } },
+    head: function (S, dir, f, L) { var y = L.headY, liner = H('#2e1838'); if (dir === 'down') { S.dot(6, y + 4, liner); S.dot(13, y + 4, liner); S.dot(9, y + 8, H('#6a1e4a')); S.dot(10, y + 8, H('#6a1e4a')); } else if (dir !== 'up') { S.dot(13, y + 4, liner); S.dot(14, y + 8, H('#6a1e4a')); } }, // winged liner
     body: function (S, dir, f, L) { // tee + skull print, spiked choker, plaid lines, fishnets
       var t = L.tt;
       if (dir === 'down') { for (var y = t + 1; y < L.tb; y++) { S.dot(9, y, H('#2d2c3e')); S.dot(10, y, H('#2d2c3e')); } S.dot(9, t + 2, H('#eceaf4')); S.dot(10, t + 2, H('#eceaf4')); }
@@ -15897,6 +15904,8 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     }
   };
 
+  for (var sid in SPRITES) if (SPRITES.hasOwnProperty(sid) && NPC[sid] && NPC[sid].blushK != null) SPRITES[sid].blushK = NPC[sid].blushK; // the portraits' blush strength
+
   SPRITES._villager = {
     skin: SKIN.fair, hair: HAIR.brown, top: HS(['#3e2d2b', '#574039', '#7a5a48']), leg: HS(['#2d2c3e', '#45445a', '#605f78']), shoe: BOOTS,
     hairD: [8, ['......HHHHHHHH......', '....HHHHHHHHHHHH....', '....HHHHHHHHHHHH....', '....HHH......HHH....', '....HH........HH....', '.....H........H.....']],
@@ -15962,7 +15971,7 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     var robe = P_ROBE[lk.robe], R = P_HAIR[lk.hairColor], st = P_SPR_HAIR[lk.hair], top = [robe[1], robe[2], robe[3]];
     return dressSprite({
       skin: P_SKIN[lk.skin], hair: R, top: top, arm: top, tails: [robe[0], robe[1], robe[2]], tailLen: 3,
-      leg: HS(['#1b1a26', '#2d2c3e', '#45445a']), shoe: BOOTS, eyeCol2: P_EYES[lk.eyes][1], openCoat: false,
+      leg: HS(['#1b1a26', '#2d2c3e', '#45445a']), shoe: BOOTS, eyeCol2: P_EYES[lk.eyes][1], openCoat: false, blushK: 0.6,
       hairD: st.D, hairR: st.R, hairU: st.U,
       legend: function () { return { t: { c: robe[3] } }; },
       head: function (S, dir, f, L) {
@@ -45069,6 +45078,8 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
         if (v.prefs) {
           // settings saved before the look was chosen pick up the new default (Golden Hour) once
           const p = Object.assign({}, v.prefs); if (p.v !== G.prefs.v) { delete p.look; p.v = G.prefs.v; }
+          // and settings saved before the round 4 picks pick up the chosen designs once
+          if (p.altsV !== G.prefs.altsV) { delete p.alts; p.altsV = G.prefs.altsV; }
           Object.assign(G.prefs, p);
         }
         const A = window.AudioEngine;
@@ -46924,6 +46935,26 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     const f = spr.walk.down[0];
     ctx.drawImage(f, 0, 0, f.width, f.height * 0.62, cv.width * 0.12, cv.height * 0.05, cv.width * 0.76, cv.height * 0.95);
   };
+  // a styled portrait takes ~20 ms to draw the first time (96 px), so faces are drawn ahead while the game is idle
+  const warmQ = [];
+  let warming = false;
+  const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 250 }) : setTimeout(() => fn({ timeRemaining: () => 12, didTimeout: false }), 60)); // a busy game loop leaves little idle time: then one face every quarter second
+  function warmStep(dl) {
+    const st = G.alt('portraits');
+    while (warmQ.length && (dl.timeRemaining() > 2 || dl.didTimeout)) {
+      const [npc, expr, o] = warmQ.shift();
+      try { if (npc === 'player') CharArt.playerPortraitStyled(st, G.S.look, expr, o); else CharArt.portraitStyled(st, npc, null, expr, o); } catch (e) { /* art optional */ }
+      if (dl.didTimeout) break;
+    }
+    if (warmQ.length) idle(warmStep); else warming = false;
+  }
+  UI.warmPortraits = function (npcs, exprs, frames) {
+    const st = G.alt('portraits');
+    if (!window.CharArt || st === 'a' || !(CharArt.portraitStyles || []).includes(st)) return;
+    for (const npc of npcs) for (const e of exprs || ['neutral']) for (const o of frames || [{}]) warmQ.push([npc, e, o]);
+    if (!warming) { warming = true; idle(warmStep); }
+  };
+  G.on('worldStart', () => { if (window.CharArt && CharArt.npcIds) UI.warmPortraits(CharArt.npcIds); }); // the villagers' faces, for menus and greetings
   UI.npcName = (id) => { const t = UI.npcText(id); return (t && (t.short || t.name)) || U.cap(id); };
   UI.npcText = (id) => (window.GAMETEXT && GAMETEXT.npcs && GAMETEXT.npcs[id]) || null;
   UI.fill = function (s, extra) {
@@ -47266,6 +47297,10 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
       let pi = 0, shown = 0, full = '', expr = 'neutral', typing = false, raf = 0, last = 0, blinkT = 2 + Math.random() * 2, blink = 0, talkT = 0, talk = false, done = false;
       const m = { name: 'dialogue', close: () => finish(undefined) };
       const drawP = () => { if (pcv) UI.drawPortrait(pcv, npc, expr, { blink: blink > 0, talk }); };
+      if (npc) { // every frame this conversation can show, its opening expression first
+        const first = (/^\s*\[(neutral|happy|sad|surprised|angry)\]/i.exec(pages[0]) || [0, 'neutral'])[1].toLowerCase();
+        UI.warmPortraits([npc], [first].concat(['neutral', 'happy', 'sad', 'surprised', 'angry'].filter((e) => e !== first)), [{ talk: true }, { blink: true }, { blink: true, talk: true }, {}]);
+      }
       const setPage = () => {
         let p = pages[pi];
         const mm = /^\s*\[(neutral|happy|sad|surprised|angry)\]\s*/i.exec(p);
@@ -48285,18 +48320,17 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
   ];
   // portrait styles: the classic renderer, then CharArt.portraitStyled styles once they're drawn
   const FACES = [['human', 'Human', 'Softer faces that read as real people'], ['human_hd', 'Human HD', 'The same faces, sharper at higher resolution']];
-  const FACE_REC = 'human_hd';
 
-  // [[value, name, note]] for each look that exists, and the recommended value
+  // [[value, name, note]] for each look that exists, and the one picked as the default (marked with a star)
   function options(d) {
+    const rec = (G.ALT_DEFAULTS && G.ALT_DEFAULTS[d.key]) || 'a';
     if (d.kind === 'portrait') {
       const have = (window.CharArt && CharArt.portraitStyles) || [];
-      const o = [['a', 'Classic', 'The faces from the first version']].concat(FACES.filter((f) => have.includes(f[0])));
-      return { o, rec: o.length > 1 ? FACE_REC : null };
+      return { o: [['a', 'Classic', 'The faces from the first version']].concat(FACES.filter((f) => have.includes(f[0]))), rec };
     }
-    const n = notes(d.key), o = [['a', 'Original', 'The design in the game today']];
+    const n = notes(d.key), o = [['a', 'Original', 'The first design']];
     if (n) for (const v of ['b', 'c']) if (n[v]) o.push([v, n[v].name, n[v].note]);
-    return { o, rec: o.length > 1 && n ? n.rec : null };
+    return { o, rec };
   }
   function current(d) { const v = G.alt(d.key), o = options(d).o; return o.some((x) => x[0] === v) ? v : 'a'; }
 
@@ -48404,7 +48438,7 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     panel.classList.add('des-modal');
     panel.appendChild(UI.closeBtn(m));
     panel.appendChild(el('h2', '', 'Designs'));
-    panel.appendChild(el('div', 'subtitle', 'Try the other looks drawn for these. Your choice applies straight away, and ★ marks the artist’s pick.'));
+    panel.appendChild(el('div', 'subtitle', 'Your round 4 picks are the defaults, marked ★. Try the other looks here; your choice applies straight away.'));
     const body = el('div', 'body'), grid = el('div', 'des-grid');
     body.appendChild(grid); panel.appendChild(body);
     const stages = [];
@@ -48422,7 +48456,7 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
         const sel = o.find((x) => x[0] === v); note.textContent = sel ? sel[2] : '';
       };
       o.forEach(([v, name], i) => {
-        const b = el('button', 'des-o hit', `<b>${'ABC'[i]}</b>${name}${v === rec ? ' <span class="star" title="The artist’s pick">★</span>' : ''}`);
+        const b = el('button', 'des-o hit', `<b>${'ABC'[i]}</b>${name}${v === rec ? ' <span class="star" title="Your pick">★</span>' : ''}`);
         b.type = 'button'; b.dataset.v = v;
         b.onclick = () => { set(d, v); sync(); G.sfx('ui_click', { volume: 0.35 }); };
         opts.appendChild(b);
@@ -52148,9 +52182,9 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
   function seedPaddock(map) {
     const r = map.paddock; if (!r) return;
     Mg.paddock = [
-      { id: 'horse_chestnut', x: (r[0] + 2) * 16, y: (r[1] + 4) * 16, dir: 'right', anim: 'idle', t: 0, wait: 2 },
+      { id: 'horse_chestnut', x: (r[0] + 1.6) * 16, y: (r[1] + 6.2) * 16, dir: 'right', anim: 'idle', t: 0, wait: 2 },
       { id: 'horse_silver', x: (r[0] + 5) * 16, y: (r[1] + 7) * 16, dir: 'left', anim: 'idle', t: 1, wait: 5 },
-      { id: 'dragon_emerald', x: (r[0] + 5.5) * 16, y: (r[1] + 3.2) * 16, dir: 'down', anim: 'idle', t: 0, wait: 1e9, still: true },
+      { id: 'dragon_emerald', x: (r[0] + 4.2) * 16, y: (r[1] + 4.4) * 16, dir: 'down', anim: 'idle', t: 0, wait: 1e9, still: true },
     ];
   }
   function updatePaddock(a, dt, map) {
@@ -52161,7 +52195,12 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
       if (d < 2) { a.anim = 'idle'; a.wait = 3 + Math.random() * 6; return; }
       a.x += (dx / d) * 18 * dt; a.y += (dy / d) * 18 * dt; a.dir = G.dirFromVec(dx, dy);
     } else if ((a.wait -= dt) <= 0) {
-      const r = map.paddock; a.tx = (r[0] + 1 + Math.random() * (r[2] - 2)) * 16; a.ty = (r[1] + 2 + Math.random() * (r[3] - 3)) * 16; a.anim = 'walk';
+      const r = map.paddock, rest = Mg.paddock.find((b) => b.still), half = rest ? ((mountInfo(rest.id) || { w: 32 }).w / 2 + 10) : 0;
+      for (let k = 0; k < 8; k++) { // somewhere to graze, clear of the dragon resting by its perch
+        a.tx = (r[0] + 1 + Math.random() * (r[2] - 2)) * 16; a.ty = (r[1] + 2 + Math.random() * (r[3] - 3)) * 16;
+        if (!rest || Math.abs(a.tx - rest.x) > half || a.ty > rest.y + 14 || a.ty < rest.y - 30) break;
+      }
+      a.anim = 'walk';
     }
   }
   Mg.paddockAt = function (map, wx, wy) { return map.id === 'village' && Mg.paddock.find((a) => Math.abs(a.x - wx) < 14 && wy > a.y - 26 && wy < a.y + 4); };

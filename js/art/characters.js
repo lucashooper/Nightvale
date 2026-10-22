@@ -3638,7 +3638,7 @@
     hairD: [6, ['......H..H.V........', '....HHHHHHVVVV......', '....HHHHHHVVVVVV....', '...HHHHHHHVVVVVVV...', '....HHHHHHVVVVVV....', '....HHHHHHVVVVVV....', '....HH.H.H.V.V.VV...', '...HH..........VV...', '...HH..........VV...', '...H.H........V.V...', '..H..H........V..V..']],
     hairR: [6, ['.....H..H.H.........', '....HHHHHHHHH.......', '...HHHHHHHHHHHH.....', '..HHHHHHHHHHHHHH....', '...HHHHHHHHHHHHH....', '...HHHHHHHHHH.HH....', '..HHHHHHHH..H.......', '..HHHHHHHS..........', '..HHHHHHH...........', '.H.HHHHH............', '..H.H.H.............']],
     hairU: [6, ['......V..H.H........', '....VVVVVVHHHH......', '....VVVVVVHHHHHH....', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '...VVVVVVVHHHHHHH...', '..V.VVVVVVHHHHHH.H..', '..V..V.V.H.H.H..H...']],
-    head: function (S, dir, f, L) { var y = L.headY; if (dir === 'down') { S.dot(6, y + 4, OUT); S.dot(13, y + 4, OUT); S.dot(9, y + 8, H('#6a1e4a')); S.dot(10, y + 8, H('#6a1e4a')); } else if (dir !== 'up') { S.dot(13, y + 4, OUT); S.dot(14, y + 8, H('#6a1e4a')); } },
+    head: function (S, dir, f, L) { var y = L.headY, liner = H('#2e1838'); if (dir === 'down') { S.dot(6, y + 4, liner); S.dot(13, y + 4, liner); S.dot(9, y + 8, H('#6a1e4a')); S.dot(10, y + 8, H('#6a1e4a')); } else if (dir !== 'up') { S.dot(13, y + 4, liner); S.dot(14, y + 8, H('#6a1e4a')); } }, // winged liner
     body: function (S, dir, f, L) { // tee + skull print, spiked choker, plaid lines, fishnets
       var t = L.tt;
       if (dir === 'down') { for (var y = t + 1; y < L.tb; y++) { S.dot(9, y, H('#2d2c3e')); S.dot(10, y, H('#2d2c3e')); } S.dot(9, t + 2, H('#eceaf4')); S.dot(10, t + 2, H('#eceaf4')); }
