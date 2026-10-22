@@ -289,7 +289,17 @@
     m.home = true; m.owner = 'laura';
     return m;
   }
-  function buildJasmineHome() {
+  // design alternatives (Settings > Designs): 'a' is the original room; 'b' / 'c' are drawn in js/art/alt_rooms.js as
+  // the surface kinds `<kind>_b` / `<kind>_c`. A look whose art is missing falls back to 'a'.
+  function homeLook(look, kind) {
+    const K = window.InteriorArt && InteriorArt._kit;
+    return (look === 'b' || look === 'c') && K && K.WALLS[kind + '_' + look] && K.FLOORS[kind + '_' + look] ? look : 'a';
+  }
+  // villagers walk to fixed spots in their homes (npcs.js): Jasmine (9.5, 6.6), (2.5, 5.6), (7, 4.6); Amara (3, 5.6),
+  // (9.5, 5.6), (7.5, 7.4). Every layout keeps those tiles clear and reachable from the door.
+  function buildJasmineHome(look) {
+    look = homeLook(look || G.alt('home_jasmine'), 'pastel');
+    if (look !== 'a') return buildJasmineAlt(look);
     const m = Room({ id: 'jasmine_home', name: "Jasmine's Cottage", zone: 'home', w: 14, h: 10, wall: 3, kind: 'pastel', ambDay: [176, 160, 160], ambNight: [110, 92, 108], door: { x: 6, to: 'village', at: 'jasmine_home' } });
     m.piece('bunting', 0, 1, 2); m.piece('honey_shelf', 0, 5, 2, { interact: fl('jasmine_honey') }); m.piece('bunting', 0, 9, 2);
     m.piece('bear_bed', 0, 1, 3, { interact: fl('jasmine_bed') }); m.piece('giant_bear', 0, 4, 3, { interact: fl('jasmine_bear') });
@@ -299,7 +309,32 @@
     m.home = true; m.owner = 'jasmine';
     return m;
   }
-  function buildAmaraHome() {
+  function buildJasmineAlt(look) {
+    const B = look === 'b';
+    const m = Room({ id: 'jasmine_home', name: "Jasmine's Cottage", zone: 'home', w: 14, h: 10, wall: 3, kind: 'pastel_' + look,
+      ambDay: B ? [180, 160, 146] : [172, 164, 180], ambNight: B ? [112, 90, 96] : [100, 92, 122], door: { x: 6, to: 'village', at: 'jasmine_home' } });
+    if (B) { // the Honey Bakery: a brick bread oven, a honey hutch, butter-yellow walls and honeycomb tiles
+      m.piece('bee_sampler_b', 0, 3, 2); m.piece('pan_rack_b', 0, 6, 2); m.piece('cottage_window_b', 0, 8, 2);
+      m.piece('honey_bed_b', 0, 1, 3, { interact: fl('jasmine_bed') }); m.piece('nightstand_b', 0, 3, 3);
+      m.piece('bread_oven_b', 0, 4, 3); m.piece('baking_counter_b', 0, 6, 3, { interact: fl('jasmine_counter') });
+      m.piece('flour_sacks_b', 0, 8, 3); m.piece('honey_shelf_b', 0, 10, 3, { interact: fl('jasmine_honey') }); m.piece('sunflowers_b', 0, 12, 3);
+      m.piece('rag_rug_b', 0, 6, 5); m.piece('spindle_chair_b', 0, 7, 6); m.piece('honey_table_b', 0, 8, 6);
+      m.piece('yarn_basket_b', 0, 1, 7); m.piece('giant_bear_b', 0, 10, 7, { interact: fl('jasmine_bear') }); m.piece('sunflowers_b', 1, 12, 7);
+      m.glow(5, 4, 60, [255, 160, 90], 0.3); m.glow(9, 3.5, 70, [255, 226, 160], 0.3);
+    } else { // the Wisteria Sunroom: lilac shiplap, wicker, a window of honey jars and a peacock chair for the bear
+      m.piece('wisteria_garland_c', 0, 1, 2); m.piece('honey_window_c', 0, 9, 2, { interact: fl('jasmine_honey') }); m.piece('wisteria_garland_c', 0, 11, 2);
+      m.piece('canopy_bed_c', 0, 1, 3, { interact: fl('jasmine_bed') }); m.piece('lavender_crate_c', 0, 3, 3);
+      m.piece('retro_stove_c', 0, 6, 3, { interact: fl('jasmine_counter') }); m.piece('tea_cart_c', 0, 4, 3); m.piece('monstera_c', 0, 12, 3);
+      m.piece('oval_rug_c', 0, 6, 5); m.piece('bistro_table_c', 0, 8, 6); m.piece('wicker_chair_c', 0, 7, 6);
+      m.piece('peacock_bear_c', 0, 11, 5, { interact: fl('jasmine_bear') }); m.piece('birdcage_c', 0, 1, 7); m.piece('wisteria_tree_c', 0, 12, 7);
+      m.glow(9.5, 4, 70, [255, 214, 140], 0.32); m.glow(3, 5, 50, [214, 190, 255], 0.25);
+    }
+    m.home = true; m.owner = 'jasmine'; m.look = look;
+    return m;
+  }
+  function buildAmaraHome(look) {
+    look = homeLook(look || G.alt('home_amara'), 'study');
+    if (look !== 'a') return buildAmaraAlt(look);
     const m = Room({ id: 'amara_home', name: "Amara's Study", zone: 'home', w: 14, h: 10, wall: 3, kind: 'study', ambDay: [150, 160, 170], ambNight: [96, 100, 124], door: { x: 6, to: 'village', at: 'amara_home' } });
     m.piece('chalkboard', 0, 2, 2, { interact: fl('amara_chalkboard') }); m.piece('star_chart', 0, 5, 2); m.piece('star_chart', 1, 6, 2); m.piece('window_arch', 1, 9, 2);
     m.piece('alchemy_desk', 0, 1, 3, { interact: fl('amara_desk') }); m.piece('book_tower', 0, 4, 3); m.piece('orrery', 0, 6, 4, { interact: fl('amara_orrery') });
@@ -309,6 +344,18 @@
     m.home = true; m.owner = 'amara';
     return m;
   }
+  function buildAmaraAlt(look) {
+    const B = look === 'b';
+    const m = Room({ id: 'amara_home', name: "Amara's Study", zone: 'home', w: 14, h: 10, wall: 3, kind: 'study_' + look,
+      ambDay: B ? [168, 150, 140] : [168, 172, 186], ambNight: B ? [100, 88, 110] : [96, 104, 132], door: { x: 6, to: 'village', at: 'amara_home' } });
+    if (B) {
+      // to be drawn
+    } else {
+      // to be drawn
+    }
+    m.home = true; m.owner = 'amara'; m.look = look;
+    return m;
+  }
 
   G.buildInteriors = function () {
     return { tavern: buildTavern(), boutique: buildBoutique(), cathedral: buildCathedral(), cottage: buildCottage(),
@@ -316,4 +363,5 @@
       laura_home: buildLauraHome(), jasmine_home: buildJasmineHome(), amara_home: buildAmaraHome() };
   };
   G.Interiors = { iaSprite, furnSprite };
+  G.Interiors.homes = { jasmine_home: buildJasmineHome, amara_home: buildAmaraHome };
 })();
