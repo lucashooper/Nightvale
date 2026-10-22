@@ -1292,12 +1292,13 @@
     if (!fly) { mLimb(fl, [[38, Y(42)], [36.6, Y(48)], [37, 54]], [4, 3, 2.6]); mLimb(fl, [[50, Y(42)], [51.4, Y(48)], [51, 54]], [4, 3, 2.6]); }
     else { mLimb(fl, [[38, Y(42)], [35, Y(46)], [33.6, Y(48)]], [3.6, 2.8, 2.4]); mLimb(fl, [[50, Y(42)], [53, Y(46)], [54.4, Y(48)]], [3.6, 2.8, 2.4]); }
     shade2(fll, fl, S, { r: 1.4, off: -1 }); over(back, fll, OL);
+    over(back, csCoil(back, P, [[44, Y(38)], [45, Y(41)], [47, Y(44)], [50, Y(46)]], 5.4, 5.4, false, 0, 0), OL);
     var tk = layer(W, Hh);
     spr(tk, ['gGgGgGgGgGg', 'rrrrrrrrrrr', 'RRRRRRRRRRR'], { r: '#8a1e2e', R: '#c43848', g: TK.gold[1], G: TK.gold[2] }, 38.6, Y(37.6));
     over(back, tk, OL);
     // ---- front layer: the coils winding toward us, the hind legs, the tail tuft at the bottom
     var fr = layer(W, Hh);
-    var coil = [[44, Y(40)], [52 + sw(0.4), Y(43.4)], [59 + sw(0.8), Y(47.6)], [53 + sw(1.2), Y(52)], [40 + sw(1.6), Y(54)], [29 + sw(2), Y(57)], [33 + sw(2.4), Y(60)], [43 + sw(2.8), Y(60.6)], [51 + sw(3.2), Y(59.4)]];
+    var coil = [[49, Y(45)], [56 + sw(0.4), Y(46.4)], [60 + sw(0.8), Y(49)], [53 + sw(1.2), Y(52.6)], [40 + sw(1.6), Y(54)], [29 + sw(2), Y(56.4)], [33 + sw(2.4), Y(59)], [43 + sw(2.8), Y(59.6)], [51 + sw(3.2), Y(58.4)]];
     var hl = M(W, Hh), hll = layer(W, Hh);
     if (!fly) { mLimb(hl, [[60, Y(49)], [62, Y(54)], [61.6, 60.6]], [4.6, 3.4, 3]); mLimb(hl, [[28, Y(57)], [26, Y(59.6)], [26.4, 61]], [4.6, 3.4, 3]); }
     else { mLimb(hl, [[60, Y(49)], [64, Y(51)], [66, Y(51)]], [4, 3, 2.6]); mLimb(hl, [[28, Y(57)], [24, Y(58)], [22, Y(57.6)]], [4, 3, 2.6]); }
