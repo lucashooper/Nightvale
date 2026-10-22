@@ -48310,20 +48310,23 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
   // ---------------------------------------------------------------- previews
   const look = () => (G.S && G.S.look) || { skin: 1, hair: 1, hairColor: 4, robe: 0, eyes: 0 };
   function shadow(x, cx, cy, rx, a) { x.globalAlpha = a; x.fillStyle = '#0e0818'; x.beginPath(); x.ellipse(cx, cy, rx, rx * 0.32, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1; }
+  // one coat at a time, all the way round, on a stage sized for the biggest look so A, B and C keep their true sizes
+  function mountSize(d) {
+    const infos = [].concat(...options(d).o.map(([v]) => d.ids.map((id) => MobArt.mountInfo(v === 'a' ? id : id + '__' + v))));
+    return [Math.max(...infos.map((i) => i.w)) + 12, Math.max(...infos.map((i) => i.ay + 2)) + (d.key === 'dragons' ? 22 : 12)];
+  }
   function drawMounts(x, t, d, W, H) {
-    const dir = ['down', 'right', 'up', 'left'][Math.floor(t / 2200) % 4], ri = CharArt.rideInfo || { ax: 10, ay: 26 };
-    d.ids.forEach((id0, i) => {
-      const id = G.altArt(id0), info = MobArt.mountInfo(id), dragon = id0.startsWith('dragon');
-      const anim = dragon ? 'fly' : 'walk', n = info.anims[anim] || 2, fr = Math.floor((t / 1000) * (info.fps[anim] || 8)) % n;
-      const parts = MobArt.mount(id, anim, dir, fr); if (!parts) return;
-      const gx = Math.round((W * (i + 0.5)) / d.ids.length), gy = H - 7, lift = dragon ? 12 : 0;
-      shadow(x, gx, gy, dragon ? info.w * 0.24 : 11, dragon ? 0.28 : 0.38);
-      const x0 = Math.round(gx - info.ax), y0 = Math.round(gy - info.ay - lift);
-      x.drawImage(parts.back, x0, y0);
-      const sdy = (info.seatDy[anim] && info.seatDy[anim][fr]) || 0, rider = CharArt.playerRide(look(), dir, fr % 2);
-      if (rider) x.drawImage(rider, Math.round(x0 + info.seat.x - ri.ax), Math.round(y0 + info.seat.y + sdy - ri.ay));
-      if (parts.front) x.drawImage(parts.front, x0, y0);
-    });
+    const turn = Math.floor(t / 2200), dir = ['down', 'right', 'up', 'left'][turn % 4], id0 = d.ids[Math.floor(turn / 4) % d.ids.length];
+    const id = G.altArt(id0), info = MobArt.mountInfo(id), dragon = id0.startsWith('dragon'), ri = CharArt.rideInfo || { ax: 10, ay: 26 };
+    const anim = dragon ? 'fly' : 'walk', n = info.anims[anim] || 2, fr = Math.floor((t / 1000) * (info.fps[anim] || 8)) % n;
+    const parts = MobArt.mount(id, anim, dir, fr); if (!parts) return;
+    const gx = Math.round(W / 2), gy = H - 6, lift = dragon ? 10 : 0;
+    shadow(x, gx, gy, info.w * (dragon ? 0.24 : 0.32), dragon ? 0.28 : 0.38);
+    const x0 = Math.round(gx - info.ax), y0 = Math.round(gy - info.ay - lift);
+    x.drawImage(parts.back, x0, y0);
+    const sdy = (info.seatDy[anim] && info.seatDy[anim][fr]) || 0, rider = CharArt.playerRide(look(), dir, fr % 2);
+    if (rider) x.drawImage(rider, Math.round(x0 + info.seat.x - ri.ax), Math.round(y0 + info.seat.y + sdy - ri.ay));
+    if (parts.front) x.drawImage(parts.front, x0, y0);
   }
   function drawMobs(x, t, d, W, H) {
     const seq = d.cycle || ['idle', 'move', 'attack'], a = seq[Math.floor(t / 1700) % seq.length];
@@ -48387,7 +48390,7 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     const s = Math.min(W / c.width, H / c.height), w = c.width * s, h = c.height * s;
     x.imageSmoothingEnabled = s < 1; x.drawImage(c, Math.round((W - w) / 2), Math.round((H - h) / 2), Math.round(w), Math.round(h)); x.imageSmoothingEnabled = false;
   }
-  const STAGE = { portrait: [96, 96, drawFace], mount: [164, 72, drawMounts], mob: [164, 72, drawMobs], home: [448, 320, drawRoom], rare: [448, 320, drawRoom] };
+  const STAGE = { portrait: [96, 96, drawFace], mount: [0, 0, drawMounts], mob: [164, 72, drawMobs], home: [448, 320, drawRoom], rare: [448, 320, drawRoom] }; // mounts size their own stage
 
   // ---------------------------------------------------------------- the panel
   UI.panels.designs = function (panel, m) {
@@ -48400,8 +48403,9 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     const stages = [];
     for (const d of LIST) {
       const { o, rec } = options(d), card = el('div', 'des-card' + (d.kind === 'home' || d.kind === 'rare' ? ' room' : ''));
-      const [w, h, fn] = STAGE[d.kind], cv = el('canvas', 'des-cv');
+      const [w, h] = d.kind === 'mount' ? mountSize(d) : STAGE[d.kind], fn = STAGE[d.kind][2], cv = el('canvas', 'des-cv');
       cv.width = w; cv.height = h; if (d.kind === 'portrait') cv.classList.add('face');
+      if (d.kind === 'mount') cv.style.width = w * 3 + 'px'; // the same 3x for every look of it
       const stage = el('div', 'des-stage' + (d.kind === 'mob' || d.kind === 'rare' || d.kind === 'home' ? ' dark' : '')); stage.appendChild(cv); card.appendChild(stage);
       stages.push([cv, d, fn]);
       card.appendChild(el('div', 'des-n', `${d.name}<span class="small muted">${d.where}</span>`));
