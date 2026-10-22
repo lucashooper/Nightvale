@@ -10,8 +10,8 @@
   var K = ROOT.MobArt._kit;
   var OL = K.OL, mk = K.mk, A = K.A, px = K.px, clr = K.clr, rect = K.rect, line = K.line, pline = K.pline, ell = K.ell,
     spr = K.spr, blit = K.blit, outline = K.outline, over = K.over, flash = K.flash, fade = K.fade, hash = K.hash, mix = K.mix,
-    cloud = K.cloud, shadowE = K.shadowE, deathPuff = K.deathPuff, leafPuff = K.leafPuff, shadeEll = K.shadeEll, jelly = K.jelly,
-    bez3 = K.bez3, crystal = K.crystal, poly = K.poly, inE = K.inE, rgba = K.rgba;
+    cloud = K.cloud, shadowE = K.shadowE, leafPuff = K.leafPuff, shadeEll = K.shadeEll, jelly = K.jelly,
+    bez3 = K.bez3, crystal = K.crystal, poly = K.poly, inE = K.inE;
 
   // ======================================================================= shared helpers
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -87,7 +87,7 @@
   // Wide mud shoulders with the head sunk between them, long arms to the ground, a bog-oak root club he leans on like
   // a cane, reeds and duckweed growing on him, eyes like bog lights. Wears the same dented crown, gone green with age.
   var BOGO = {
-    mud: ['#1a110c', '#2e2017', '#463223', '#614631', '#7d5c40', '#9e7c58'],
+    mud: ['#1a110c', '#30221a', '#4a3626', '#674c35', '#86684a', '#ab8f68'],
     weed: ['#2a4a1a', '#447426', '#6c9e34', '#a2d05a', '#d6f28e'],
     reed: ['#37331a', '#625a2c', '#958a42', '#cbbd6c'], cat: ['#2e170c', '#5a3218', '#86512a'],
     eye: ['#b4560f', '#ffbe3a', '#fff4c4'],
@@ -129,11 +129,11 @@
     // a wrap of reed twine at the grip, and a tuft of moss on the knob
     var t1 = [gx + ux * 0.5, gy + uy * 0.5];
     px(L, t1[0] + nx * 1.2, t1[1] + ny * 1.2, BOGO.reed[2]); px(L, t1[0], t1[1], BOGO.reed[3]); px(L, t1[0] - nx * 1.2, t1[1] - ny * 1.2, BOGO.reed[1]);
-    var mx = cx - nx * 2 + (ny < 0 ? 0 : 0), my = cy - Math.abs(ny) * 2.6 - 0.6;
+    var mx = cx - nx * 2, my = cy - Math.abs(ny) * 2.6 - 0.6;
     px(L, mx, my, BOGO.weed[3]); px(L, mx + 1, my, BOGO.weed[2]); px(L, mx - 1, my + 1, BOGO.weed[2]); px(L, mx, my - 1, BOGO.weed[4]);
     return L;
   }
-  function bogCrown(b, x, y, tilt, al) {
+  function bogCrown(b, x, y, tilt) {
     var C = BOGO.crown, P = BOGO.pat;
     var rows = tilt ? ['w......', 'a..w...', 'aa.ab.w', 'bcbpbba', 'cdcpcdb', 'bbbbbbb'] : ['w..w..w', 'aa.ab.a', 'bcbpbbb', 'cdcpcdb', 'bbbbbbb'];
     spr(b, rows, { a: C[2], b: C[1], c: C[2], d: '#3aa0b0', p: P[0], w: C[3] }, x, y);
@@ -306,7 +306,8 @@
     weed(lay, 1);
     // a sprout (two leaves) on top
     var sx = Math.round(cx + lean * 0.6 - 1), st = topAt(lay, sx);
-    if (st > 1) { px(lay, sx, st - 1, BOGO.weed[2]); px(lay, sx - 1, st - 2, BOGO.weed[3]); if (s > 1) { px(lay, sx + 1, st - 2, BOGO.weed[4]); px(lay, sx, st - 2, BOGO.weed[2]); px(lay, sx - 2, st - 2, BOGO.weed[2]); } }
+    if (st > 2) { px(lay, sx, st - 1, BOGO.weed[2]); px(lay, sx - 1, st - 2, BOGO.weed[3]); if (s > 1) { px(lay, sx + 1, st - 2, BOGO.weed[4]); px(lay, sx, st - 2, BOGO.weed[2]); px(lay, sx - 2, st - 2, BOGO.weed[2]); } }
+    else if (st > 1) px(lay, sx, st - 1, BOGO.weed[3]);
     px(lay, cx - rx * 0.5, cy - ry * 0.3, BOGO.gloss);
     var fx = Math.round(cx + lean + 0.6 * s), fy = Math.round(cy - ry * 0.05), E = BOGO.eye;
     var faces = s > 1 ? { n: ['y...y', '.....', '.kkk.'], a: ['k...k', 'y...y', '.kkk.'], b: ['k...k', 'y...y', 'kkkkk', '.kTk.'], h: ['k...k', '.k.k.', '..k..'], x: ['k.k.k.k', '.k...k.', 'k.k.k.k'] }
@@ -434,7 +435,7 @@
     rect(J, fx - 8, fy + 3, 2, 1, GLUT.cheek); rect(J, fx + 6, fy + 3, 2, 1, GLUT.cheek);
     var mo = { grin: ['k.......k', '.kWkkkGk.', '..kkkkk..'], open: ['.kkkkkkk.', 'kWkkkkkGk', 'kkkRRRkkk', '.kkkkkkk.'],
       roar: ['kkkkkkkkk', 'kWk...kGk', 'kk.RRR.kk', 'kkRRRRRkk', '.kkkkkkk.'], ow: ['..kkkkk..', '.kk...kk.', '..kkkkk..'] }[p.mouth];
-    spr(J, mo, { k: F, W: '#ffffff', G: GLUT.gold[2], R: GLUT.tongue, '.': undefined }, fx - 4, fy + 4);
+    spr(J, mo, { k: F, W: '#ffffff', G: GLUT.gold[2], R: GLUT.tongue }, fx - 4, fy + 4);
     // gloss: a big window highlight on the top-left of the dome
     var gx = Math.round(hx - 10 + L * 0.2), gy0 = Math.round(Y(16));
     px(J, gx, gy0, GLUT.spec); px(J, gx, gy0 + 1, GLUT.spec); px(J, gx + 1, gy0 - 1, GLUT.spec); px(J, gx + 2, gy0 - 2, R[4]); px(J, gx, gy0 + 3, R[4]);
@@ -443,7 +444,7 @@
       var bb = botAt(J, x) - 2;
       if (bb > 30 && A(J, x, bb + 1) && A(J, x, bb - 1) && (x % 3 !== 0)) px(J, x, bb, R[3], 0.85);
     }
-    // ---- compose: bone behind, jelly, then whatever pokes out of the jelly (crown points, the bone's far end)
+    // ---- compose: the jelly (with the crown and bone inside it tinted), then whatever pokes out of it
     var lay = mk(48, 44);
     var fr = mk(48, 44);
     for (y = 0; y < 44; y++) for (x = 0; x < 48; x++) {
@@ -564,10 +565,7 @@
     else if (anim === 'die' && i === 0) { p.by += C.crouch; p.head = 'low'; p.tail = 4; p.eyes = 'shut'; mv('nf', 2, 2); mv('nh', -2, -2); }
     p.by += p.bob;
     p.L = {};
-    for (k in Lg) {
-      var lunge = p.lunge;
-      p.L[k] = [[p.bx + Lg[k][0][0], p.by + Lg[k][0][1]], [p.bx + Lg[k][1][0], p.by + Lg[k][1][1]], [p.bx + Lg[k][2][0], lunge ? Lg[k][2][1] : Lg[k][2][1]]];
-    }
+    for (k in Lg) p.L[k] = [[p.bx + Lg[k][0][0], p.by + Lg[k][0][1]], [p.bx + Lg[k][1][0], p.by + Lg[k][1][1]], [p.bx + Lg[k][2][0], Lg[k][2][1]]]; // paw y is absolute
     return p;
   }
   // a tapered two-segment leg with a paw; lit from the left; near legs lighter
@@ -580,25 +578,14 @@
     px(b, paw[0] - pawW / 2 + 0.5, paw[1] - 1, near ? F[4] : F[2]);
     if (toe) px(b, paw[0] + pawW / 2 + 0.5, paw[1], toe);
   }
-  // shaggy tufts around part of an ellipse (angles a0..a1, 0 = right, y down); light from the top-left
-  function tufts(b, cx, cy, rx, ry, a0, a1, n, len, R, seed) {
-    for (var k = 0; k < n; k++) {
-      var t = (k + 0.5) / n, a = a0 + (a1 - a0) * t, ca = Math.cos(a), sa = Math.sin(a);
-      var L = len * (0.6 + 0.7 * hash(k, 1, seed)), x0 = cx + ca * rx * 0.82, y0 = cy + sa * ry * 0.82;
-      var x1 = cx + ca * (rx + L) + sa * 1.2, y1 = cy + sa * (ry + L) - ca * 0.6; // tips curl back a little
-      var lit = -0.6 * ca - 0.8 * sa;
-      line(b, x0, y0, x1, y1, R[lit > 0.45 ? 4 : lit > -0.1 ? 3 : 2]);
-      px(b, x1, y1, R[lit > 0.45 ? 5 : lit > -0.1 ? 4 : 3]);
-    }
-  }
 
   // ======================================================================= GRIMJAW B — "Old Silvermane": the ancient pack-father
   // A front-heavy dire wolf gone silver with age: a huge shaggy mane swept back over his shoulders, the back sloping
   // down to lean hips, head carried low, lichen and tiny white flowers grown into his coat, a hunter's broken spear
   // still in his shoulder, a torn ear and one amber eye.
   var SILV = {
-    F: ['#15111a', '#272027', '#3d3439', '#564c4e', '#73686a', '#938884'],
-    mane: ['#3a3236', '#655c5e', '#908684', '#b9b0aa', '#dbd4cc', '#f6f0e6'],
+    F: ['#17131a', '#2c2529', '#453c3e', '#615656', '#80736f', '#a09288'],
+    mane: ['#3e3638', '#6a6060', '#958a86', '#bdb3ac', '#ddd6cc', '#f8f2e8'],
     lichen: ['#323e2c', '#536448', '#7c8f66', '#aebf90'], flower: ['#f6f2e8', '#f2c45a'],
     eye: ['#b45a14', '#ffb43c', '#fff0c0'], scar: '#d8c6ba', scarD: '#5e4a4e',
     spear: ['#2c2018', '#4e3a28', '#76583c', '#9a7a56'], rag: ['#4e1e22', '#863434', '#b4524a'],
@@ -672,8 +659,9 @@
       poly(mn, pts, function (xx, yy) { var side = (xx + 0.5 - mcx - bxk) * nx + (yy + 0.5 - mcy - byk) * ny; return side > 0.6 ? MN[5] : side > -0.5 ? MN[4] : MN[3]; });
       line(mn, mcx + bxk - nx * hw * 0.9, mcy + byk - ny * hw * 0.9, mcx + tx2 - dx * 0.25, mcy + ty2 - dy * 0.25, MN[2]);
     };
-    for (k = 0; k < crest.length; k++) flame(crest[k][0], crest[k][1], crest[k][2], crest[k][3], 2.3);
-    for (k = 0; k < throat.length; k++) flame(throat[k][0], throat[k][1], throat[k][2], throat[k][3], 1.9);
+    var sway = anim === 'move' ? [0.6, 0, -0.6, 0][i] : p.lunge ? -1.2 : anim === 'idle' ? i * 0.4 : 0;
+    for (k = 0; k < crest.length; k++) flame(crest[k][0], crest[k][1], crest[k][2] - Math.abs(sway) * 0.5, crest[k][3] + sway * (k % 2 ? 0.6 : 1), 2.3);
+    for (k = 0; k < throat.length; k++) flame(throat[k][0], throat[k][1], throat[k][2] - sway * 0.5, throat[k][3], 1.9);
     // lichen and tiny white flowers grown into the dark coat of his back
     var fl = [[bx - 4, by - 4.2], [bx - 9, by - 2.4], [bx + 0.6, by - 4.2]];
     for (k = 0; k < fl.length; k++) {
@@ -881,8 +869,10 @@
     for (k = 0; k < 7; k++) {
       var cxk = Math.round(bx + 3 - k * 2.4), cyk = topAt(body, cxk);
       if (cyk < 2) continue;
-      var hgt = [3, 3.6, 4, 3.6, 3.2, 2.8, 2.2][k], lean = -1.4;
-      poly(crest, [cxk - 1, cyk + 1, cxk + lean * 0.5, cyk - hgt, cxk + lean, cyk - hgt - 0.6, cxk + 1.2, cyk + 1], function (xx, yy) { return yy < cyk - hgt + 1.6 ? BRIAR.thorn[3] : xx + 0.5 < cxk ? BRIAR.thorn[2] : BRIAR.thorn[1]; });
+      var hgt = [3.4, 4, 4.4, 4, 3.6, 3, 2.4][k] + (p.lunge ? 0.4 : 0);
+      // a rose thorn: broad at the base, its front edge sweeping back to a hooked point
+      poly(crest, [cxk - 1.4, cyk + 1, cxk - 0.8, cyk - hgt * 0.55, cxk - 2, cyk - hgt, cxk + 0.2, cyk - hgt * 0.5, cxk + 1.6, cyk + 1],
+        function (xx, yy) { return yy < cyk - hgt + 1.4 ? BRIAR.thorn[3] : xx + 0.5 < cxk - 0.4 ? BRIAR.thorn[2] : BRIAR.thorn[1]; });
     }
     // ---- compose
     over(body, crest, BRIAR.thorn[0]);
@@ -1044,10 +1034,10 @@
   // No eyes, just a row of glowing pits; his blunt head splits into rock petals lined with crystal, like a geode
   // cracked open, around a throat full of light. He dies breaking apart into geodes.
   var GEO = {
-    R: ['#1a120d', '#33251a', '#4e3a28', '#6c5237', '#8c6d49', '#ad8d60', '#cdae80'],
-    belly: ['#251a12', '#3e2e20', '#5a4430'],
+    R: ['#1c0f0c', '#3a1d15', '#5a2c1d', '#7c3f27', '#9d5734', '#bc7647', '#d89a66'],
+    belly: ['#2a1612', '#46261b', '#643a28'],
     maw: ['#0e0618', '#24103e', '#3e2270', '#5a3a9a'],
-    dust: ['#2e2420', '#4e4034', '#73614e', '#9e8a70', '#c8b496'], pit: '#07050e', wall: '#2a1f18'
+    dust: ['#2e2224', '#4e3a38', '#735a52', '#9e8476', '#c8b0a0'], pit: '#07050e', wall: '#2e1a16'
   };
   // the plated tube: bold armour rings, each a rounded band lit on the top-left with a pale front lip, dark pinched
   // gaps between them; the gaps show the crystal inside only when he glows (the shard telegraph) or cracks apart
@@ -1066,7 +1056,7 @@
       else c = R[kk];
       if (gap) {
         c = R[0];
-        if ((glow || crack) && dors > -0.6 && depth > 1.4) c = CRY[depth > 3 ? 3 : 2];
+        if ((glow || crack) && dors > -0.5 && depth > 2.2) c = CRY[depth > 4 ? 3 : 2];
         else if (dors > -0.2 && depth > 3.2) c = CRY[1];
       }
       px(lay, x, y, c);
@@ -1144,10 +1134,11 @@
     }
     // a row of glowing sense-pits along the crown
     for (k = 0; k < 3; k++) { var pp = T(-1.8 - k * 2.4, -rr + 1.6 + k * 0.4); px(H, pp[0], pp[1], glow ? CRY[4] : CRY[3]); px(H, pp[0] - c, pp[1] - s, R[1]); }
-    // crystals crowning the collar
-    var crn = mk(lay.w, lay.h), cA = T(-1.2, -rr - 0.4), cB = T(-2.4, -rr + 0.8);
-    crystal(crn, cA[0], cA[1], -c * 0.6 + s * 0.8, -s * 0.6 - c * 0.8, 5, 1.5, CRY, glow);
-    crystal(crn, cB[0], cB[1], -c * 0.9 + s * 0.45, -s * 0.9 - c * 0.45, 3.6, 1.2, CRY, glow);
+    // a crown of crystal breaking out of the collar
+    var crn = mk(lay.w, lay.h), cA = T(-0.8, -rr - 0.6), cB = T(-2.6, -rr + 0.4), cC = T(0.2, -rr + 0.4);
+    crystal(crn, cB[0], cB[1], -c * 0.85 + s * 0.55, -s * 0.85 - c * 0.55, 4.6, 1.4, CRY, glow);
+    crystal(crn, cA[0], cA[1], -c * 0.62 + s * 0.78, -s * 0.62 - c * 0.78, 5, 1.8, CRY, glow);
+    crystal(crn, cC[0], cC[1], c * 0.1 + s * 1, s * 0.1 - c * 1, 3, 1.1, CRY, glow);
     over(lay, crn, CRY[0]);
     over(lay, H, R[0]);
     if (spray) { // shards burst from the throat
@@ -1248,7 +1239,7 @@
         c = Sk[kk];
         var mo = hash(Math.round(M.s / 2.2), Math.round(dors * 2.4), 301);
         if (dors > 0.05 && mo > 0.62 && hash(x, y, 302) > 0.25) c = OLM.mottle[kk > 4 ? 1 : 0];
-        if (Math.abs(((M.s + 0.6) % 3) - 0.3) < 0.35 && dors > -0.45 && dors < 0.55 && M.t < 0.92 && kk > 2) c = Sk[kk - 1]; // grooves
+        if (Math.abs(((M.s + 0.6) % 3.6) - 0.3) < 0.3 && dors > -0.3 && dors < 0.35 && M.t < 0.9 && kk > 2 && kk < 6) c = Sk[kk - 1]; // costal grooves
       }
       if (pale) c = mix(c, '#9a92a8', pale);
       px(lay, x, y, c);
@@ -1268,28 +1259,30 @@
       }
     }
   }
-  // the gills: three feathery fronds, fanning back from behind the head; `flare` spreads them, `droop` wilts them
-  function olmGills(lay, T, flare, droop, dark) {
-    var G = OLM.gill, fronds = [[0.2, -3.6, -1.95, 6.4], [-0.6, -2.2, -1.2, 7], [-0.8, -0.2, -0.45, 6]];
+  // the gills: three feathery fronds fanning up and back from behind the head, each a stalk with angled barbs
+  // on both sides (lit on the upper-left one) and a pale tip; `flare` spreads them, `droop` wilts them
+  function olmGills(lay, T, flare, droop, hot) {
+    var G = hot ? [OLM.gill[0], OLM.gill[2], OLM.gill[3], OLM.gill[4], '#fff2ee'] : OLM.gill, fronds = [[-0.2, -3.4, -1.78, 6.6], [-1.6, -2.4, -1.12, 7.8], [-2.6, -0.8, -0.44, 6.8]];
+    var F = mk(lay.w, lay.h);
     for (var k = 0; k < fronds.length; k++) {
-      var F = fronds[k], a = F[2] - flare * 0.22 * (k - 1) - flare * 0.15 + droop * (1.2 - k * 0.2), L = F[3] * (1 + flare * 0.1) * (1 - droop * 0.2);
-      var pts = [];
-      for (var q = 0; q <= 6; q++) {
-        var t = q / 6, curl = t * t * 1.4;
-        var uu = F[0] - Math.cos(a) * L * t - Math.sin(a) * curl * 0.4, vv = F[1] + Math.sin(a) * L * t + curl * (1 - droop * 0.3);
-        pts.push(T(uu, vv));
-      }
-      var c1 = dark ? mix(G[2], G[0], 0.5) : G[2], c2 = dark ? mix(G[3], G[0], 0.5) : G[3], c3 = dark ? mix(G[4], G[0], 0.5) : G[4];
-      for (q = 0; q < pts.length - 1; q++) {
-        line(lay, pts[q][0], pts[q][1], pts[q + 1][0], pts[q + 1][1], q < 2 ? c1 : c2);
-        if (q > 0 && q % 2 === 1) { // feathery filaments on the outer side
-          var dx = pts[q + 1][0] - pts[q][0], dy = pts[q + 1][1] - pts[q][1], Ln = Math.sqrt(dx * dx + dy * dy) || 1;
-          px(lay, pts[q][0] - dy / Ln * 1.1 - dx / Ln * 0.6, pts[q][1] + dx / Ln * 1.1 - dy / Ln * 0.6, c3);
-          px(lay, pts[q][0] + dy / Ln * 1.1 - dx / Ln * 0.6, pts[q][1] - dx / Ln * 1.1 - dy / Ln * 0.6, c2);
+      var fr = fronds[k], a = fr[2] + flare * 0.24 * (k - 1) - flare * 0.12 + droop * (1.1 - k * 0.22), L = fr[3] * (1 + flare * 0.1) * (1 - droop * 0.15);
+      var b0 = T(fr[0], fr[1]), tp = T(fr[0] - Math.cos(a) * L, fr[1] + Math.sin(a) * L + droop * 2.4);
+      var dx = tp[0] - b0[0], dy = tp[1] - b0[1], Ln = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / Ln, uy = dy / Ln, nx = -uy, ny = ux;
+      if (nx * -0.55 + ny * -0.8 < 0) { nx = -nx; ny = -ny; } // n points to the lit side
+      for (var q = 0; q <= Math.ceil(Ln); q++) {
+        var t = q / Ln, cx = b0[0] + dx * t, cy = b0[1] + dy * t, w = t < 0.15 ? 0.5 : t > 0.88 ? 0.8 : 1.7 * Math.sin(t * Math.PI * 0.95) + 0.3;
+        if (t > 0.1) {
+          for (var ww = 0.5; ww <= w + 0.01; ww += 0.5) {
+            px(F, cx + nx * ww + ux * ww * 0.6, cy + ny * ww + uy * ww * 0.6, t > 0.72 ? G[4] : G[3]);
+            px(F, cx - nx * ww + ux * ww * 0.6, cy - ny * ww + uy * ww * 0.6, t > 0.72 ? G[3] : G[2]);
+          }
+          if (q % 2 === 0 && w > 1) px(F, cx + nx * (w + 0.8) + ux * w, cy + ny * (w + 0.8) + uy * w, G[4]); // a feathery tick
         }
       }
-      px(lay, pts[6][0], pts[6][1], c3);
+      line(F, b0[0], b0[1], tp[0] - ux, tp[1] - uy, G[2]);
+      px(F, tp[0], tp[1], G[4]);
     }
+    over(lay, F, G[0]);
   }
   // the head: broad and flat with a blunt round snout and a long smile; the lower jaw drops about its hinge
   var OLM_SKULL = [-2.6, -3.8, 1.6, -4.8, 5.6, -4.6, 8.4, -3.6, 10.2, -1.8, 10.8, 0.4, 10.2, 2, 6, 2.4, 2, 2.8, -2.6, 3];
@@ -1302,11 +1295,7 @@
     function map(pts, f) { var o = []; for (var q = 0; q < pts.length; q += 2) { var p2 = f(pts[q], pts[q + 1]); o.push(p2[0], p2[1]); } return o; }
     function tint(cc) { return pale ? mix(cc, '#9a92a8', pale) : cc; }
     var H = mk(lay.w, lay.h), Gl = mk(lay.w, lay.h);
-    olmGills(Gl, T, flare, droop);
-    // the far-side gills peek out above the head, in shadow, drawn first
-    var Gf = mk(lay.w, lay.h);
-    olmGills(Gf, function (u, v) { return T(u + 2.2, v - 1.2); }, flare * 0.8, droop, true);
-    over(lay, Gf, OLM.gill[0]);
+    olmGills(Gl, T, flare, droop, flare >= 0.6 && !droop);
     if (jaw > 0.05) { // inside of the mouth
       var m1 = T(1.8, 1.8), m2 = T(10.2, 1.4), m3 = J(9.8, 1.8), m4 = J(2.2, 3);
       poly(H, [m1[0], m1[1], m2[0], m2[1], m3[0], m3[1], m4[0], m4[1]], OLM.mouth[1]);
@@ -1357,11 +1346,12 @@
       crystal(lay, bx0 + M.tx * 1.6, by0 + M.ty * 1.6, dx * 0.8 + M.tx * 0.6, dy * 0.8 + M.ty * 0.6, OLM_SPK[k][1] * 0.6 + 0.8, OLM_SPK[k][2] * 0.7, CRY, glow);
     }
   }
-  // its little hand on the rim of the hole
-  function olmHand(lay, x, y, pale) {
-    var c1 = pale ? mix(OLM.S[4], '#9a92a8', pale) : OLM.S[4], c2 = pale ? mix(OLM.S[3], '#9a92a8', pale) : OLM.S[3];
-    line(lay, x - 3, y - 3, x, y, c2); line(lay, x - 3, y - 2, x - 0.4, y + 0.6, c1);
-    px(lay, x + 1, y + 1, c1); px(lay, x, y + 1, c1); px(lay, x - 1, y + 1, c2); px(lay, x + 2, y + 0.4, c1);
+  // its little hand on the rim of the hole: a short arm from the body, four soft fingers spread on the stone
+  function olmHand(lay, x0, y0, x, y, pale) {
+    var c1 = pale ? mix(OLM.S[5], '#9a92a8', pale) : OLM.S[5], c2 = pale ? mix(OLM.S[3], '#9a92a8', pale) : OLM.S[3], c3 = pale ? mix(OLM.S[4], '#9a92a8', pale) : OLM.S[4];
+    stroke(lay, x0, y0, x, y, 2.6, 2, function (xx, yy, a) { return a < 0 ? c3 : c2; });
+    spr(lay, ['.ab.', 'abbb', 'b.b.b'.slice(0, 4)], { a: c1, b: c3 }, Math.round(x) - 1, Math.round(y) - 1);
+    px(lay, Math.round(x) + 3, Math.round(y), c3); px(lay, Math.round(x) - 1, Math.round(y) + 1, c2); px(lay, Math.round(x) + 1, Math.round(y) + 1, c2); px(lay, Math.round(x) + 3, Math.round(y) + 1, c2);
   }
   var OLM_D = {
     rock: OLM.rock, dust: OLM.dust, pit: OLM.pit, wall: OLM.wall,
@@ -1370,6 +1360,7 @@
       if (anim === 'hurt') p.flare = 1;
       if (anim === 'die') { p.droop = i === 0 ? 0 : i === 1 ? 0.6 : 1; p.pale = i === 0 ? 0 : i === 1 ? 0.25 : 0.45; p.hands = i === 0; if (i === 0) p.flare = 1.2; }
       if (anim === 'idle' && i) p.flare = 0.25;
+      if (anim === 'move') p.flare = [0.1, 0.35, 0.1, -0.15][i];
       if (p.tail) { p.r0 = 4.4; p.r1 = 1.6; }
       return p;
     },
@@ -1424,7 +1415,11 @@
         olmHead(hd, E.x - Math.cos(p.th) * back, E.y - Math.sin(p.th) * back, p.th, p.jaw, p.flare, p.droop, p.spray, p.pale);
         over(cr, hd, OLM.S[0]);
       }
-      if (p.hands) { var hn = mk(64, 48); olmHand(hn, 40, 37.4, p.pale); olmHand(hn, 25.4, 37, p.pale); over(cr, hn, OLM.S[0]); }
+      if (p.hands) {
+        var hb = S[Math.round(0.16 * (S.length - 1))], hn = mk(64, 48);
+        olmHand(hn, hb.x + hb.ty * -hb.r * 0.4 + 1, hb.y + 1, 39.6, 36.2, p.pale);
+        over(cr, hn, OLM.S[1]);
+      }
     }
   };
   K.defType('deep_wyrm__c', {
@@ -1434,4 +1429,22 @@
     fps: { idle: 2, move: 6, attack: 7, die: 6, burrow: 7, emerge: 7 },
     draw: function (v, anim, i) { return wyrmFrame(OLM_D, anim, i); }
   });
+
+  // ======================================================================= the names the Designs menu shows
+  var NOTES = ROOT.ALT_NOTES = ROOT.ALT_NOTES || {};
+  NOTES.gloopgarr = {
+    b: { name: 'Bog Brute', note: 'A hulking knuckle-walker of peat mud with reeds, bog-light eyes and a bog-oak club.' },
+    c: { name: 'Jelly Glutton', note: 'A see-through raspberry jelly showing all the loot he swallowed, with a gnawed-bone club.' },
+    rec: 'c'
+  };
+  NOTES.grimjaw = {
+    b: { name: 'Old Silvermane', note: 'A grizzled elder with a great white mane and a hunter’s broken spear in his shoulder.' },
+    c: { name: 'Briarback', note: 'The Deepwood has grown over him: bark hide, a crest of thorns, a mane of autumn leaves.' },
+    rec: 'b'
+  };
+  NOTES.wyrm = {
+    b: { name: 'Geode Maw', note: 'A rust-shelled rock worm whose head splits open like a geode around a throat of light.' },
+    c: { name: 'Pale Olm', note: 'A huge blind cave salamander with coral gills, a sleepy smile and crystals on its back.' },
+    rec: 'b'
+  };
 })();
