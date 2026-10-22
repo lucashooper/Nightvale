@@ -21,12 +21,15 @@
     ctx.clearRect(0, 0, cv.width, cv.height);
     let src = null;
     try {
-      if (window.CharArt) {
+      const st = G.alt('portraits');
+      if (window.CharArt && st !== 'a' && CharArt.portraitStyles && CharArt.portraitStyles.includes(st)) { // a style picked in Settings > Designs
+        src = npc === 'player' ? CharArt.playerPortraitStyled(st, G.S.look, expr || 'neutral', opts || {}) : CharArt.portraitStyled(st, npc, null, expr || 'neutral', opts || {});
+      } else if (window.CharArt) {
         if (npc === 'player' && CharArt.playerPortrait) src = CharArt.playerPortrait(G.S.look, expr || 'neutral', opts || {});
         else if (CharArt.portrait) src = CharArt.portrait(npc, expr || 'neutral', opts || {});
       }
     } catch (e) { src = null; }
-    if (src) { ctx.drawImage(src, 0, 0, cv.width, cv.height); return; }
+    if (src) { ctx.imageSmoothingEnabled = src.width > cv.width; ctx.drawImage(src, 0, 0, cv.width, cv.height); ctx.imageSmoothingEnabled = false; return; } // smooth only when shrinking
     // fallback: draw the walking sprite large
     const spr = npc === 'player' ? G.playerSprites(G.S.look) : G.npcSprites(npc);
     const f = spr.walk.down[0];

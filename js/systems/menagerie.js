@@ -218,8 +218,8 @@
   }
 
   // ---------------------------------------------------------------- drawing
-  function mountParts(id, anim, dir, frame) { try { return MA().mount(id, anim, dir, frame); } catch (e) { return null; } }
-  function mountInfo(id) { try { return MA().mountInfo(id); } catch (e) { return null; } }
+  function mountParts(id, anim, dir, frame) { try { return MA().mount(G.altArt(id), anim, dir, frame); } catch (e) { return null; } }
+  function mountInfo(id) { try { return MA().mountInfo(G.altArt(id)); } catch (e) { return null; } }
   function shadow(ctx, x, y, w, a) { ctx.globalAlpha = a; ctx.fillStyle = '#0e0818'; ctx.beginPath(); ctx.ellipse(Math.round(x), Math.round(y), w, w * 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
   // the player riding: the mount behind, the rider in the saddle, the near side of the mount in front
   Mg.drawRider = function (ctx, p, ox, oy) {

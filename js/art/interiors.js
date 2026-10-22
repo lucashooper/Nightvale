@@ -4127,4 +4127,22 @@
       return cached('r|' + w + '|' + h + '|' + seed, () => makeRunner(w, h, seed).canvas());
     },
   };
+  // plug-in kit for art that lives in other files (js/art/alt_rooms.js draws the look alternatives: floor and wall kinds
+  // and pieces named `<kind>_b` / `<kind>_c`): the painter, palettes, helpers and registries. kit.def also lists the piece.
+  window.InteriorArt._kit = {
+    Pix, hash, noise, fbm, bay, clamp, OUT, rgb, pack, pk, mix, rampAt, sprite, build, L, finishWear, flame,
+    candle, bottle, spine, plankFloor, floorHerringbone, floorMarble, starInlay, floorFlag, crown, wallTavern,
+    defaultBays, wallBoutique, wallCathedral, wallCottage, stampRune, slabFloor, strawOverlay, floorCarpet,
+    floorBasket, floorObservatory, floorCrystal, wallAlt, wallPastel, wallStudy, wallSmithy, wallMenagerie,
+    wallGuild, makePool, makeRunner, ellTop, tankard, brassStick, barSeg, chairPix, sky, cloth, flatBook,
+    armchairPix, crowPose, archHW, paneCol, mosaic, fillPoly, veiledFigure, wing, stamp, skull5, teddy, crest,
+    bedBody, quiltPatch, honeyJar, cupcake, fillBooks, AMBER, GOLDC, CANDLE, ORANGE, EMBERC, OAK, HONEY, WALNUT,
+    WOOD, GOLD, BRASS, COPPER, IRON, SILVER, MARBLE, PSTONE, HSTONE, STONE, WAX, PAPER, PLUM, WINE, VIOLET,
+    MIDNIGHT, FOREST, TEALC, OCHRE, CHAR, LAV, CRIMSON, LEAF, MAGIC, EMER, MOON, TERRA, LIQ, LIQ_RGB, GLASS,
+    FLAMES, L_CANDLE, L_WITCH, L_LAMP, BOTTLES, BOOK_R, DAMASK, STRAW, SOOT, CREAM, PINK, RUNES, POOL_HUE,
+    POOL_RGB, CRESCENT, STAR5, OWL, BW, RUST, GARMENTS, ROSE_C, CROW, GL, GL_RGB, SCHEMES, BONE, TEDDY, TEDDY_PINK,
+    TEDDY_CREAM, MINT, HONEYG, TANL, BLACKW, VIOW, RUNE_C, TEDDY_MAP, HEART, NOTE, STEEL, ORES, CREST_BLADE,
+    QUARRY, FLOORS, WALLS, DEFS,
+    def(id, n, make) { if (!DEFS[id]) ids.push(id); def(id, n, make); variants[id] = n; },
+  };
 })();

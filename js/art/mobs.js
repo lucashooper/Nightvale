@@ -4611,6 +4611,17 @@
       mount: function (type, anim, dir, index) { var r = rawMount(type, anim, dir, index); return { back: r.back, front: r.front }; }
     }
   };
+  // plug-in kit for art that lives in other files (js/art/alt_*.js draws the look alternatives, ids `<id>__b` / `<id>__c`):
+  // the raster toolkit, the registries, and the palettes and drawers of the designs they vary
+  MobArt._kit = {
+    OL: OL, rgba: rgba, mix: mix, mk: mk, clone: clone, A: A, px: px, pxIn: pxIn, clr: clr, rect: rect, line: line, pline: pline,
+    inE: inE, ell: ell, ringE: ringE, spr: spr, blit: blit, flipX: flipX, outline: outline, over: over, eachPx: eachPx,
+    flash: flash, fade: fade, shift: shift, hash: hash, cloud: cloud, shadowE: shadowE, deathPuff: deathPuff, leafPuff: leafPuff,
+    shadeEll: shadeEll, limb: limb, jelly: jelly, bez3: bez3, crystal: crystal, poly: poly, SMOKE: SMOKE, LEAFY: LEAFY,
+    defType: defType, defMount: defMount, TYPES: TYPES, MOUNTS: MOUNTS,
+    GLOOP: GLOOP, drawOgre: drawOgre, ogreSplit: ogreSplit, GRIM: GRIM, drawGrimjaw: drawGrimjaw, WYRM: WYRM, drawWyrm: drawWyrm,
+    HORSE: HORSE, TACK: TACK, HORSE_GAIT: HORSE_GAIT, drawHorseMount: drawHorseMount, DRAGON: DRAGON, DWING: DWING, drawDragonMount: drawDragonMount
+  };
   ROOT.MobArt = MobArt;
   if (typeof module !== 'undefined' && module && module.exports) module.exports = MobArt; // node require() convenience
 })();

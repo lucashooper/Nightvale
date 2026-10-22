@@ -1,0 +1,80 @@
+<title>Nightvale Picks Round 4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+/* layout: one long column, a section per kind of thing; each thing shows A (today), B and C side by side as real game art, with my pick marked; a sticky tally of your picks at the bottom */
+:root {
+  --bg: #14101f; --panel: #1f1830; --panel2: #271e3c; --edge: #4a3b6d; --ink: #0d0818; --text: #efe8fb; --muted: #b1a4cf;
+  --gold: #f2c45a; --gold2: #ffdf91; --more: #8fc4ff; --ok: #8fe0b0; --grass: #2e4a34; --grass2: #142019; --cave: #33284f; --cave2: #120c1c;
+  --body: 'Pixelify Sans', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--body); margin: 0; font-size: 16px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 22px 130px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.05; margin: 0 0 6px; font-weight: 700; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 14px; max-width: 74ch; line-height: 1.45; }
+.lede b { color: var(--text); font-weight: 500; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+.toc a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 3px 10px; border-radius: 99px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--edge); }
+.toc a:hover, .toc a:focus-visible { color: var(--gold); outline: none; box-shadow: inset 0 0 0 1px var(--gold); }
+section { margin-top: 40px; scroll-margin-top: 16px; }
+h2 { font-size: 26px; margin: 0 0 4px; font-weight: 700; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0 0 12px; max-width: 78ch; line-height: 1.45; }
+.subj { margin-top: 26px; display: grid; gap: 10px; }
+.subj h3 { font-size: 21px; font-weight: 600; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; text-wrap: balance; }
+.subj h3 small { font-size: 14px; font-weight: 400; color: var(--muted); }
+.rec { display: flex; gap: 10px; align-items: flex-start; background: #221a37; border-radius: 8px; padding: 8px 12px; max-width: 900px; line-height: 1.4; font-size: 15px; }
+.rec b { flex: none; color: var(--ink); background: var(--gold); border-radius: 5px; padding: 1px 8px; font-size: 13px; letter-spacing: .04em; margin-top: 1px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.opt { background: var(--panel); border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px var(--edge); border-radius: 10px; padding: 10px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.opt.on { box-shadow: inset 0 0 0 3px var(--gold); }
+.opt .lab { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 18px; }
+.opt .lab .k { color: var(--gold); }
+.opt .lab .mine { font-size: 12px; letter-spacing: .05em; color: var(--ink); background: var(--gold); border-radius: 4px; padding: 0 6px; }
+.opt .ds { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.opt .wait { color: var(--muted); font-size: 14px; padding: 30px 6px; text-align: center; }
+.stage { display: grid; place-items: center; min-height: 150px; border-radius: 8px; background: radial-gradient(circle at 50% 62%, var(--grass), var(--grass2) 78%); overflow: hidden; }
+.stage.dark { background: radial-gradient(circle at 50% 60%, var(--cave), var(--cave2) 78%); }
+.stage.face { background: radial-gradient(circle at 50% 40%, #3b2d62, #1a1230 70%); }
+.stage canvas { image-rendering: pixelated; max-width: 100%; height: auto; display: block; }
+img.shot { width: 100%; height: auto; display: block; border-radius: 8px; border: 2px solid var(--ink); background: var(--cave2); }
+button { font: inherit; color: var(--text); cursor: pointer; }
+.choose { justify-self: start; font-size: 15px; background: #221a37; border: 2px solid var(--ink); border-radius: 6px; padding: 5px 12px; box-shadow: inset 0 0 0 1px var(--edge); }
+.opt.on .choose { color: var(--ink); background: var(--gold); box-shadow: none; }
+.extra { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.extra .alt { font-size: 14px; background: #221a37; border: 2px solid var(--ink); border-radius: 6px; padding: 5px 11px; flex: none; }
+.extra .alt[aria-pressed="true"] { color: var(--more); box-shadow: inset 0 0 0 2px var(--more); }
+textarea.note { flex: 1 1 260px; min-width: 0; box-sizing: border-box; font: inherit; font-size: 14px; color: var(--text); background: #170f2a; border: 2px solid var(--ink); border-radius: 6px; padding: 6px 8px; resize: vertical; min-height: 34px; }
+button:focus-visible, textarea:focus-visible, .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.cast-head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 22px; }
+.cast-head h3 { font-size: 21px; font-weight: 600; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 14px; padding: 4px 11px; border-radius: 99px; background: var(--panel); border: 0; box-shadow: inset 0 0 0 1px var(--edge); color: var(--muted); }
+.chip[aria-pressed="true"] { color: var(--gold); box-shadow: inset 0 0 0 2px var(--gold); }
+.cast { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr)); gap: 10px; margin-top: 10px; }
+.who { background: var(--panel); border-radius: 10px; padding: 8px 10px 10px; box-shadow: inset 0 0 0 1px var(--edge); display: grid; gap: 6px; min-width: 0; }
+.who .nm { font-size: 16px; } .who .nm small { color: var(--muted); font-size: 13px; }
+.faces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.faces figure { margin: 0; display: grid; gap: 2px; justify-items: center; }
+.faces canvas { width: 100%; max-width: 112px; height: auto; border-radius: 6px; background: radial-gradient(circle at 50% 40%, #3b2d62, #1a1230 70%); }
+.faces figcaption { font-size: 12px; color: var(--muted); }
+.faces figure.on figcaption { color: var(--gold); }
+.tally { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: rgba(20, 16, 31, .96); border-top: 2px solid var(--edge); padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.tally .in { max-width: 1180px; margin: 0 auto; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tally .st { flex: 1; min-width: 0; color: var(--muted); }
+.tally .st.ok { color: var(--ok); }
+.tally .n { color: var(--gold); font-variant-numeric: tabular-nums; }
+.tally button { font-size: 15px; border: 2px solid var(--ink); border-radius: 6px; padding: 6px 12px; color: var(--ink); background: var(--gold); }
+.tally textarea { width: 100%; font: inherit; font-size: 13px; color: var(--text); background: var(--panel); border: 2px solid var(--edge); border-radius: 6px; padding: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+<div class="wrap">
+  <h1>Nightvale picks, round 4</h1>
+  <p class="lede">The alternatives you asked for on the round 3 page, and the new faces. Everything here is drawn by the game's own art. Choose <b>A</b>, <b>B</b> or <b>C</b> for each one; your picks save as you go, and I'll put them in the game. If none of them is right, press <b>Show alternatives</b> and say what to change. You can also switch between all of these inside the game, in <b>Settings &rarr; Designs</b>.</p>
+  <nav class="toc" aria-label="Sections"><a href="#faces">Faces</a><a href="#mounts">Mounts</a><a href="#bosses">Bounty bosses</a><a href="#homes">Homes</a><a href="#floors">Rare floors</a></nav>
+  <main id="secs"></main>
+</div>
+<div class="tally" role="region" aria-label="Your picks"><div class="in"><span class="st" id="st">Your picks save automatically as you choose.</span><span class="n" id="count"></span><button id="copy" type="button" hidden>Copy picks</button><textarea id="box" rows="2" readonly hidden aria-label="Your picks as text"></textarea></div></div>
+<!--SCRIPTS-->

@@ -87,8 +87,17 @@
   // Tiny event bus
   const listeners = {};
   // player preferences that live outside the save (settings store): the colour grade and tester mode
-  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer' };
+  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer', alts: {} };
   G.admin = (k) => G.prefs.admin && !!G.prefs[k];
+  // design alternatives (Settings > Designs): key -> 'a' (the original design) | 'b' | 'c'
+  G.alt = (key) => (G.prefs.alts && G.prefs.alts[key]) || 'a';
+  // the MobArt id to draw for a monster or mount: its `__b` / `__c` alternative when that design is chosen and drawn
+  const ALT_ART = { horse_midnight: 'horses', horse_silver: 'horses', horse_chestnut: 'horses', dragon_amethyst: 'dragons', dragon_emerald: 'dragons', dragon_ember: 'dragons',
+    slime_ogre: 'gloopgarr', slime_med: 'gloopgarr', slime_small: 'gloopgarr', grimjaw: 'grimjaw', deep_wyrm: 'wyrm' };
+  G.altArt = (id) => {
+    const v = ALT_ART[id] ? G.alt(ALT_ART[id]) : 'a', K = v !== 'a' && window.MobArt && MobArt._kit;
+    return K && (K.TYPES[id + '__' + v] || K.MOUNTS[id + '__' + v]) ? id + '__' + v : id;
+  };
   G.on = (ev, fn) => { (listeners[ev] = listeners[ev] || []).push(fn); };
   G.off = (ev, fn) => { const l = listeners[ev]; if (l) { const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } };
   G.emit = (ev, a, b, c) => { const l = listeners[ev]; if (l) for (const fn of l.slice()) { try { fn(a, b, c); } catch (e) { console.error(e); } } };

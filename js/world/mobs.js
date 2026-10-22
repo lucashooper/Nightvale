@@ -7,12 +7,12 @@
   // ---------------------------------------------------------------- art adapter
   const fallback = new Map();
   function artInfo(type) {
-    try { if (window.MobArt && MobArt.info) { const i = MobArt.info(type); if (i) return i; } } catch (e) { /* fallback */ }
+    try { if (window.MobArt && MobArt.info) { const i = MobArt.info(G.altArt(type)); if (i) return i; } } catch (e) { /* fallback */ }
     const big = type === 'archon' ? 48 : type === 'broodmother' ? 40 : type === 'golem' ? 24 : 16;
     return { w: big, h: big, ax: big / 2, ay: big - 2, anims: { idle: 2, move: 2, attack: 2, hurt: 1, die: 3 }, fps: { idle: 4, move: 8, attack: 8, die: 10 } };
   }
   function artFrame(type, variant, anim, idx, flip) {
-    try { if (window.MobArt && MobArt.frame) { const c = MobArt.frame(type, variant, anim, idx, flip); if (c) return c; } } catch (e) { /* fallback */ }
+    try { if (window.MobArt && MobArt.frame) { const c = MobArt.frame(G.altArt(type), variant, anim, idx, flip); if (c) return c; } } catch (e) { /* fallback */ }
     const key = type + variant + anim + idx;
     if (fallback.has(key)) return fallback.get(key);
     const info = artInfo(type), P = new G.Pix(info.w, info.h);

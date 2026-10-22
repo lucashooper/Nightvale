@@ -641,6 +641,10 @@
     const zi = zr.querySelector('input');
     zi.oninput = () => { G.R.setZoom(+zi.value); zr.querySelector('span').textContent = (zi.value > 0 ? '+' : '') + zi.value; G.Save.saveSettings(); };
     box.appendChild(zr);
+    const des = el('button', 'btn', 'Designs…');
+    des.style.alignSelf = 'flex-start'; des.title = 'Switch between the original look of things and the alternatives';
+    des.onclick = () => UI.open('designs');
+    box.appendChild(des);
     if (document.documentElement.requestFullscreen) {
       const fs = el('button', 'btn ghost', document.fullscreenElement ? 'Leave full screen' : 'Full screen');
       fs.style.alignSelf = 'flex-start';
