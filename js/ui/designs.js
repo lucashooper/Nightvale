@@ -20,18 +20,17 @@
   ];
   // portrait styles: the classic renderer, then CharArt.portraitStyled styles once they're drawn
   const FACES = [['human', 'Human', 'Softer faces that read as real people'], ['human_hd', 'Human HD', 'The same faces, sharper at higher resolution']];
-  const FACE_REC = 'human_hd';
 
-  // [[value, name, note]] for each look that exists, and the recommended value
+  // [[value, name, note]] for each look that exists, and the one picked as the default (marked with a star)
   function options(d) {
+    const rec = (G.ALT_DEFAULTS && G.ALT_DEFAULTS[d.key]) || 'a';
     if (d.kind === 'portrait') {
       const have = (window.CharArt && CharArt.portraitStyles) || [];
-      const o = [['a', 'Classic', 'The faces from the first version']].concat(FACES.filter((f) => have.includes(f[0])));
-      return { o, rec: o.length > 1 ? FACE_REC : null };
+      return { o: [['a', 'Classic', 'The faces from the first version']].concat(FACES.filter((f) => have.includes(f[0]))), rec };
     }
-    const n = notes(d.key), o = [['a', 'Original', 'The design in the game today']];
+    const n = notes(d.key), o = [['a', 'Original', 'The first design']];
     if (n) for (const v of ['b', 'c']) if (n[v]) o.push([v, n[v].name, n[v].note]);
-    return { o, rec: o.length > 1 && n ? n.rec : null };
+    return { o, rec };
   }
   function current(d) { const v = G.alt(d.key), o = options(d).o; return o.some((x) => x[0] === v) ? v : 'a'; }
 
@@ -139,7 +138,7 @@
     panel.classList.add('des-modal');
     panel.appendChild(UI.closeBtn(m));
     panel.appendChild(el('h2', '', 'Designs'));
-    panel.appendChild(el('div', 'subtitle', 'Try the other looks drawn for these. Your choice applies straight away, and ★ marks the artist’s pick.'));
+    panel.appendChild(el('div', 'subtitle', 'Your round 4 picks are the defaults, marked ★. Try the other looks here; your choice applies straight away.'));
     const body = el('div', 'body'), grid = el('div', 'des-grid');
     body.appendChild(grid); panel.appendChild(body);
     const stages = [];
@@ -157,7 +156,7 @@
         const sel = o.find((x) => x[0] === v); note.textContent = sel ? sel[2] : '';
       };
       o.forEach(([v, name], i) => {
-        const b = el('button', 'des-o hit', `<b>${'ABC'[i]}</b>${name}${v === rec ? ' <span class="star" title="The artist’s pick">★</span>' : ''}`);
+        const b = el('button', 'des-o hit', `<b>${'ABC'[i]}</b>${name}${v === rec ? ' <span class="star" title="Your pick">★</span>' : ''}`);
         b.type = 'button'; b.dataset.v = v;
         b.onclick = () => { set(d, v); sync(); G.sfx('ui_click', { volume: 0.35 }); };
         opts.appendChild(b);

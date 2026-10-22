@@ -87,9 +87,11 @@
   // Tiny event bus
   const listeners = {};
   // player preferences that live outside the save (settings store): the colour grade and tester mode
-  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer', alts: {} };
+  // the designs chosen on the round 4 pick page; Settings > Designs switches any of them (missing = 'a', the first design)
+  G.ALT_DEFAULTS = { portraits: 'human_hd', horses: 'b', dragons: 'c', gloopgarr: 'c', grimjaw: 'b', home_jasmine: 'b', home_amara: 'b', rare_observatory: 'c', rare_crystal: 'b' };
+  G.prefs = { v: 2, look: 'golden', admin: false, noSleep: true, energy: true, god: true, freeze: false, fast: false, marketMode: 'wander', bossDifficulty: 'balanced', cabinetStyle: 'drawer', altsV: 1, alts: Object.assign({}, G.ALT_DEFAULTS) };
   G.admin = (k) => G.prefs.admin && !!G.prefs[k];
-  // design alternatives (Settings > Designs): key -> 'a' (the original design) | 'b' | 'c'
+  // design alternatives (Settings > Designs): key -> 'a' | 'b' | 'c'; portraits -> 'a' (classic) | 'human' | 'human_hd'
   G.alt = (key) => (G.prefs.alts && G.prefs.alts[key]) || 'a';
   // the MobArt id to draw for a monster or mount: its `__b` / `__c` alternative when that design is chosen and drawn
   const ALT_ART = { horse_midnight: 'horses', horse_silver: 'horses', horse_chestnut: 'horses', dragon_amethyst: 'dragons', dragon_emerald: 'dragons', dragon_ember: 'dragons',

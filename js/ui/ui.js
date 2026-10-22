@@ -35,6 +35,26 @@
     const f = spr.walk.down[0];
     ctx.drawImage(f, 0, 0, f.width, f.height * 0.62, cv.width * 0.12, cv.height * 0.05, cv.width * 0.76, cv.height * 0.95);
   };
+  // a styled portrait takes ~20 ms to draw the first time (96 px), so faces are drawn ahead while the game is idle
+  const warmQ = [];
+  let warming = false;
+  const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 250 }) : setTimeout(() => fn({ timeRemaining: () => 12, didTimeout: false }), 60)); // a busy game loop leaves little idle time: then one face every quarter second
+  function warmStep(dl) {
+    const st = G.alt('portraits');
+    while (warmQ.length && (dl.timeRemaining() > 2 || dl.didTimeout)) {
+      const [npc, expr, o] = warmQ.shift();
+      try { if (npc === 'player') CharArt.playerPortraitStyled(st, G.S.look, expr, o); else CharArt.portraitStyled(st, npc, null, expr, o); } catch (e) { /* art optional */ }
+      if (dl.didTimeout) break;
+    }
+    if (warmQ.length) idle(warmStep); else warming = false;
+  }
+  UI.warmPortraits = function (npcs, exprs, frames) {
+    const st = G.alt('portraits');
+    if (!window.CharArt || st === 'a' || !(CharArt.portraitStyles || []).includes(st)) return;
+    for (const npc of npcs) for (const e of exprs || ['neutral']) for (const o of frames || [{}]) warmQ.push([npc, e, o]);
+    if (!warming) { warming = true; idle(warmStep); }
+  };
+  G.on('worldStart', () => { if (window.CharArt && CharArt.npcIds) UI.warmPortraits(CharArt.npcIds); }); // the villagers' faces, for menus and greetings
   UI.npcName = (id) => { const t = UI.npcText(id); return (t && (t.short || t.name)) || U.cap(id); };
   UI.npcText = (id) => (window.GAMETEXT && GAMETEXT.npcs && GAMETEXT.npcs[id]) || null;
   UI.fill = function (s, extra) {
@@ -377,6 +397,10 @@
       let pi = 0, shown = 0, full = '', expr = 'neutral', typing = false, raf = 0, last = 0, blinkT = 2 + Math.random() * 2, blink = 0, talkT = 0, talk = false, done = false;
       const m = { name: 'dialogue', close: () => finish(undefined) };
       const drawP = () => { if (pcv) UI.drawPortrait(pcv, npc, expr, { blink: blink > 0, talk }); };
+      if (npc) { // every frame this conversation can show, its opening expression first
+        const first = (/^\s*\[(neutral|happy|sad|surprised|angry)\]/i.exec(pages[0]) || [0, 'neutral'])[1].toLowerCase();
+        UI.warmPortraits([npc], [first].concat(['neutral', 'happy', 'sad', 'surprised', 'angry'].filter((e) => e !== first)), [{ talk: true }, { blink: true }, { blink: true, talk: true }, {}]);
+      }
       const setPage = () => {
         let p = pages[pi];
         const mm = /^\s*\[(neutral|happy|sad|surprised|angry)\]\s*/i.exec(p);

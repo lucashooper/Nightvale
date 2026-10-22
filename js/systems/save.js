@@ -77,6 +77,8 @@
         if (v.prefs) {
           // settings saved before the look was chosen pick up the new default (Golden Hour) once
           const p = Object.assign({}, v.prefs); if (p.v !== G.prefs.v) { delete p.look; p.v = G.prefs.v; }
+          // and settings saved before the round 4 picks pick up the chosen designs once
+          if (p.altsV !== G.prefs.altsV) { delete p.alts; p.altsV = G.prefs.altsV; }
           Object.assign(G.prefs, p);
         }
         const A = window.AudioEngine;
