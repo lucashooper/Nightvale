@@ -12,6 +12,17 @@
     crystal: { name: 'The Crystal Garden', ambient: [86, 76, 132], floor: 'crystal' },
   };
   R.KINDS = KINDS;
+  // design alternatives (Settings > Designs) for the observatory and the crystal garden: look 'a' is the original;
+  // 'b' / 'c' are drawn in js/art/alt_rooms.js (floor kinds `<floor>_b` / `<floor>_c`) and chosen when a floor is built
+  const LOOKS = {
+    observatory_b: { ambient: [70, 98, 116], air: [120, 230, 220] }, observatory_c: { ambient: [118, 88, 92], air: [255, 186, 120] },
+    crystal_b: { ambient: [118, 84, 112], air: [255, 160, 200] }, crystal_c: { ambient: [70, 104, 100], air: [120, 255, 190] },
+  };
+  function lookOf(kind) {
+    if (kind !== 'observatory' && kind !== 'crystal') return 'a';
+    const v = G.alt('rare_' + kind), FL = window.InteriorArt && InteriorArt._kit && InteriorArt._kit.FLOORS;
+    return (v === 'b' || v === 'c') && FL && FL[KINDS[kind].floor + '_' + v] ? v : 'a';
+  }
   const TX = () => (window.GAMETEXT && GAMETEXT.rare) || {};
   R.size = [28, 20];
   // about one floor in ten, never on gate floors (every fifth) or the throne
@@ -45,10 +56,10 @@
   const rare = (what) => ({ kind: 'rare', what });
 
   R.build = function (map, kind, r, floor, placeDown) {
-    const k = KINDS[kind], w = map.w, h = map.h;
-    map.rare = { kind, rect: [3, 3, w - 6, h - 6], used: {} };
-    map.subtitle = k.name; map.ambient = k.ambient;
-    try { const c = window.InteriorArt && InteriorArt.floor(k.floor, (w - 6) * 16, (h - 6) * 16, map.seed); map.rare.floorCanvas = c && (c.c || c); } catch (e) { map.rare.floorCanvas = null; }
+    const k = KINDS[kind], w = map.w, h = map.h, look = lookOf(kind), alt = look !== 'a' ? LOOKS[kind + '_' + look] : null;
+    map.rare = { kind, look, rect: [3, 3, w - 6, h - 6], used: {} };
+    map.subtitle = k.name; map.ambient = alt ? alt.ambient : k.ambient;
+    try { const c = window.InteriorArt && InteriorArt.floor(alt ? k.floor + '_' + look : k.floor, (w - 6) * 16, (h - 6) * 16, map.seed); map.rare.floorCanvas = c && (c.c || c); } catch (e) { map.rare.floorCanvas = null; }
     const spawn = (type, variant, n) => { for (let i = 0; i < n; i++) { for (let t = 0; t < 30; t++) { const x = 4 + r.int(0, w - 9), y = 4 + r.int(0, h - 10); if (!map.blocked(x, y) && !map.tobj.has(map.idx(x, y)) && Math.abs(y - (h - 6)) > 3) { map.entities.push(G.Mobs.spawn(type, variant, x * 16 + 8, y * 16 + 12, floor)); break; } } } };
     if (kind === 'library') {
       for (const x of [4, 7, 10, 17, 20, 23]) piece(map, 'lib_shelf', 0, x, 4, { interact: rare('shelf') });
@@ -69,6 +80,8 @@
       for (const [x, y, v] of [[4, 8, 0], [22, 9, 1], [11, 14, 1], [18, 14, 0]]) piece(map, 'lumi_fungus', v, x, y);
       spawn('shroomling', 'toxic', 3);
       placeDown(map, [23, 14], true);
+    } else if (kind === 'observatory' && look !== 'a') {
+      observatoryAlt(map, look);
     } else if (kind === 'observatory') {
       piece(map, 'star_chart_floor', 0, 12, 8);
       piece(map, 'orrery_big', 0, 6, 6, { interact: rare('orrery') });
@@ -77,6 +90,10 @@
       piece(map, 'astrolabe', 0, 16, 12, { interact: rare('telescope') }); piece(map, 'book_tower', 0, 22, 13);
       for (const [x, y] of [[5, 12], [9, 14], [21, 9]]) map.setObj(x, y, { kind: 'forage', id: 'starshard' });
       map.rare.orreryHides = true;
+    } else if (look !== 'a') {
+      crystalAlt(map, look);
+      spawn('golem', 'crystal', 2);
+      placeDown(map, [23, 14], true);
     } else {
       piece(map, 'fairy_fountain', 0, 13, 7, { interact: rare('fountain') });
       for (const [x, y, v] of [[6, 5, 0], [20, 5, 1], [8, 12, 2], [19, 12, 0], [11, 14, 1], [16, 4, 2]]) piece(map, 'crystal_flower', v, x, y, { interact: rare('flower') });
@@ -85,12 +102,59 @@
       placeDown(map, [23, 14], true);
     }
     // a little shimmer in the air
-    map.staticLights.push({ x: w * 8, y: h * 8, r: 160, color: kind === 'witch' ? [120, 255, 170] : kind === 'crystal' ? [190, 150, 255] : [150, 170, 255], i: 0.25 });
+    map.staticLights.push({ x: w * 8, y: h * 8, r: 160, color: alt ? alt.air : kind === 'witch' ? [120, 255, 170] : kind === 'crystal' ? [190, 150, 255] : [150, 170, 255], i: 0.25 });
   };
+
+  // ---------------------------------------------------------------- the alternative looks (same secrets, new rooms)
+  // every layout keeps the entrance clear (ladder at 14,15; you arrive at 14,16) and the orrery's way down free (23,14)
+  function observatoryAlt(map, look) {
+    if (look === 'b') { // the Tidal Observatory: half drowned, verdigris and pearl, moon jellies drifting in the damp
+      piece(map, 'star_pool_b', 0, 12, 8);
+      piece(map, 'orrery_big_b', 0, 13, 4, { interact: rare('orrery') });
+      piece(map, 'great_telescope_b', 0, 5, 11, { interact: rare('telescope') });
+      piece(map, 'blueprint_pedestal_b', 0, 20, 10, { interact: rare('pedestal') });
+      piece(map, 'astrolabe_b', 0, 8, 5, { interact: rare('telescope') });
+      piece(map, 'broken_column_b', 1, 4, 5); piece(map, 'broken_column_b', 0, 18, 4); piece(map, 'broken_column_b', 1, 23, 9); piece(map, 'broken_column_b', 0, 10, 14);
+      piece(map, 'kelp_b', 0, 21, 5); piece(map, 'kelp_b', 1, 7, 9); piece(map, 'kelp_b', 0, 17, 14);
+      piece(map, 'soggy_books_b', 0, 22, 13);
+      piece(map, 'shells_b', 0, 16, 6); piece(map, 'shells_b', 1, 9, 12); piece(map, 'shells_b', 0, 19, 13);
+      piece(map, 'moon_jelly_b', 0, 9, 8); piece(map, 'moon_jelly_b', 1, 18, 8); piece(map, 'moon_jelly_b', 0, 16, 12);
+      for (const [x, y] of [[11, 6], [19, 7], [7, 15]]) map.setObj(x, y, { kind: 'forage', id: 'starshard' });
+    } else { // the Sunstone Observatory: a hall of warm sandstone round a sun mosaic, an ember sun turning at its heart
+      piece(map, 'orrery_big_c', 0, 13, 9, { interact: rare('orrery') });
+      piece(map, 'blueprint_pedestal_c', 0, 14, 4, { interact: rare('pedestal') });
+      piece(map, 'great_telescope_c', 0, 5, 4, { interact: rare('telescope') });
+      piece(map, 'astrolabe_c', 0, 22, 5, { interact: rare('telescope') });
+      for (const [x, y] of [[9, 6], [19, 6], [9, 13], [19, 13]]) piece(map, 'brazier_c', 0, x, y);
+      piece(map, 'obelisk_c', 0, 5, 10); piece(map, 'obelisk_c', 0, 23, 10);
+      piece(map, 'scroll_rack_c', 0, 5, 14); piece(map, 'urn_c', 0, 11, 4); piece(map, 'urn_c', 1, 17, 4); piece(map, 'urn_c', 1, 21, 15);
+      for (const [x, y] of [[7, 9], [21, 8], [11, 15]]) map.setObj(x, y, { kind: 'forage', id: 'starshard' });
+    }
+    map.rare.orreryHides = true;
+  }
+  function crystalAlt(map, look) {
+    if (look === 'b') { // the Rose Quartz Hollow: rosy stone and soft moss, a heart-shaped spring
+      piece(map, 'fairy_fountain_b', 0, 13, 7, { interact: rare('fountain') });
+      for (const [x, y, v] of [[7, 5, 0], [20, 6, 1], [6, 12, 2], [21, 12, 0], [10, 14, 1], [17, 4, 2]]) piece(map, 'crystal_flower_b', v, x, y, { interact: rare('flower') });
+      for (const [x, y, v] of [[4, 8, 0], [23, 9, 1], [16, 13, 1], [4, 15, 0], [11, 4, 1]]) piece(map, 'glow_puff_b', v, x, y);
+      piece(map, 'quartz_cluster_b', 0, 9, 9); piece(map, 'quartz_cluster_b', 1, 18, 10); piece(map, 'geode_b', 0, 22, 4); piece(map, 'geode_b', 0, 4, 4);
+    } else { // the Emerald Grotto: deep moss, a waterfall spring, golden glowcaps
+      piece(map, 'fairy_fountain_c', 0, 13, 5, { interact: rare('fountain') });
+      for (const [x, y, v] of [[6, 6, 0], [21, 5, 1], [8, 13, 2], [19, 11, 0], [12, 10, 1], [16, 10, 2]]) piece(map, 'crystal_flower_c', v, x, y, { interact: rare('flower') });
+      for (const [x, y, v] of [[4, 9, 0], [23, 8, 1], [15, 13, 0], [5, 15, 1], [10, 4, 0]]) piece(map, 'glowcap_c', v, x, y);
+      piece(map, 'mossy_log_c', 0, 20, 14); piece(map, 'emerald_cluster_c', 0, 4, 4); piece(map, 'emerald_cluster_c', 1, 23, 12); piece(map, 'fern_c', 0, 9, 8); piece(map, 'fern_c', 1, 18, 8);
+    }
+  }
 
   R.drawGround = function (ctx, map, ox, oy) {
     const rr = map.rare; if (!rr || !rr.floorCanvas) return;
     ctx.drawImage(rr.floorCanvas, rr.rect[0] * 16 + ox, rr.rect[1] * 16 + oy);
+    const sh = rr.floorCanvas.shimmer; // glints on the water of the floors that have pools (alternative looks)
+    if (sh) {
+      const t = G.R.time, x0 = rr.rect[0] * 16 + ox, y0 = rr.rect[1] * 16 + oy;
+      ctx.fillStyle = 'rgba(214,255,248,0.75)';
+      for (let i = 0; i < sh.length; i += 2) { const ph = (Math.sin(t * 1.6 + sh[i] * 0.37 + sh[i + 1] * 0.11) + 1) / 2; if (ph > 0.6) ctx.fillRect(x0 + sh[i] - (ph > 0.85 ? 1 : 0), y0 + sh[i + 1], ph > 0.85 ? 3 : 2, 1); }
+    }
   };
 
   // a blueprint you don't know yet (or something nice if you know them all)
@@ -104,7 +168,7 @@
       G.UI.say(null, [lines ? U.pick(lines) : 'A blueprint. You can learn to make something new.']);
       G.UI.toast(`Found ${G.item(id).name}! Read it (E) to learn it.`, id);
     } else { G.Inv.giveOrDrop('lore_page', 1); G.S.gold += 500; G.UI.toast('An old lore page and a purse of 500 ✦ rest on the pedestal.', 'lore_page'); G.sfx('coin'); }
-    if (prop) { const v = G.Interiors.iaSprite('blueprint_pedestal', 1); prop.spr = v; prop.lights = []; }
+    if (prop) { const v = G.Interiors.iaSprite((prop.o && prop.o.id) || 'blueprint_pedestal', 1); prop.spr = v; prop.lights = []; } // its empty look
   }
 
   R.interact = async function (it, prop) {

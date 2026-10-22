@@ -1200,7 +1200,7 @@
   }
   // octagon-and-cabochon tiles: white glazed octagons with little cobalt diamonds where four meet
   function floorOctagon(w, h, seed) {
-    const P = new Pix(w, h), T = 16, C = 4;
+    const P = new Pix(w, h), T = 16, C = 3;
     const WT = ['#9aa0ae', '#b8bdc8', '#d2d6de', '#e4e6ec', '#f0f1f5', '#fafbfc'];
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const lx = ((x % T) + T) % T, ly = ((y % T) + T) % T, cx = Math.min(lx, T - 1 - lx), cy = Math.min(ly, T - 1 - ly);
@@ -1442,5 +1442,722 @@
     P.ell(11.5, b - 18, 1.8, 1.8, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.5 ? BRASS[4] : '#c4e6ff')); P.line(10, b - 16, 8, b - 14, BIRCH[1]);
     P.outline(OUT); P.shadow(8, b, 7, 1.4);
     return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('rug_c', 1, () => {
+    const W = 64, H = 32, P = new Pix(W, H);
+    // a cobalt rug with a white key border and a ring of stars around a white crescent
+    for (let y = 1; y < H - 1; y++) for (let x = 2; x < W - 2; x++) {
+      const e = Math.min(x - 2, y - 1, W - 3 - x, H - 2 - y);
+      let c = e === 0 ? DELFT[1] : e <= 3 ? (((x + y) % 4 < 2) !== (e === 2) ? '#f2f4f8' : DELFT[2]) : e === 4 ? DELFT[5] : DELFT[2];
+      if (e > 4 && noise(x / 6, y / 4, 5) > 0.7) c = DELFT[3];
+      P.set(x, y, c);
+    }
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2, sx = 31.5 + Math.cos(a) * 15, sy = 15.5 + Math.sin(a) * 6.5; P.set(sx, sy, '#ffffff'); P.set(sx - 1, sy, DELFT[5]); P.set(sx + 1, sy, DELFT[5]); P.set(sx, sy - 1, DELFT[5]); P.set(sx, sy + 1, DELFT[5]); }
+    stamp(P, 29, 12, ['.##..', '#....', '#....', '#....', '.##..'], { '#': '#f6f8fc' }); P.set(29, 12, LEMON[3]);
+    for (let y = 4; y < H - 4; y++) if (y % 2) { P.set(0, y, '#e8ecf4'); P.set(1, y, '#c8ccd8'); P.set(W - 1, y, '#c8ccd8'); P.set(W - 2, y, '#e8ecf4'); }
+    return sprite({ c: P.canvas(), ax: 32, ay: H - 1, foot: [4, 2], solid: false, flat: true });
+  });
+
+  def('floor_lamp_c', 1, () => {
+    const W = 16, H = 40, b = H - 1, P = new Pix(W, H);
+    // a slim brass floor lamp with a pleated white shade
+    P.ell(7.5, b - 1, 4, 1.4, (x, y, nx, ny) => P.set(x, y, ny < 0 ? BRASS[5] : BRASS[3]));
+    for (let y = 12; y <= b - 2; y++) { P.set(7, y, BRASS[4]); P.set(8, y, BRASS[2]); }
+    for (let j = 0; j < 9; j++) { const y = 3 + j, hw = 3 + j * 0.45; for (let x = Math.round(7.5 - hw); x <= Math.round(7.5 + hw) - 1; x++) { const rel = (x - (7.5 - hw)) / (2 * hw); P.set(x, y, (x % 2 === 0) ? (rel < 0.4 ? '#ffffff' : '#e4e8f0') : rel < 0.3 ? '#f4f6fa' : rel < 0.75 ? '#e8ecf4' : '#c8cede'); } }
+    P.hline(3, 12, 12, DELFT[2]); P.hline(4, 11, 3, DELFT[2]);
+    P.set(7, 13, '#fff4d0'); P.set(8, 13, '#ffe8b0');
+    P.outline(OUT); P.shadow(9, b, 5, 1.3);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(7.5, 10, 64, [255, 228, 180], 0.75, 1), L(7.5, 14, 18, [255, 240, 210], 0.35)] });
+  });
+
+  def('book_pile_c', 1, () => {
+    const W = 16, H = 24, b = H - 1, P = new Pix(W, H);
+    let y = b - 1;
+    for (const [x0, wd, th, R] of [[1, 13, 3, DELFT.slice(1)], [2, 11, 2, PLASTER.slice(1)], [2, 12, 3, BIRCH.slice(1)], [3, 10, 2, DELFT.slice(0, 6)], [4, 8, 2, LEMON.concat(['#fff4b0', '#fffad8'])]]) { flatBook(P, x0, y, wd, th, R, true); y -= th; }
+    P.hline(5, 9, y, '#ffffff'); lathe(P, 7.5, y, 3, () => 2, ['#c8ccd8', '#e6e8f0', '#ffffff']); P.set(6, y - 1, DELFT[2]); P.set(8, y - 2, DELFT[2]); P.set(10, y - 2, '#e6e8f0'); P.set(10, y - 1, '#c8ccd8');
+    P.outline(OUT); P.shadow(9, b, 7, 1.4);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  // ================================================================== rare floors: shared bits
+  // a floor kind that also hands the Depths renderer a list of glinting water pixels (js/world/rare.js draws them)
+  function withShimmer(P, pts) { const mk = P.canvas; P.canvas = function () { const c = mk.call(this); c.shimmer = pts; return c; }; return P; }
+  // irregular blob test: inside an ellipse whose edge wobbles with noise
+  const blob = (x, y, b2, seed) => { const nx = (x - b2[0]) / b2[2], ny = (y - b2[1]) / b2[3]; return Math.sqrt(nx * nx + ny * ny) + (noise(x / 9, y / 7, seed) - 0.5) * 0.55; };
+
+  // ================================================================== the Sunken Observatory, look B: the Tidal Observatory
+  const SEA = ['#18262e', '#22363e', '#2e4850', '#3c5c62', '#4c7074', '#5e8686', '#74a09c', '#90bab2'];
+  const AQUA = ['#08202c', '#0c3442', '#124c5a', '#1a6874', '#288a90', '#40aaa8', '#6cc8c0', '#a8e8dc', '#e4fff8'];
+  const VERD = ['#163a34', '#1e5448', '#2a7060', '#3a8c78', '#56a890', '#7cc4a8', '#aee0c8']; // verdigris
+  const PEARL = ['#8c8aa8', '#b2b0c8', '#d4d2e4', '#ecebf4', '#ffffff'];
+  const CORAL = ['#5a2430', '#8a3a44', '#b85a5a', '#dc8270', '#f4ac90'];
+  const TIDE_POOLS = [[176, 46, 46, 17], [48, 170, 40, 17], [292, 106, 32, 22], [110, 18, 16, 8], [236, 190, 18, 10], [300, 30, 18, 10]];
+  function floorTidal(w, h, seed) {
+    // the observatory's marble grid, drowned: pale sea-marble squares, verdigris seams, pearl stars, cracks and tide pools
+    const P = new Pix(w, h), T = 32;
+    const MA = ['#4c766e', '#5a867c', '#6a968a', '#7aa698', '#8cb4a6'], MB = ['#34524e', '#3e605a', '#4a6e66', '#567c72', '#628a7e'];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const tx = Math.floor(x / T), ty = Math.floor(y / T), lx = x - tx * T, ly = y - ty * T, R = (tx + ty) & 1 ? MB : MA;
+      let c = rampAt(R, 0.25 + fbm(x / 12 + tx * 3, y / 12 + ty * 5, seed) * 0.6, x, y);
+      const vein = Math.abs(noise(x / 8 + tx * 7, y / 5 + ty * 3, seed + 2) - 0.5);
+      if (vein < 0.016) c = R[1]; else if (vein < 0.03 && bay(x, y) < 0.3) c = R[2];
+      if (lx === 1 || ly === 1) c = R[4]; else if (lx === T - 1 || ly === T - 1) c = R[0];
+      if (lx === 0 || ly === 0) c = noise(x / 6, y / 6, seed + 4) > 0.6 ? VERD[1] : hash(x, y, seed) < 0.08 ? BRASS[3] : VERD[2];
+      P.set(x, y, c);
+    }
+    // cracks across a few tiles, and a couple of tiles lost altogether
+    for (let k = 0; k < (w * h) / 5000; k++) {
+      let x = Math.floor(hash(k, 1, seed + 5) * w), y = Math.floor(hash(k, 2, seed + 5) * h);
+      for (let i = 0; i < 14; i++) { P.set(x, y, '#203634'); P.set(x + 1, y, '#5e8a80'); x += hash(k, i, seed + 6) < 0.5 ? 1 : 0; y += hash(k, i, seed + 7) < 0.6 ? 1 : -1; }
+    }
+    // pearl stars set where four squares meet
+    for (let ty = 0; ty * T <= h; ty++) for (let tx = 0; tx * T <= w; tx++) {
+      const sx = tx * T, sy = ty * T;
+      for (const [dx, dy] of [[0, -2], [0, 2], [-2, 0], [2, 0]]) P.set(sx + dx, sy + dy, PEARL[2]);
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) P.set(sx + dx, sy + dy, PEARL[3]);
+      P.set(sx, sy, '#ffffff');
+    }
+    const shimmer = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let d = 9; for (const b2 of TIDE_POOLS) d = Math.min(d, blob(x, y, b2, seed + 3));
+      if (d < 0.86) { // shallow water: deeper toward the middle, stars reflected in it
+        const depth = clamp((0.86 - d) / 0.86, 0, 1), caus = noise(x / 6, y / 4, seed + 9);
+        let c = rampAt(AQUA, 0.22 + depth * 0.42 + (caus - 0.5) * 0.18, x, y);
+        if (hash(x, y, seed + 11) < 0.008) c = AQUA[8];
+        P.set(x, y, c);
+        if (depth > 0.2 && hash(x, y, seed + 12) < 0.012) shimmer.push(x, y);
+      } else if (d < 0.95) P.set(x, y, hash(x, y, seed + 13) < 0.4 ? AQUA[7] : AQUA[5]); // the bright wet rim
+      else if (d < 1.14) P.dark(x, y, 0.26); // damp stone
+      else if (d < 1.4 && noise(x / 4, y / 4, seed + 14) > 0.55) P.tint(x, y, VERD[3], 0.25); // algae creeping out of the water
+    }
+    // seaweed strands and little shells on the stone
+    for (let k = 0; k < (w * h) / 1400; k++) {
+      const x = 4 + Math.floor(hash(k, 1, seed + 15) * (w - 8)), y = 6 + Math.floor(hash(k, 2, seed + 15) * (h - 10));
+      let d = 9; for (const b2 of TIDE_POOLS) d = Math.min(d, blob(x, y, b2, seed + 3)); if (d < 1.05) continue;
+      if (k % 3) { for (let j = 0; j < 4 + (k % 3); j++) P.set(x + Math.round(Math.sin(j * 0.9 + k) * 0.8), y - j, j % 2 ? VERD[3] : VERD[2]); }
+      else { P.set(x, y, PEARL[3]); P.set(x + 1, y, PEARL[2]); P.set(x, y - 1, CORAL[4]); }
+    }
+    return withShimmer(P, shimmer);
+  }
+  FLOORS.observatory_b = floorTidal;
+
+  def('orrery_big_b', 1, () => {
+    const W = 36, H = 52, b = H - 1, cx = 18, cy = b - 30;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a barnacled stone plinth standing in the shallows
+      P.ell(cx, b - 3, 16, 3.6, (x, y, nx, ny) => P.set(x, y, (Math.round(Math.atan2(ny, nx) * 6 + f) & 1) && nx * nx + ny * ny > 0.7 ? AQUA[7] : AQUA[5]));
+      for (let y = b - 13; y <= b - 4; y++) for (let x = 7; x <= 28; x++) { const nx = (x - cx) / 11; P.set(x, y, y === b - 13 ? SEA[7] : nx < -0.6 ? SEA[6] : nx > 0.6 ? SEA[3] : SEA[5]); }
+      for (const [bx, by] of [[9, b - 6], [12, b - 5], [25, b - 7], [22, b - 5], [27, b - 9]]) { P.set(bx, by, PEARL[3]); P.set(bx + 1, by, PEARL[1]); P.set(bx, by - 1, PEARL[4]); }
+      for (let x = 8; x <= 27; x += 3) P.set(x, b - 4, VERD[3]);
+      P.ell(cx, b - 14, 6, 1.6, (x, y) => P.set(x, y, VERD[4]));
+      for (let y = cy + 4; y <= b - 15; y++) { P.set(cx - 1, y, VERD[5]); P.set(cx, y, VERD[3]); P.set(cx + 1, y, VERD[2]); }
+      // verdigris rings, sea-glass planets and seven pearl moons around a glowing moonpearl
+      const rings = [[15, 4.4, 0.8], [10.5, 3.2, -1.2], [6.2, 2.2, 0.6]];
+      const ring = (rx, ry, tl, front) => { for (let a = 0; a < 150; a++) { const t = a / 150 * Math.PI * 2; if ((Math.sin(t) > 0) !== front) continue; P.set(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry + Math.cos(t) * tl), front ? VERD[5] : VERD[2]); } };
+      const pl = [[15, 4.4, 0.8, f * Math.PI / 2 + 0.5, AQUA, 1.8], [10.5, 3.2, -1.2, -f * Math.PI / 2 + 2.1, CORAL, 1.4], [6.2, 2.2, 0.6, f * Math.PI / 2 + 4, VERD, 1.1]];
+      const planets = (front) => pl.forEach(([rx, ry, tl, t, C, r]) => { if ((Math.sin(t) > 0) !== front) return; const ppx = cx + Math.cos(t) * rx, ppy = cy + Math.sin(t) * ry + Math.cos(t) * tl; P.line(cx, cy, ppx, ppy, VERD[3]); P.ell(ppx, ppy, r, r, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? C[C.length - 1] : lit(nx, ny) > -0.3 ? C[C.length - 2] : C[C.length - 3])); });
+      const moons = (front) => { for (let k = 0; k < 7; k++) { const t = (k / 7) * Math.PI * 2 + f * Math.PI / 14; if ((Math.sin(t) > 0) !== front) continue; P.set(Math.round(cx + Math.cos(t) * 12.8), Math.round(cy + 0.5 + Math.sin(t) * 3.8 + Math.cos(t) * 0.8), front ? PEARL[4] : PEARL[1]); } };
+      rings.forEach(([rx, ry, tl]) => ring(rx, ry, tl, false)); moons(false); planets(false);
+      P.ell(cx, cy, 3.6, 3.6, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.5 ? '#ffffff' : lit(nx, ny) > 0 ? PEARL[3] : lit(nx, ny) > -0.5 ? PEARL[2] : PEARL[1]));
+      rings.forEach(([rx, ry, tl]) => ring(rx, ry, tl, true)); moons(true); planets(true);
+      for (const [sx, sy] of [[6, b - 12], [28, b - 10]]) { stamp(P, sx - 2, sy - 2, ['..#..', '#####', '.###.', '#.#.#'], { '#': CORAL[3] }); P.set(sx, sy - 1, CORAL[4]); }
+      P.outline(OUT); P.shadow(cx + 1, b, 16, 2);
+      return P;
+    };
+    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(18, b - 30, 64, [170, 240, 230], 0.65), L(18, b - 4, 40, [90, 210, 200], 0.4)] }, draw, 4, 3);
+  });
+
+  def('great_telescope_b', 1, () => {
+    const W = 40, H = 40, b = H - 1, P = new Pix(W, H);
+    // a great telescope toppled from its mount, lying across the stones, green with verdigris and draped in kelp
+    for (let y = b - 9; y <= b - 2; y++) for (let x = 25; x <= 37; x++) { const nx = (x - 31) / 6.5; if (y < b - 9 + Math.abs(nx) * 3) continue; P.set(x, y, y === b - 9 ? SEA[7] : nx < -0.5 ? SEA[6] : SEA[4]); }
+    for (const [bx, by] of [[27, b - 4], [33, b - 3], [35, b - 6]]) { P.set(bx, by, PEARL[3]); P.set(bx + 1, by, PEARL[1]); }
+    const A = [32, b - 11], B2 = [3, b - 22], len = Math.hypot(B2[0] - A[0], B2[1] - A[1]), dx = (B2[0] - A[0]) / len, dy = (B2[1] - A[1]) / len, nx = -dy, ny = dx;
+    for (let t = 0; t <= len; t += 0.4) {
+      const hw = 2.4 + (t / len) * 1.8 + (t > len - 4 ? 1 : 0);
+      for (let o = -hw; o <= hw; o += 0.4) {
+        const x = Math.round(A[0] + dx * t + nx * o), y = Math.round(A[1] + dy * t + ny * o), rel = o / hw;
+        let c = rel < -0.5 ? VERD[5] : rel < 0 ? VERD[4] : rel < 0.55 ? VERD[3] : VERD[2];
+        if (Math.round(t) % 10 === 5) c = rel < 0 ? BRASS[4] : BRASS[2];
+        if (noise(x / 3, y / 3, 61) > 0.72) c = rel < 0 ? BRASS[3] : COPPER[2];
+        P.set(x, y, c);
+      }
+    }
+    P.ell(B2[0] + 0.5, B2[1] + 0.5, 3, 3.4, (x, y, nx2, ny2) => P.set(x, y, nx2 * nx2 + ny2 * ny2 > 0.6 ? VERD[2] : nx2 + ny2 < -0.2 ? '#c4f0ff' : '#1e3a5a'));
+    for (const [kx, len2] of [[12, 9], [16, 7], [21, 8]]) { const ky = Math.round(A[1] + (B2[1] - A[1]) * ((A[0] - kx) / (A[0] - B2[0]))) - 1; for (let j = 0; j < len2; j++) P.set(kx + Math.round(Math.sin(j * 0.8) * 0.8), ky + j, j % 2 ? VERD[2] : VERD[4]); }
+    stamp(P, 23, b - 22, ['..#..', '.###.', '#####', '.#.#.', '#...#'], { '#': (i, j) => (j < 2 ? CORAL[4] : CORAL[3]) });
+    P.ell(8, b - 3, 3.6, 2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? PEARL[3] : PEARL[1])); P.set(7, b - 4, PEARL[4]);
+    P.outline(OUT); P.shadow(20, b, 18, 2.2);
+    return sprite({ c: P.canvas(), ax: 16, ay: b, foot: [2, 2], solid: true });
+  });
+
+  def('blueprint_pedestal_b', 2, (v) => {
+    const W = 18, H = 32, b = H - 1;
+    const draw = (f) => {
+      const P = new Pix(W, H), cx = 8.5;
+      // a barnacled stone column holding a giant clam, its lid thrown open: a glowing blueprint inside (v0) or a pearl (v1)
+      for (let y = b - 3; y <= b - 1; y++) for (let x = 3; x <= 14; x++) P.set(x, y, y === b - 3 ? SEA[7] : x <= 4 ? SEA[6] : x >= 13 ? SEA[2] : SEA[5]);
+      for (let y = b - 13; y <= b - 4; y++) for (let x = 5; x <= 12; x++) P.set(x, y, SEA[[7, 6, 5, 6, 5, 4, 3, 2][x - 5]]);
+      for (const [bx, by] of [[6, b - 6], [10, b - 10], [11, b - 5]]) { P.set(bx, by, PEARL[3]); P.set(bx + 1, by, PEARL[1]); }
+      for (let x = 5; x <= 12; x += 2) P.set(x, b - 13, VERD[3]);
+      // the open lid: a scallop fan rising from the hinge, its pearly inside toward us, ribs in rose and pearl
+      for (let y = b - 30; y <= b - 17; y++) for (let x = 0; x <= 17; x++) {
+        const dx = x - cx, dy = (b - 16) - y, r = Math.hypot(dx * 0.95, dy), a = Math.atan2(dy, dx);
+        if (dy < 1 || a < 0.16 || a > Math.PI - 0.16) continue;
+        const wf = (a - 0.16) / ((Math.PI - 0.32) / 9), wi = Math.floor(wf), wc = wf - wi - 0.5;
+        const rim = 12.4 - wc * wc * 5;
+        if (r > rim) continue;
+        let c = wi % 2 ? '#e4b4cc' : '#fbeaf4';
+        if (r > rim - 1.1) c = wi % 2 ? '#a87098' : '#c890b4';
+        else if (Math.abs(wc) > 0.4) c = '#c890b4';
+        else if (r < 3.5) c = '#f6dcea';
+        P.set(x, y, c);
+      }
+      for (const [ex, d] of [[cx - 4, -1], [cx + 4, 1]]) for (let j = 0; j < 3; j++) P.set(ex + d * j * 0.5, b - 17 - j, '#c890b4');
+      // the lower shell: a shallow bowl with a ribbed outer rim
+      P.ell(cx, b - 16, 7.4, 2.8, (x, y, nx, ny) => P.set(x, y, ny > 0.35 ? ((Math.round(nx * 7) & 1) ? '#9a7096' : '#b48ab0') : ny > -0.2 ? '#e4c6dc' : '#f4e2ee'));
+      if (v === 0) {
+        for (let x = 5; x <= 12; x++) { P.set(x, b - 18, '#8ad8ff'); P.set(x, b - 17, x % 3 === 0 ? '#ffffff' : '#4aa8e8'); }
+        P.set(4, b - 18, '#e0f6ff'); P.set(13, b - 17, '#2a6a9a'); P.vline(9, b - 19, b - 17, GOLD[4]);
+      } else P.ell(cx, b - 17.6, 1.7, 1.5, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.2 ? '#ffffff' : PEARL[2]));
+      P.outline(OUT);
+      if (v === 0) { const a = f ? 170 : 110; for (const [x, y] of [[3, b - 20], [14, b - 19], [6, b - 22], [11, b - 23]]) if (!P.has(x, y)) P.set(x, y, '#8ad0ff', a); }
+      P.shadow(9, b, 6, 1.5);
+      return P;
+    };
+    if (v === 0) return build({ ax: 9, ay: b, foot: [1, 1], solid: true, lights: [L(9, b - 18, 36, [120, 210, 255], 0.65)] }, draw, 2, 2);
+    return sprite({ c: draw(0).canvas(), ax: 9, ay: b, foot: [1, 1], solid: true, lights: [L(9, b - 18, 18, [220, 220, 255], 0.35)] });
+  });
+
+  def('astrolabe_b', 1, () => {
+    const W = 16, H = 32, b = H - 1, P = new Pix(W, H), cy = b - 20;
+    // a ship's armillary on a driftwood post, crusted with barnacles
+    for (let y = b - 12; y <= b - 1; y++) { P.set(7, y, '#9a8a7a'); P.set(8, y, '#6a5a4c'); } P.hline(5, 10, b - 1, '#7a6a5c'); P.set(9, b - 7, PEARL[3]); P.set(6, b - 4, PEARL[3]);
+    P.ell(7.5, cy, 6, 6, (x, y, nx, ny) => { const d = Math.sqrt(nx * nx + ny * ny); if (d > 0.82) P.set(x, y, lit(nx, ny) > 0 ? VERD[5] : VERD[2]); else if (Math.abs(ny) < 0.12 || Math.abs(nx * 0.8 - ny * 0.6) < 0.1) P.set(x, y, VERD[4]); });
+    P.ell(7.5, cy, 1.4, 1.4, (x, y) => P.set(x, y, BRASS[4])); P.set(7, cy, GOLD[6]);
+    P.set(7, cy - 7, VERD[4]); P.set(8, cy - 7, VERD[2]);
+    P.outline(OUT); P.shadow(9, b, 5, 1.4);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('star_pool_b', 1, () => {
+    const W = 48, H = 40, cx = 23.5, cy = 19.5;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a round reflecting pool ringed in sea glass: the sky's constellations shine in the still water
+      P.ell(cx, cy, 23, 19, (x, y, nx, ny) => {
+        const d = Math.sqrt(nx * nx + ny * ny), a = Math.atan2(ny, nx);
+        let c;
+        if (d > 0.9) c = (Math.floor((a + Math.PI) / (Math.PI * 2) * 28) % 3 === 0) ? AQUA[6] : (Math.floor((a + Math.PI) / (Math.PI * 2) * 28) % 3 === 1 ? VERD[4] : PEARL[2]);
+        else if (d > 0.84) c = SEA[2];
+        else { c = rampAt(['#06141e', '#0a1e2c', '#0e2a3a', '#14384a'], 0.2 + (1 - d) * 0.6 + (noise(x / 5, y / 3, 41) - 0.5) * 0.2, x, y); if (Math.abs(d - 0.5 - (f % 4) * 0.08) < 0.03) c = '#1e4a5e'; }
+        P.set(x, y, c);
+      });
+      const cons = [[[12, 12], [16, 9], [20, 11], [19, 15]], [[29, 9], [33, 12], [35, 16], [31, 19], [28, 16]], [[14, 25], [18, 28], [22, 26], [26, 29], [30, 27]]];
+      for (const g of cons) { for (let k = 0; k + 1 < g.length; k++) { const [x0, y0] = g[k], [x1, y1] = g[k + 1], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 1; i < n; i++) if (i % 2) P.set(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), '#3a7a8a'); } g.forEach(([x, y], k) => { const tw = (k + f) % 4 === 0; P.set(x, y, tw ? '#ffffff' : '#c8f4ff'); if (tw) for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) P.set(x + ox, y + oy, '#7ad0e0'); }); }
+      P.ell(23.5, 19.5, 2.4, 2, (x, y, nx, ny) => P.set(x, y, nx + ny < -0.3 ? PEARL[4] : PEARL[3]));
+      return P;
+    };
+    return build({ ax: 24, ay: H - 1, foot: [3, 3], solid: false, flat: true, lights: [L(24, 20, 50, [110, 220, 230], 0.45)] }, draw, 4, 2);
+  });
+
+  def('moon_jelly_b', 2, (v) => {
+    const W = 16, H = 26, b = H - 1;
+    const draw = (f) => {
+      const P = new Pix(W, H), bob = [0, -1, -1, 0][f], C = v ? ['#6a4a8a', '#9a7ac0', '#c8a8ec', '#f0e2ff'] : ['#2a6a7a', '#4aa0b0', '#8ad8e0', '#e0fcff'];
+      // a moon jelly drifting in the damp air, softly glowing
+      P.ell(7.5, 8 + bob, 5.4, 3.8, (x, y, nx, ny) => { if (ny > 0.35) return; const d = nx * nx + ny * ny; P.set(x, y, d > 0.7 ? C[1] : lit(nx, ny) > 0.3 ? C[3] : C[2], 220); });
+      for (const [rx, ry] of [[-2, -1], [2, -1], [0, -2]]) P.set(7.5 + rx, 8 + bob + ry, C[0], 200);
+      for (let k = 0; k < 5; k++) { const tx = 4 + k * 2; for (let j = 0; j < 6 + (k % 2) * 3; j++) P.set(tx + Math.round(Math.sin((j + f + k) * 0.8) * 0.8), 10 + bob + j, C[j % 2 ? 1 : 2], 170 - j * 14); }
+      return P;
+    };
+    return build({ ax: 8, ay: b, foot: [1, 1], solid: false, overhead: true, lights: [L(7.5, 8, 30, v ? [200, 160, 255] : [120, 230, 240], 0.55, 1)] }, draw, 4, 2);
+  });
+
+  def('kelp_b', 2, (v) => {
+    const W = 16, H = 34, b = H - 1;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // tall ribbons of kelp swaying out of a crack in the floor
+      for (const [x0, len, ph] of (v ? [[5, 24, 0], [9, 30, 1.4], [11, 18, 2.7]] : [[4, 20, 0.6], [7, 28, 2], [10, 22, 3.3]])) for (let j = 0; j < len; j++) {
+        const x = x0 + Math.round(Math.sin(j * 0.35 + ph + f * 0.6) * 1.4 * (j / len)), y = b - 2 - j;
+        P.set(x, y, j % 4 === 0 ? VERD[5] : VERD[3]); P.set(x + 1, y, VERD[2]);
+        if (j % 6 === 3) P.set(x - 1, y, VERD[4]);
+      }
+      P.ell(7.5, b - 1, 5, 1.4, (x, y) => P.set(x, y, SEA[2]));
+      P.outline(OUT);
+      return P;
+    };
+    return build({ ax: 8, ay: b, foot: [1, 1], solid: true }, draw, 4, 2);
+  });
+
+  def('broken_column_b', 2, (v) => {
+    const W = 16, H = v ? 40 : 22, b = H - 1, P = new Pix(W, H);
+    // a fluted column snapped by the sea (v0 a stump, v1 standing), barnacled and weed-hung
+    const top = v ? 6 : b - 12;
+    for (let y = top; y <= b - 3; y++) for (let x = 3; x <= 12; x++) { const lx = x - 3; let c = SEA[[7, 6, 7, 5, 6, 4, 5, 3, 4, 2][lx]]; if (y === top && hash(x, 3, v) < 0.6) continue; P.set(x, y, c); }
+    for (let x = 2; x <= 13; x++) { P.set(x, b - 2, SEA[6]); P.set(x, b - 1, SEA[3]); }
+    for (let x = 3; x <= 12; x++) if (hash(x, 5, v) < 0.5) P.set(x, top + 1, SEA[2]);
+    for (const [bx, by] of [[4, b - 5], [10, b - 8], [6, top + 4], [11, b - 4]]) { P.set(bx, by, PEARL[3]); P.set(bx + 1, by, PEARL[1]); }
+    for (const [kx, ky, len] of [[5, top + 2, 6], [9, top + 1, 9]]) for (let j = 0; j < len; j++) P.set(kx + Math.round(Math.sin(j * 0.9) * 0.6), ky + j, j % 2 ? VERD[2] : VERD[4]);
+    P.outline(OUT); P.shadow(9, b, 6, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, fade: !!v });
+  });
+
+  def('soggy_books_b', 1, () => {
+    const W = 16, H = 24, b = H - 1, P = new Pix(W, H);
+    // a slumped stack of sea-stained books, a starfish asleep on top
+    let y = b - 1;
+    for (const [x0, wd, th, R] of [[1, 13, 3, TEALC], [2, 11, 3, ['#3a2a3a', '#5a4058', '#7a5a74', '#9a7890', '#b496aa', '#ccb4c2']], [1, 12, 2, VERD], [3, 10, 3, ['#4a3a2a', '#6a543a', '#8a704e', '#a88a62', '#c4a87c', '#dcc49a']]]) { flatBook(P, x0 + ((y % 3) - 1), y, wd, th, R.slice(1), true); y -= th; }
+    for (let x = 2; x <= 13; x++) if (hash(x, 1, 7) < 0.5) P.tint(x, b - 5, '#2a6a6a', 0.4);
+    stamp(P, 5, y - 4, ['..#..', '#####', '.###.', '#...#'], { '#': (i, j) => (j < 2 ? CORAL[4] : CORAL[3]) });
+    P.outline(OUT); P.shadow(9, b, 7, 1.4);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('shells_b', 2, (v) => {
+    const W = 16, H = 12, b = H - 1, P = new Pix(W, H);
+    // a scatter of shells and a little coral fan
+    if (v) { for (let j = 0; j < 7; j++) for (let i = -j; i <= j; i += 2) P.set(8 + i * 0.6, b - 1 - (7 - j), CORAL[(j + i) % 2 ? 3 : 4]); P.vline(8, b - 3, b - 1, CORAL[2]); }
+    else { P.ell(5, b - 2, 2.6, 1.8, (x, y, nx) => P.set(x, y, (Math.round(nx * 4) & 1) ? PEARL[3] : PEARL[2])); P.ell(11, b - 2, 1.8, 1.4, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? CORAL[4] : CORAL[3])); }
+    P.set(9, b - 1, PEARL[4]); P.set(3, b, AQUA[6]);
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: false });
+  });
+
+  // ================================================================== the Sunken Observatory, look C: the Sunstone Observatory
+  const SAND = ['#3e2620', '#5c3a2c', '#7c523c', '#9a6a4c', '#b6865e', '#d0a276', '#e6c094'];
+  const RSAND = ['#3e2226', '#5a3434', '#7a4a46', '#985e58', '#b47a6e', '#cc9686'];
+  const LAPIS = ['#0c1438', '#162258', '#203278', '#2c4498', '#4460b8', '#6c88d8', '#a0b8f0'];
+  function floorSunstone(w, h, seed) {
+    const P = new Pix(w, h), cx = w / 2, cy = h / 2, SQ = 0.72;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = x + 0.5 - cx, dy = (y + 0.5 - cy) / SQ, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), u = (a + Math.PI) / (Math.PI * 2);
+      let c;
+      if (r < 24) { // the sun: gold and copper rays round a bright heart
+        const ray = Math.abs(Math.sin(a * 8)), long = Math.abs(Math.sin(a * 4)) > 0.7;
+        if (r < 9) c = rampAt(GOLD, 0.95 - r / 9 * 0.35 + lit(dx / 9, dy / 9) * 0.1, x, y);
+        else if (r < 10.2) c = GOLD[3];
+        else c = (ray > 0.55 && (long || r < 18)) ? rampAt(GOLD, 0.7 - (r - 10) / 14 * 0.35, x, y) : rampAt(COPPER, 0.35 + noise(x / 4, y / 4, seed) * 0.2, x, y);
+        if (r > 23) c = GOLD[2];
+      } else if (r < 28) c = r < 25 || r > 27 ? GOLD[3] : (Math.round(u * 48) % 2 ? LAPIS[2] : GOLD[4]);
+      else if (r < 42) { // the zodiac: twelve sandstone panels, each with a lapis glyph
+        const sec = Math.floor(u * 12), su = u * 12 - sec;
+        c = su < 0.03 || su > 0.97 ? GOLD[3] : rampAt(SAND, 0.62 + fbm(x / 8, y / 8, seed + sec) * 0.25, x, y);
+        if (r < 29 || r > 41) c = GOLD[2];
+      } else if (r < 45) c = r < 43 ? COPPER[4] : COPPER[2];
+      else { // rings of sandstone blocks, a sunburst of lapis inlay running through them
+        const ring = Math.floor((r - 45) / 16), lr = (r - 45) - ring * 16, n = 10 + ring * 8, bi = Math.floor(u * n + ring * 0.37), bu = u * n + ring * 0.37 - bi;
+        const R = ring % 2 ? RSAND : SAND, t = hash(bi, ring, seed + 3);
+        let k = t < 0.25 ? 2 : t < 0.85 ? 3 : 4;
+        if (lr < 1.2) k = 0; else if (lr < 2.2) k++; else if (lr > 14.8) k--;
+        if (bu * (r * Math.PI * 2 / n) < 1.1) k = 0; else if (bu * (r * Math.PI * 2 / n) < 2.1) k++;
+        if (noise(x / 4, y / 3, seed + 7 + bi) > 0.8) k--;
+        c = R[clamp(k, 0, R.length - 1)];
+        if (Math.abs(Math.sin(a * 4)) < 0.012 * (120 / Math.max(40, r)) * 2.2 && lr > 1.2) c = LAPIS[3];
+      }
+      P.set(x, y, c);
+    }
+    // glyphs on the zodiac panels
+    for (let s2 = 0; s2 < 12; s2++) { const a = ((s2 + 0.5) / 12) * Math.PI * 2 - Math.PI, gx = cx + Math.cos(a) * 35, gy = cy + Math.sin(a) * 35 * SQ; stampRune(P, Math.round(gx - 2), Math.round(gy - 2), s2, LAPIS[3], LAPIS[5]); }
+    // dust in the corners and a few worn steps
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const wv = fbm(x / 26, y / 20, seed + 41); if (wv > 0.64) P.tint(x, y, '#f0d8b8', 0.08 + (bay(x, y) < (wv - 0.64) * 4 ? 0.05 : 0)); }
+    return P;
+  }
+  FLOORS.observatory_c = floorSunstone;
+
+  def('orrery_big_c', 1, () => {
+    const W = 36, H = 54, b = H - 1, cx = 18, cy = b - 31;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a terracotta drum with a carved band, a copper armillary round an ember sun, gold and lapis planets
+      for (let y = b - 12; y <= b - 2; y++) for (let x = 5; x <= 30; x++) { const nx = (x - cx) / 13; P.set(x, y, y === b - 12 ? TERRA[4] : nx < -0.6 ? TERRA[4] : nx > 0.6 ? TERRA[1] : y > b - 6 && y < b - 3 ? (x % 4 === 0 ? GOLD[2] : GOLD[3]) : TERRA[3]); }
+      P.ell(cx, b - 12, 13, 2.6, (x, y, nx, ny) => P.set(x, y, ny < 0 ? TERRA[4] : TERRA[3]));
+      P.ell(cx, b - 1.5, 13, 1.6, (x, y) => P.set(x, y, TERRA[1]));
+      for (let y = cy + 5; y <= b - 13; y++) { P.set(cx - 1, y, COPPER[5]); P.set(cx, y, COPPER[3]); P.set(cx + 1, y, COPPER[2]); }
+      const rings = [[15.5, 4.6, 1], [11, 3.2, -1.4], [6.8, 2.2, 0.7]];
+      const ring = (rx, ry, tl, front) => { for (let a = 0; a < 150; a++) { const t = a / 150 * Math.PI * 2; if ((Math.sin(t) > 0) !== front) continue; P.set(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry + Math.cos(t) * tl), front ? COPPER[5] : COPPER[2]); } };
+      const pl = [[15.5, 4.6, 1, f * Math.PI / 2 + 0.3, LAPIS, 1.8], [11, 3.2, -1.4, -f * Math.PI / 2 + 2.2, GOLD, 1.5], [6.8, 2.2, 0.7, f * Math.PI / 2 + 4.2, RSAND, 1.1]];
+      const planets = (front) => pl.forEach(([rx, ry, tl, t, C, r]) => { if ((Math.sin(t) > 0) !== front) return; const ppx = cx + Math.cos(t) * rx, ppy = cy + Math.sin(t) * ry + Math.cos(t) * tl; P.line(cx, cy, ppx, ppy, COPPER[3]); P.ell(ppx, ppy, r, r, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? C[C.length - 1] : lit(nx, ny) > -0.3 ? C[C.length - 2] : C[C.length - 3])); });
+      rings.forEach(([rx, ry, tl]) => ring(rx, ry, tl, false)); planets(false);
+      // the ember sun with a flickering corona
+      for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2 + f * 0.13, len2 = 5.4 + ((k + f) % 3) * 0.8; for (let t2 = 4; t2 < len2; t2 += 0.6) P.set(Math.round(cx + Math.cos(a) * t2), Math.round(cy + Math.sin(a) * t2), t2 > len2 - 1 ? ORANGE : AMBER); }
+      P.ell(cx, cy, 4.2, 4.2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.5 ? '#fff8e0' : lit(nx, ny) > 0 ? '#ffe08a' : lit(nx, ny) > -0.5 ? AMBER : ORANGE));
+      rings.forEach(([rx, ry, tl]) => ring(rx, ry, tl, true)); planets(true);
+      P.outline(OUT); P.shadow(cx + 1, b, 15, 2);
+      return P;
+    };
+    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(18, b - 31, 74, [255, 168, 90], 0.8, 1), L(18, b - 31, 24, [255, 236, 190], 0.5)] }, draw, 4, 4);
+  });
+
+  def('great_telescope_c', 1, () => {
+    const W = 36, H = 58, b = H - 1, P = new Pix(W, H);
+    // a long bronze telescope banded in lapis, on a stepped sandstone mount carved with a sun
+    for (let y = b - 8; y <= b - 1; y++) for (let x = 3; x <= 32; x++) P.set(x, y, y === b - 8 ? SAND[6] : x <= 5 ? SAND[5] : x >= 30 ? SAND[2] : y === b - 1 ? SAND[2] : SAND[4]);
+    for (let y = b - 15; y <= b - 9; y++) for (let x = 8; x <= 27; x++) P.set(x, y, y === b - 15 ? SAND[6] : x <= 9 ? SAND[5] : x >= 26 ? SAND[2] : SAND[4]);
+    P.ell(18, b - 4.5, 3, 2.4, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.5 ? GOLD[3] : GOLD[5]));
+    for (const yx of [13, 22]) for (let y = b - 24; y <= b - 16; y++) { P.set(yx, y, COPPER[4]); P.set(yx + 1, y, COPPER[2]); }
+    const A = [9, b - 19], B2 = [30, 4], len = Math.hypot(B2[0] - A[0], B2[1] - A[1]), dx = (B2[0] - A[0]) / len, dy = (B2[1] - A[1]) / len, nx = -dy, ny = dx;
+    for (let t = 0; t <= len; t += 0.4) {
+      const hw = 2.2 + (t / len) * 1.3 + (t > len - 4 ? 0.8 : 0);
+      for (let o = -hw; o <= hw; o += 0.4) {
+        const x = Math.round(A[0] + dx * t + nx * o), y = Math.round(A[1] + dy * t + ny * o), rel = o / hw;
+        let c = rel > 0.5 ? COPPER[5] : rel > 0 ? COPPER[4] : rel > -0.55 ? COPPER[3] : COPPER[2];
+        if (Math.round(t) % 9 === 4) c = rel > 0 ? LAPIS[5] : LAPIS[3];
+        P.set(x, y, c);
+      }
+    }
+    P.ell(B2[0] + 0.5, B2[1] - 0.5, 2.2, 2.2, (x, y, nx2, ny2) => P.set(x, y, nx2 + ny2 < -0.2 ? '#ffe8c0' : '#5a2a1a'));
+    P.ell(18, b - 22, 2, 2, (x, y, nx2) => P.set(x, y, nx2 < 0 ? GOLD[5] : GOLD[3]));
+    P.outline(OUT); P.shadow(18, b, 16, 2.4);
+    return sprite({ c: P.canvas(), ax: 16, ay: b, foot: [2, 2], solid: true, fade: true });
+  });
+
+  def('blueprint_pedestal_c', 2, (v) => {
+    const W = 16, H = 32, b = H - 1;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a sandstone pillar with a lapis band, crowned by a gold sun cradle holding a blueprint (v0) or nothing (v1)
+      for (let y = b - 3; y <= b - 1; y++) for (let x = 2; x <= 13; x++) P.set(x, y, y === b - 3 ? SAND[6] : x <= 3 ? SAND[5] : x >= 12 ? SAND[2] : SAND[4]);
+      for (let y = b - 15; y <= b - 4; y++) for (let x = 4; x <= 11; x++) P.set(x, y, y > b - 10 && y < b - 7 ? LAPIS[[5, 4, 4, 3, 3, 2, 2, 1][x - 4]] : SAND[[6, 5, 5, 4, 4, 3, 3, 2][x - 4]]);
+      for (let y = b - 17; y <= b - 16; y++) for (let x = 3; x <= 12; x++) P.set(x, y, y === b - 17 ? SAND[6] : SAND[3]);
+      for (let k = 0; k < 7; k++) { const a = Math.PI + (k / 6) * Math.PI; for (let t = 4; t <= 6.5; t += 0.7) P.set(Math.round(7.5 + Math.cos(a) * t), Math.round(b - 18 + Math.sin(a) * t * 0.7), GOLD[t > 5.5 ? 5 : 4]); }
+      P.ell(7.5, b - 18.5, 4, 1.6, (x, y, nx, ny) => P.set(x, y, ny < 0 ? GOLD[5] : GOLD[3]));
+      if (v === 0) {
+        for (let x = 4; x <= 11; x++) { P.set(x, b - 20, '#8ac8ff'); P.set(x, b - 19, x % 3 === 0 ? '#ffffff' : '#4a8ae8'); }
+        P.set(3, b - 20, '#e0f0ff'); P.set(12, b - 19, '#2a4a9a'); P.vline(8, b - 21, b - 19, GOLD[6]);
+      }
+      P.outline(OUT);
+      if (v === 0) { const a = f ? 170 : 110; for (const [x, y] of [[2, b - 22], [13, b - 21], [6, b - 24], [10, b - 24]]) if (!P.has(x, y)) P.set(x, y, '#8ad0ff', a); }
+      P.shadow(9, b, 6, 1.5);
+      return P;
+    };
+    if (v === 0) return build({ ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 19, 36, [120, 200, 255], 0.6)] }, draw, 2, 2);
+    return sprite({ c: draw(0).canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('astrolabe_c', 1, () => {
+    const W = 16, H = 34, b = H - 1, P = new Pix(W, H), cy = b - 22;
+    // a gold astrolabe, its rete pierced with star points, raised on a lapis column
+    for (let y = b - 3; y <= b - 1; y++) for (let x = 3; x <= 12; x++) P.set(x, y, y === b - 3 ? SAND[6] : x <= 4 ? SAND[5] : x >= 11 ? SAND[2] : SAND[4]);
+    for (let y = b - 14; y <= b - 4; y++) for (let x = 6; x <= 9; x++) P.set(x, y, LAPIS[[5, 4, 3, 2][x - 6]]);
+    P.hline(5, 10, b - 15, GOLD[4]); P.hline(5, 10, b - 14, GOLD[2]);
+    P.ell(7.5, cy, 6.4, 6.4, (x, y, nx, ny) => { const d = Math.sqrt(nx * nx + ny * ny), a = Math.atan2(ny, nx); let c = d > 0.85 ? (Math.round(a * 12 / Math.PI) % 2 ? GOLD[5] : GOLD[4]) : d > 0.76 ? GOLD[2] : LAPIS[2]; if (d < 0.76 && Math.abs(Math.hypot(nx - 0.15, ny + 0.2) - 0.45) < 0.09) c = GOLD[5]; if (d < 0.76 && Math.abs(nx * 0.7 + ny * 0.7) < 0.07) c = GOLD[4]; P.set(x, y, c); });
+    for (const [sx, sy] of [[5, cy - 2], [10, cy + 1], [8, cy + 3], [4, cy + 2]]) P.set(sx, sy, '#fff4c8');
+    P.set(7, cy, GOLD[6]); P.set(8, cy, GOLD[4]);
+    P.ell(7.5, cy - 7.6, 1.4, 1.2, (x, y, nx, ny) => { if (nx * nx + ny * ny > 0.3) P.set(x, y, GOLD[4]); });
+    P.outline(OUT); P.shadow(9, b, 5, 1.4);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('brazier_c', 1, () => {
+    const W = 16, H = 32, b = H - 1;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a copper brazier on three legs, its fire low and steady
+      P.line(5, b - 9, 2, b, COPPER[4]); P.line(10, b - 9, 13, b, COPPER[2]); P.line(7.5, b - 9, 7.5, b - 1, COPPER[3]);
+      P.ell(7.5, b - 11, 6, 2.6, (x, y, nx, ny) => P.set(x, y, ny > 0.2 ? COPPER[2] : lit(nx, ny) > 0.2 ? COPPER[5] : COPPER[3]));
+      for (let x = 2; x <= 13; x++) P.set(x, b - 12, x < 5 ? COPPER[5] : COPPER[4]);
+      for (let k = 0; k < 4; k++) { const fx = 4 + k * 2 + (k > 1 ? 1 : 0); flame(P, fx, b - 13, (f + k) % 4, 'ember', k === 1 || k === 2 ? 2 : 1); }
+      P.ell(7.5, b - 12.4, 4.4, 1, (x, y) => P.set(x, y, (x + f) % 2 ? '#ffbc62' : '#e8843c'));
+      P.outline(OUT);
+      for (let j = 0; j < 3; j++) { const x = 7 + Math.round(Math.sin((j + f) * 1.1)), y = b - 21 - j * 2 - (f % 2); if (!P.has(x, y)) P.set(x, y, '#ffd890', 140 - j * 40); }
+      P.shadow(9, b, 6, 1.5);
+      return P;
+    };
+    return build({ ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(7.5, b - 15, 64, [255, 160, 80], 0.85, 1)] }, draw, 4, 7);
+  });
+
+  def('obelisk_c', 1, () => {
+    const W = 16, H = 46, b = H - 1, P = new Pix(W, H);
+    // a sandstone obelisk cut with lapis glyphs, capped in gold
+    for (let y = b - 4; y <= b - 1; y++) for (let x = 2; x <= 13; x++) P.set(x, y, y === b - 4 ? SAND[6] : x <= 3 ? SAND[5] : x >= 12 ? SAND[2] : SAND[4]);
+    for (let y = 8; y <= b - 5; y++) { const hw = 3.2 + (y - 8) / (b - 13) * 1.4; for (let x = Math.round(7.5 - hw); x <= Math.round(7.5 + hw) - 1; x++) { const rel = (x - (7.5 - hw)) / (2 * hw); P.set(x, y, SAND[rel < 0.25 ? 6 : rel < 0.55 ? 5 : rel < 0.8 ? 4 : 3]); } }
+    for (let j = 0; j < 5; j++) { const hw = 3.2 * (j + 1) / 5; for (let x = Math.round(7.5 - hw); x <= Math.round(7.5 + hw) - 1; x++) P.set(x, 3 + j, x < 7.5 ? GOLD[5] : GOLD[3]); }
+    P.set(7, 2, GOLD[6]);
+    for (let k = 0; k < 4; k++) stampRune(P, 5, 12 + k * 7, k * 2 + 1, LAPIS[3], LAPIS[5]);
+    P.outline(OUT); P.shadow(9, b, 6, 1.6);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, fade: true });
+  });
+
+  def('scroll_rack_c', 1, () => {
+    const W = 16, H = 30, b = H - 1, P = new Pix(W, H), R = WOOD;
+    // a cedar rack of pigeonholes stuffed with star scrolls
+    for (let y = 3; y <= b - 1; y++) for (let x = 1; x <= 14; x++) P.set(x, y, x <= 2 ? R[4] : x >= 13 ? R[1] : R[0]);
+    for (let x = 1; x <= 14; x++) { P.set(x, 2, R[5]); P.set(x, 3, R[3]); }
+    for (const sy of [10, 17, 24]) for (let x = 3; x <= 12; x++) { P.set(x, sy, R[4]); P.set(x, sy + 1, R[2]); }
+    P.vline(7, 4, b - 2, R[3]); P.vline(8, 4, b - 2, R[1]);
+    for (const [x0, y0] of [[3, 9], [9, 9], [3, 16], [9, 16], [3, 23], [9, 23], [4, 28], [10, 28]]) {
+      for (const dx of [0, 2]) { const c = (x0 + y0 + dx) % 3 === 0 ? '#c8d8f0' : PAPER[3 + ((x0 + dx) % 2)]; P.ell(x0 + dx + 0.5, y0 - 1.5, 1.2, 1.2, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny < 0.3 ? '#8a7a6a' : c)); }
+    }
+    P.outline(OUT); P.shadow(9, b, 7, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('urn_c', 2, (v) => {
+    const W = 16, H = v ? 32 : 26, b = H - 1, P = new Pix(W, H);
+    // a terracotta urn painted with a little sun (v1 holds dried star-flowers)
+    lathe(P, 7.5, b - 1, 14, (j) => [2.4, 3.6, 4.4, 5, 5.2, 5.2, 5, 4.6, 4, 3.2, 2.4, 2, 2.4, 3][j], TERRA);
+    P.hline(4, 11, b - 14, TERRA[4]);
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; P.set(Math.round(7.5 + Math.cos(a) * 2.6), Math.round(b - 7 + Math.sin(a) * 2.2), GOLD[4]); }
+    P.ell(7.5, b - 7, 1.4, 1.2, (x, y) => P.set(x, y, GOLD[5]));
+    if (v) for (const [dx, h0] of [[-3, 12], [-1, 15], [1, 13], [3, 11]]) { P.line(7.5, b - 14, 7.5 + dx, b - 14 - h0, '#8a7a5a'); stamp(P, Math.round(7.5 + dx) - 1, b - 15 - h0, ['.#.', '#c#', '.#.'], { '#': '#e8d8a8', c: GOLD[4] }); }
+    P.outline(OUT); P.shadow(9, b, 6, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  // ================================================================== the Crystal Garden: shared bits
+  // a crystal flower's colours follow the gem it gives (rare.js: v0 amethyst, v1 emerald, v2 quartz)
+  const GEMC = [['#3a1e6a', '#5a3494', '#8058c4', '#ac8ae6', '#d4c0fa', '#f4ecff'], ['#0c4a30', '#167a4c', '#2aa86a', '#5ad696', '#a4f2c8', '#e8fff2'], ['#6a5a6a', '#9c8a9c', '#cabccc', '#e8dce8', '#f8f0f8', '#ffffff']];
+  const GEM_RGB = [[190, 150, 255], [100, 240, 170], [240, 220, 250]];
+  const MOSS = ['#14261c', '#1c3626', '#264a30', '#305e3a', '#3e7446', '#508a54', '#68a464'];
+  // a faceted crystal point from (x, by) up `h` px, w wide at the base, lit on its left face
+  function shard(P, x, by, h, w, C, lean) {
+    for (let j = 0; j < h; j++) {
+      const t = j / h, hw = Math.max(0.5, (w / 2) * (1 - t * t * 0.9)), cx = x + (lean || 0) * t * h * 0.3;
+      for (let i = Math.round(cx - hw); i <= Math.round(cx + hw) - (hw > 1 ? 1 : 0); i++) { const rel = (i + 0.5 - (cx - hw)) / (2 * hw); P.set(i, by - j, C[clamp(rel < 0.35 ? C.length - 2 : rel < 0.6 ? C.length - 3 : C.length - 4, 0, C.length - 1)]); }
+    }
+    P.set(Math.round(x + (lean || 0) * h * 0.3), by - h, C[C.length - 1]);
+  }
+
+  // ================================================================== the Crystal Garden, look B: the Rose Quartz Hollow
+  const ROSEROCK = ['#2a161e', '#3e222a', '#543036', '#6a4044', '#805254', '#966664', '#ac7c78'];
+  const RQ = ['#6a2a4a', '#9a4a6a', '#c87090', '#e89ab4', '#f8c4d4', '#ffe8f0'];
+  const PEACH = ['#6a3020', '#a4523a', '#d6805a', '#f2aa80', '#ffd2b0', '#fff0e0'];
+  function floorRoseHollow(w, h, seed) {
+    const P = new Pix(w, h);
+    // smooth rosy stones fitted together, soft moss in the seams, rose quartz sprouting here and there
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const gx0 = Math.floor(x / 14), gy0 = Math.floor(y / 11);
+      let d1 = 1e9, d2 = 1e9, best = 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const gx = gx0 + i, gy = gy0 + j, ox = gx * 14 + 2 + hash(gx, gy, seed) * 10, oy = gy * 11 + 2 + hash(gx, gy, seed + 1) * 7;
+        const d = Math.hypot((x - ox) * 0.8, y - oy);
+        if (d < d1) { d2 = d1; d1 = d; best = hash(gx, gy, seed + 2); } else if (d < d2) d2 = d;
+      }
+      const moss = fbm(x / 22, y / 16, seed + 5);
+      let c;
+      if (d2 - d1 < 1.3) c = moss > 0.5 ? MOSS[3] : ROSEROCK[0];
+      else {
+        let k = best < 0.3 ? 3 : best < 0.8 ? 4 : 5;
+        if (d2 - d1 < 3) k--; else if (d1 < 3) k++;
+        c = rampAt(ROSEROCK, (k + noise(x / 5, y / 5, seed + 3) * 0.8) / 7, x, y);
+        if (moss > 0.62) c = rampAt(MOSS, 0.4 + (moss - 0.62) * 2 + noise(x / 3, y / 3, seed + 6) * 0.2, x, y);
+      }
+      P.set(x, y, c);
+    }
+    // clover flowers in the moss, glints of quartz, and little rose quartz sprigs
+    for (let k = 0; k < (w * h) / 260; k++) {
+      const x = Math.floor(hash(k, 1, seed + 7) * w), y = Math.floor(hash(k, 2, seed + 7) * h);
+      if (fbm(x / 22, y / 16, seed + 5) > 0.62) { P.set(x, y, k % 3 ? '#fff4f8' : '#f8c4d4'); P.set(x + 1, y + 1, MOSS[5]); }
+      else if (k % 5 === 0) P.set(x, y, k % 2 ? RQ[5] : '#ffffff');
+    }
+    for (let k = 0; k < (w * h) / 900; k++) {
+      const x = 3 + Math.floor(hash(k, 1, seed + 9) * (w - 6)), y = 6 + Math.floor(hash(k, 2, seed + 9) * (h - 7));
+      for (const [dx, hh] of [[-1, 2], [0, 4], [1, 3]]) for (let j = 0; j < hh; j++) P.set(x + dx, y - j, j === hh - 1 ? RQ[5] : dx < 0 ? RQ[4] : dx > 0 ? RQ[2] : RQ[3]);
+      P.set(x - 1, y + 1, ROSEROCK[0]); P.set(x, y + 1, ROSEROCK[0]); P.set(x + 1, y + 1, ROSEROCK[0]);
+    }
+    return P;
+  }
+  FLOORS.crystal_b = floorRoseHollow;
+
+  def('fairy_fountain_b', 1, () => {
+    const W = 36, H = 48, b = H - 1, cx = 17.5;
+    const WT = ['#7a2a5a', '#b04a7a', '#e078a0', '#f8a8c4', '#ffd8e6', '#fff4f8'];
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a heart-shaped spring carved from rose quartz
+      const inHeart = (x, y, s2) => { const u = (x - cx) / (16 * s2), v = (y - (b - 9)) / (9 * s2); const X = u * 1.1, Y = -v * 1.25 + 0.25; return Math.pow(X * X + Y * Y - 1, 3) - X * X * Y * Y * Y < 0; };
+      for (let y = b - 20; y <= b; y++) for (let x = 0; x < W; x++) {
+        if (inHeart(x, y, 1)) { const inner = inHeart(x, y, 0.8); if (!inner) P.set(x, y, y > b - 6 ? RQ[2] : x < cx ? RQ[5] : RQ[3]); else { const d = Math.hypot((x - cx) / 12, (y - (b - 10)) / 6); let c = rampAt(WT, 0.3 + (1 - d) * 0.5, x, y); if (Math.abs(d * 4 - (f % 4) - 0.4) < 0.25) c = WT[5]; P.set(x, y, c); } }
+      }
+      for (let x = 2; x < W - 2; x++) for (let y = b - 3; y <= b; y++) if (inHeart(x, y, 1) && !inHeart(x, y + 1, 1)) P.set(x, y, RQ[1]);
+      // a small marble fairy holding up a shell, pink crystal wings, water trickling down
+      for (let y = b - 26; y <= b - 11; y++) { const hw = y > b - 14 ? 2.2 : 1.4; for (let x = Math.round(cx - hw); x <= Math.round(cx + hw) - 1; x++) P.set(x, y, x < cx ? '#ffffff' : '#d8d0e0'); }
+      P.ell(cx, b - 28, 2, 2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? '#ffffff' : '#d8d0e0'));
+      P.ell(cx, b - 30, 2.4, 1, (x, y) => P.set(x, y, '#e8d8a8'));
+      for (const d of [-1, 1]) { shard(P, cx + d * 5, b - 18, 8, 4, RQ, d * 0.9); shard(P, cx + d * 4, b - 15, 5, 3, RQ, d * 1.2); }
+      P.line(cx - 2, b - 24, cx - 4, b - 32, '#e8e0f0'); P.ell(cx - 4.5, b - 34, 3, 1.6, (x, y, nx) => P.set(x, y, nx < 0 ? '#fff0f6' : '#e8c8d8'));
+      for (let k = 0; k < 4; k++) { const y = b - 32 + ((f * 3 + k * 4) % 18); P.set(cx - 6 + (k % 2), y, '#ffe0f0'); }
+      P.outline(OUT);
+      for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + f * 0.5, r = 9 + (k % 2) * 4; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(b - 24 + Math.sin(a) * r * 0.5); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#ffd0e8' : '#ffffff'); }
+      P.shadow(cx + 1, b, 16, 2);
+      return P;
+    };
+    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(17.5, b - 10, 66, [255, 150, 200], 0.7), L(17.5, b - 26, 30, [255, 220, 240], 0.45, 1)] }, draw, 4, 4);
+  });
+
+  def('crystal_flower_b', 3, (v) => {
+    const W = 16, H = 26, b = H - 1, P = new Pix(W, H), C = GEMC[v], fy = b - 15;
+    // a crystal rose: faceted petals cupped round a bright heart, on a stem with two leaves
+    for (const [sx, sy] of [[4, b], [11, b], [8, b]]) P.ell(sx, sy - 1, 2.2, 1.1, (x, y, nx) => P.set(x, y, nx < 0 ? ROSEROCK[4] : ROSEROCK[2]));
+    for (let y = fy + 3; y <= b - 2; y++) { const x = Math.round(8 + Math.sin((y - fy) * 0.3) * 0.7); P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
+    stamp(P, 4, b - 9, ['..#', '.##', '###'], { '#': (i) => (i < 1 ? LEAF[5] : LEAF[3]) }); stamp(P, 10, b - 11, ['#..', '##.', '###'], { '#': (i) => (i > 1 ? LEAF[2] : LEAF[4]) });
+    // outer petals, then inner, then the bud
+    for (const [px0, py0, rx, ry, k] of [[5.5, fy + 1, 3, 2.6, 2], [10.5, fy + 1, 3, 2.6, 1], [8, fy + 2.4, 3.6, 2.2, 2], [6.6, fy - 1, 2.4, 2.4, 3], [9.6, fy - 1, 2.4, 2.4, 2], [8, fy - 2.2, 2, 2, 4]]) P.ell(px0, py0, rx, ry, (x, y, nx, ny) => P.set(x, y, C[clamp(k + (lit(nx, ny) > 0.3 ? 1 : lit(nx, ny) < -0.4 ? -1 : 0), 0, 5)]));
+    P.set(8, fy - 2, C[5]); P.set(7, fy - 3, '#ffffff');
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, fy, 30, GEM_RGB[v], 0.6)] });
+  });
+
+  def('glow_puff_b', 2, (v) => {
+    const W = 16, H = 16, b = H - 1, P = new Pix(W, H), C = v ? ['#7a4a6a', '#b07aa0', '#e4b0d4', '#fce0f2', '#ffffff'] : PEACH.slice(1);
+    // round glowing puffballs, freckled
+    for (const [x, y, r] of [[5, b - 4, 3.4], [10.5, b - 3, 2.6], [8.5, b - 7.5, 2.4], [3, b - 1.6, 1.6]]) {
+      P.ell(x, y, r, r * 0.9, (xx, yy, nx, ny) => P.set(xx, yy, C[lit(nx, ny) > 0.5 ? 4 : lit(nx, ny) > 0 ? 3 : lit(nx, ny) > -0.5 ? 2 : 1]));
+      P.set(Math.round(x + r * 0.3), Math.round(y + r * 0.2), C[1]); P.set(Math.round(x - r * 0.4), Math.round(y - r * 0.4), '#ffffff');
+    }
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: false, lights: [L(7, b - 5, 28, v ? [240, 170, 230] : [255, 180, 130], 0.55)] });
+  });
+
+  def('quartz_cluster_b', 2, (v) => {
+    const W = 16, H = 32, b = H - 1, P = new Pix(W, H), C = v ? PEACH : RQ;
+    // a cluster of quartz points rising from a rosy rock
+    P.ell(8, b - 2, 6.6, 2.6, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? ROSEROCK[5] : lit(nx, ny) > -0.3 ? ROSEROCK[4] : ROSEROCK[2]));
+    shard(P, 4, b - 3, 12, 4, C, -0.8); shard(P, 12, b - 3, 10, 4, C, 0.9); shard(P, 8, b - 3, 22, 6, C, 0.1); shard(P, 6, b - 2, 8, 3, C, -0.3); shard(P, 10.5, b - 2, 7, 3, C, 0.5);
+    P.outline(OUT); P.shadow(9, b, 7, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 14, 36, v ? [255, 190, 150] : [255, 160, 200], 0.55)] });
+  });
+
+  def('geode_b', 1, () => {
+    const W = 16, H = 20, b = H - 1, P = new Pix(W, H);
+    // a round stone cracked open, pink crystals glittering inside
+    P.ell(8, b - 7, 7, 6.4, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.4 ? ROSEROCK[6] : lit(nx, ny) > -0.1 ? ROSEROCK[5] : ROSEROCK[3]));
+    P.ell(8.4, b - 6.6, 4.6, 4, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.7 ? '#f4ece8' : (Math.round(Math.atan2(ny, nx) * 4) & 1) ? RQ[4] : RQ[2]));
+    P.ell(8.4, b - 6.6, 2, 1.8, (x, y) => P.set(x, y, RQ[1])); P.set(7, b - 8, '#ffffff'); P.set(10, b - 5, RQ[5]);
+    P.outline(OUT); P.shadow(9, b, 7, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 7, 22, [255, 160, 200], 0.4)] });
+  });
+
+  // ================================================================== the Crystal Garden, look C: the Emerald Grotto
+  const STREAM = [[184, 70], [160, 92], [134, 118], [112, 140], [86, 160], [62, 186], [40, 224]];
+  function floorEmerald(w, h, seed) {
+    const P = new Pix(w, h), shimmer = [];
+    // a deep moss carpet over old stone: stones peeping through, a brook running from the spring
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const m = fbm(x / 18, y / 14, seed), st = fbm(x / 9 + 40, y / 7, seed + 2);
+      let c = rampAt(MOSS, 0.25 + m * 0.6 + (noise(x / 2.5, y / 2, seed + 3) - 0.5) * 0.25, x, y);
+      if (st > 0.66) c = rampAt(['#1a2026', '#262e34', '#343e44', '#424e52', '#525e60'], 0.2 + (st - 0.66) * 2.4 + lit(0, 0) * 0, x, y);
+      P.set(x, y, c);
+    }
+    // the brook
+    const segD = (x, y) => { let d = 1e9; for (let k = 0; k + 1 < STREAM.length; k++) { const [x0, y0] = STREAM[k], [x1, y1] = STREAM[k + 1], vx = x1 - x0, vy = y1 - y0, t = clamp(((x - x0) * vx + (y - y0) * vy) / (vx * vx + vy * vy), 0, 1); d = Math.min(d, Math.hypot(x - x0 - vx * t, y - y0 - vy * t)); } return d; };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const d = segD(x, y) + (noise(x / 6, y / 6, seed + 4) - 0.5) * 2.5, wd = 4.2;
+      if (d < wd) { const t = 1 - d / wd; let c = rampAt(['#06221e', '#0a3430', '#104842', '#18605a', '#2a8078', '#52aaa0'], 0.25 + t * 0.55 + (noise(x / 4, y / 3, seed + 5) - 0.5) * 0.2, x, y); if (hash(x, y, seed + 6) < 0.01) c = '#c8fff0'; P.set(x, y, c); if (t > 0.3 && hash(x, y, seed + 7) < 0.03) shimmer.push(x, y); }
+      else if (d < wd + 1.2) P.set(x, y, hash(x, y, seed + 8) < 0.5 ? '#3a4e48' : '#2a3a36');
+    }
+    // tiny star flowers, gold buttercups, emerald glints and fallen leaves
+    for (let k = 0; k < (w * h) / 220; k++) {
+      const x = Math.floor(hash(k, 1, seed + 9) * w), y = Math.floor(hash(k, 2, seed + 9) * h);
+      if (segD(x, y) < 6) continue;
+      const t = k % 7;
+      if (t < 3) { P.set(x, y, '#f4fff8'); P.set(x - 1, y, '#c8e8d8'); P.set(x + 1, y, '#c8e8d8'); P.set(x, y - 1, '#c8e8d8'); }
+      else if (t < 5) { P.set(x, y, '#f6d04a'); P.set(x + 1, y, '#c89a2a'); }
+      else if (t < 6) { P.set(x, y, EMER[3]); P.set(x, y - 1, EMER[4]); P.set(x + 1, y, EMER[1]); }
+      else { P.set(x, y, '#8a6a2a'); P.set(x + 1, y, '#6a4a1e'); }
+    }
+    return withShimmer(P, shimmer);
+  }
+  FLOORS.crystal_c = floorEmerald;
+
+  def('fairy_fountain_c', 1, () => {
+    const W = 40, H = 54, b = H - 1, cx = 19.5;
+    const WT = ['#06302a', '#0c4a40', '#14665a', '#228a78', '#40b09a', '#80dcc4', '#d4fff0'];
+    const ROCK = ['#1a2226', '#262f34', '#353f44', '#455054', '#566264', '#6a7674'];
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a mossy rock spring: a little waterfall tumbling into a stone-ringed pool, ferns and emeralds on the rocks
+      P.ell(cx, b - 7, 18, 6.4, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.72 ? (lit(nx, ny) > 0 ? ROCK[5] : ROCK[3]) : ROCK[1]));
+      P.ell(cx, b - 7.4, 15, 4.8, (x, y, nx, ny) => { const d = Math.sqrt(nx * nx + ny * ny); let c = rampAt(WT, 0.25 + (1 - d) * 0.55, x, y); if (Math.abs(d * 4 - (f % 4) - 0.3) < 0.22) c = WT[6]; P.set(x, y, c); });
+      for (const [rx, ry, rr] of [[cx - 15, b - 6, 3], [cx + 15, b - 7, 3.4], [cx - 9, b - 2, 2.6], [cx + 9, b - 2, 2.8], [cx, b - 1, 2.4]]) P.ell(rx, ry, rr, rr * 0.7, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? ROCK[5] : lit(nx, ny) > -0.3 ? ROCK[4] : ROCK[2]));
+      // the rock outcrop behind, capped with moss
+      for (let y = 4; y <= b - 11; y++) for (let x = 6; x <= 33; x++) {
+        const nx = (x - cx) / 14, ny = (y - (b - 11)) / (b - 15); if (nx * nx + ny * ny > 1 || (y < 12 && Math.abs(nx) > 0.6 + (y - 4) * 0.05)) continue;
+        let c = rampAt(ROCK, 0.35 + lit(nx, ny) * 0.4 + noise(x / 4, y / 4, 3) * 0.25, x, y);
+        if (noise(x / 5, y / 4, 9) > 0.58 || y < 10 + Math.sin(x * 0.7) * 2) c = rampAt(MOSS, 0.45 + lit(nx, ny) * 0.3 + noise(x / 2, y / 2, 4) * 0.2, x, y);
+        P.set(x, y, c);
+      }
+      // the falling water, animated
+      for (let y = 12; y <= b - 10; y++) for (let x = Math.round(cx - 2); x <= Math.round(cx + 2); x++) { const k = (y * 2 - f * 3 + x) % 6; P.set(x, y, k < 2 ? WT[6] : k < 4 ? WT[5] : WT[4]); }
+      for (let k = 0; k < 5; k++) { const sx = Math.round(cx - 4 + ((k * 3 + f * 2) % 9)), sy = b - 11 - ((k + f) % 3); P.set(sx, sy, '#e8fff8'); }
+      // emeralds and glowing fern tips on the rock
+      shard(P, cx - 9, b - 22, 9, 4, GEMC[1], -0.8); shard(P, cx - 6, b - 21, 6, 3, GEMC[1], -0.2); shard(P, cx + 10, b - 19, 8, 4, GEMC[1], 0.9);
+      for (const [fx, fy, d] of [[cx + 5, 8, 1], [cx - 4, 7, -1], [cx + 9, 11, 1]]) for (let t = 0; t < 7; t++) { P.set(fx + d * t * 0.6, fy - Math.sin(t / 7 * Math.PI) * 3 + t * 0.4, t > 5 ? '#b4ffd0' : LEAF[4]); }
+      P.outline(OUT);
+      for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 + f * 0.6, r = 10 + (k % 2) * 6; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(b - 22 + Math.sin(a) * r * 0.45); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#c8ffe0' : '#ffffff'); }
+      P.shadow(cx + 1, b, 18, 2);
+      return P;
+    };
+    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(19.5, b - 8, 70, [90, 240, 190], 0.7), L(19.5, b - 24, 34, [190, 255, 230], 0.45, 1)] }, draw, 4, 5);
+  });
+
+  def('crystal_flower_c', 3, (v) => {
+    const W = 16, H = 30, b = H - 1, P = new Pix(W, H), C = GEMC[v];
+    // a crystal bellflower: an arching stem hung with three glassy bells
+    for (const [sx, sy] of [[4, b], [11, b], [8, b]]) P.ell(sx, sy - 1, 2.2, 1.1, (x, y, nx) => P.set(x, y, nx < 0 ? MOSS[5] : MOSS[3]));
+    const stem = []; for (let t = 0; t <= 1.0001; t += 0.04) { const x = 5 + Math.sin(t * 2.4) * 6, y = b - 2 - Math.sin(t * Math.PI * 0.62) * 20; stem.push([x, y]); P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
+    stamp(P, 2, b - 7, ['..#', '.##', '###'], { '#': (i) => (i < 1 ? LEAF[5] : LEAF[3]) });
+    for (const [ti, r] of [[0.42, 2.4], [0.7, 2.8], [0.96, 2.2]]) {
+      const [bx, by] = stem[Math.round(ti * (stem.length - 1))];
+      P.vline(Math.round(bx), Math.round(by), Math.round(by) + 1, LEAF[3]);
+      const top = Math.round(by) + 2;
+      for (let j = 0; j < Math.round(r * 2); j++) { const hw = r * (0.5 + j / (r * 2) * 0.6); for (let x = Math.round(bx - hw); x <= Math.round(bx + hw) - 1; x++) { const rel = (x + 0.5 - (bx - hw)) / (2 * hw); P.set(x, top + j, C[j === Math.round(r * 2) - 1 ? 2 : rel < 0.35 ? 5 : rel < 0.65 ? 4 : 3]); } }
+      P.set(Math.round(bx), top + Math.round(r * 2), C[5]);
+    }
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(9, b - 14, 32, GEM_RGB[v], 0.6)] });
+  });
+
+  def('glowcap_c', 2, (v) => {
+    const W = 16, H = 16, b = H - 1, P = new Pix(W, H), C = v ? ['#6a3a0a', '#a8641a', '#e09a30', '#ffcc60', '#fff0b0'] : ['#5a4a0a', '#9a8418', '#d4bc30', '#f6e46a', '#fffad0'];
+    const caps = [[4, b - 4, 2.2, 1.3, 3], [10, b - 8, 3.6, 2, 7], [6, b - 6.5, 2.8, 1.6, 5], [13, b - 3, 2, 1.2, 2]];
+    for (const [x, y, rx, ry, sh] of caps) {
+      for (let j = 1; j <= sh; j++) { P.set(x, y + j, '#e8e0c8'); P.set(x + 1, y + j, '#b0a890'); }
+      P.ell(x + 0.5, y, rx, ry, (xx, yy, nx, ny) => P.set(xx, yy, ny > 0.4 ? C[0] : lit(nx, ny) > 0.5 ? C[3] : lit(nx, ny) > -0.2 ? C[2] : C[1]));
+      P.set(Math.round(x - rx * 0.3), Math.round(y - 0.5), C[4]); if (rx > 3) P.set(Math.round(x + 1.5), Math.round(y - 0.5), C[4]);
+    }
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: false, lights: [L(8, b - 7, 30, v ? [255, 180, 90] : [255, 230, 120], 0.6)] });
+  });
+
+  def('emerald_cluster_c', 2, (v) => {
+    const W = 16, H = 32, b = H - 1, P = new Pix(W, H), C = GEMC[1];
+    // emerald points breaking out of a mossy boulder
+    P.ell(8, b - 4, 7, 4.4, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.2 ? (ny < -0.3 ? MOSS[5] : '#4a5658') : lit(nx, ny) > -0.3 ? '#3a4448' : '#262e32'));
+    for (let x = 2; x <= 14; x++) if (hash(x, 1, v) < 0.6) P.set(x, b - 8 + Math.round(hash(x, 2, v) * 2), MOSS[4]);
+    if (v) { shard(P, 6, b - 6, 16, 5, C, -0.4); shard(P, 10.5, b - 5, 11, 4, C, 0.7); shard(P, 3.5, b - 5, 7, 3, C, -1); }
+    else { shard(P, 8, b - 6, 20, 6, C, 0.2); shard(P, 4, b - 5, 10, 4, C, -0.9); shard(P, 12, b - 5, 9, 3, C, 1); }
+    P.outline(OUT); P.shadow(9, b, 7, 1.5);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 14, 36, [90, 240, 160], 0.5)] });
+  });
+
+  def('mossy_log_c', 1, () => {
+    const W = 32, H = 24, b = H - 1, P = new Pix(W, H), BK = ['#2a1e16', '#3e2c1e', '#544028', '#6a5234', '#806640'];
+    // a fallen log furred with moss, a crop of tiny glowcaps along its side
+    for (let y = b - 11; y <= b - 2; y++) for (let x = 3; x <= 28; x++) { const ny = (y - (b - 6.5)) / 5; const k = ny < -0.5 ? 4 : ny < 0 ? 3 : ny < 0.6 ? 2 : 1; P.set(x, y, (x * 3 + y) % 7 === 0 ? BK[k - 1 < 0 ? 0 : k - 1] : BK[k]); }
+    P.ell(28.5, b - 6.5, 2.4, 5, (x, y, nx, ny) => P.set(x, y, Math.round(Math.hypot(nx, ny) * 3) % 2 ? '#a88a5a' : '#8a6a40'));
+    for (let x = 3; x <= 27; x++) { const top = b - 12 + Math.round(Math.sin(x * 0.6) * 0.8); for (let y = top; y <= top + 2 + (x % 3 === 0 ? 1 : 0); y++) P.set(x, y, y === top ? MOSS[6] : MOSS[4 + (x % 2)]); }
+    for (const mx of [7, 12, 18, 23]) { P.set(mx, b - 3, '#e8e0c8'); P.ell(mx, b - 4, 1.4, 0.9, (x, y) => P.set(x, y, '#f6e46a')); }
+    P.outline(OUT); P.shadow(17, b, 14, 1.6);
+    return sprite({ c: P.canvas(), ax: 16, ay: b, foot: [2, 1], solid: true, lights: [L(15, b - 4, 26, [255, 230, 120], 0.35)] });
+  });
+
+  def('fern_c', 2, (v) => {
+    const W = 16, H = 24, b = H - 1, P = new Pix(W, H);
+    // a fern whose frond tips glow softly
+    const fr = v ? [[-7, -8], [-4, -13], [0, -15], [4, -12], [7, -7]] : [[-6, -10], [-2, -14], [3, -13], [6, -9], [-7, -5]];
+    fr.forEach(([dx, dy], k) => {
+      for (let t = 0; t <= 1.0001; t += 0.07) {
+        const x = 7.5 + dx * t, y = b - 1 + dy * t + t * t * 3 * (Math.abs(dx) / 7);
+        P.set(x, y, t > 0.85 ? '#b4ffd0' : LEAF[k % 2 ? 3 : 4]);
+        if (t > 0.2 && t < 0.85 && Math.round(t * 14) % 2 === 0) { P.set(x - 1, y - (dx > 0 ? 0 : 1), LEAF[k % 2 ? 4 : 5]); P.set(x + 1, y - (dx > 0 ? 1 : 0), LEAF[2]); }
+      }
+    });
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: false, lights: [L(8, b - 12, 24, [150, 255, 200], 0.4)] });
   });
 })();

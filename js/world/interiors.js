@@ -364,7 +364,7 @@
       m.piece('blackboard_c', 0, 6, 3, { interact: fl('amara_chalkboard') }); m.piece('celestial_globe_c', 0, 8, 3);
       m.piece('window_seat_c', 0, 10, 3); m.piece('map_chest_c', 0, 12, 3);
       m.piece('refractor_c', 0, 9, 4, { interact: fl('amara_telescope') }); m.piece('orrery_c', 0, 11, 5, { interact: fl('amara_orrery') });
-      m.piece('chaise_c', 0, 7, 6);
+      m.piece('rug_c', 0, 6, 6); m.piece('chaise_c', 0, 7, 6); m.piece('floor_lamp_c', 0, 12, 7); m.piece('book_pile_c', 0, 1, 7);
       m.glow(3.5, 4, 50, [255, 226, 180], 0.25); m.glow(10.5, 3, 70, [200, 214, 255], 0.3);
     }
     m.home = true; m.owner = 'amara'; m.look = look;

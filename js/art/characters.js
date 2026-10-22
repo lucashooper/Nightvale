@@ -2368,7 +2368,7 @@
   [['ronan', 0.35], ['brann', 0.3], ['gideon', 0.25], ['orvyn', 0.4], ['corvin', 0.3], ['lune', 0.4], ['elvis', 0.45], ['caspian', 0.45], ['fennick', 0.6], ['grizelda', 0.3], ['nightmerchant', 0]].forEach(function (h) { if (NPC[h[0]]) NPC[h[0]].blushK = h[1]; });
   NPC.ronan.browKeep = true;
   // the human styles read these: masc (finer lashes, a smaller iris), old (soft lids)
-  [['brann', { masc: 1 }], ['orvyn', { masc: 1, old: 1 }], ['corvin', { masc: 1 }], ['lune', { masc: 1 }], ['elvis', { masc: 1 }], ['fennick', { masc: 1 }], ['ronan', { masc: 1 }], ['caspian', { masc: 1 }], ['gideon', { masc: 1, old: 1 }], ['mirabel', { old: 1 }], ['grizelda', { old: 1 }], ['isolde', { old: 1 }]].forEach(function (h) { if (NPC[h[0]]) NPC[h[0]].hum = h[1]; });
+  [['pip', { masc: 1, kid: 1 }], ['brann', { masc: 1 }], ['orvyn', { masc: 1, old: 1 }], ['corvin', { masc: 1 }], ['lune', { masc: 1 }], ['elvis', { masc: 1 }], ['fennick', { masc: 1 }], ['ronan', { masc: 1 }], ['caspian', { masc: 1 }], ['gideon', { masc: 1, old: 1 }], ['mirabel', { old: 1 }], ['grizelda', { old: 1 }], ['isolde', { old: 1 }]].forEach(function (h) { if (NPC[h[0]]) NPC[h[0]].hum = h[1]; });
   function softSkin(S, ST) {
     var o = {}, k;
     for (k in S) if (S.hasOwnProperty(k)) o[k] = S[k];
@@ -2701,15 +2701,13 @@
   function DY(Y) { return XF ? dzY(Y) + 0.5 : Y + 0.5; }
   function sq(v) { return v * v; }
   function stepsF(M, x, y, dx, dy, max) { for (var s = 1; s <= max; s++) if (!M.hasF(x + dx * s, y + dy * s)) return s; return max + 1; }
-  // lower-face contour per design face: below the cheekbones (jaw rows under the eye centre) the cheeks taper to a
-  // chin of half-width `chin`; p keeps the cheeks full for longer, q softens the jaw, ext adds chin rows
+  // lower-face contour per design face: below the cheekbones (jaw rows under the eye centre) the cheeks follow a
+  // superellipse down to the chin: m 2 gives an oval with a gentle chin, higher m a squarer jaw, lower m a pointed chin;
+  // ext adds chin rows
   var HFACE = {
-    round: { chin: 4.4, p: 1.9, q: 0.8, ext: 1, jaw: 2 }, kid: { chin: 4.4, p: 2.3, q: 0.7, ext: 0, jaw: 2 },
-    oval: { chin: 3.8, p: 1.7, q: 0.85, ext: 1, jaw: 2 }, broad: { chin: 7, p: 2.4, q: 0.7, ext: 0, jaw: 3 },
-    long: { chin: 4.6, p: 2, q: 0.8, ext: 0, jaw: 3 }, angular: { chin: 2.6, p: 1.4, q: 0.95, ext: 0, jaw: 1 },
-    narrow: { chin: 3.6, p: 1.8, q: 0.85, ext: 1, jaw: 2 }, square: { chin: 5.6, p: 2.4, q: 0.7, ext: 0, jaw: 2 },
-    showman: { chin: 4.4, p: 2, q: 0.8, ext: 1, jaw: 2 }, cute: { chin: 4, p: 2.1, q: 0.75, ext: 1, jaw: 2 },
-    player: { chin: 4.2, p: 1.9, q: 0.8, ext: 1, jaw: 2 }
+    round: { m: 2, jaw: 2, ext: 1 }, kid: { m: 2.2, jaw: 2.5, ext: 0 }, oval: { m: 1.85, jaw: 2, ext: 1 }, broad: { m: 2.6, jaw: 3, ext: 0 },
+    long: { m: 2.2, jaw: 3, ext: 0 }, angular: { m: 1.6, jaw: 1, ext: 0 }, narrow: { m: 1.9, jaw: 2, ext: 1 }, square: { m: 2.6, jaw: 2, ext: 0 },
+    showman: { m: 2.1, jaw: 2, ext: 1 }, cute: { m: 2, jaw: 2, ext: 1 }, player: { m: 2, jaw: 2, ext: 1 }
   };
   function faceName(f) { for (var k in FACES) if (FACES.hasOwnProperty(k) && FACES[k] === f) return k; return 'round'; }
   function humanFace(def) {
@@ -2722,9 +2720,7 @@
     function at(yc) { // half-width at the continuous design row yc
       if (yc < top || yc > bot) return undefined;
       if (yc <= yA) return orig(yc);
-      var t = (yc - yA) / (bot - yA), w = hp.chin + (orig(yA) - hp.chin) * Math.pow(Math.max(0, 1 - Math.pow(t, hp.p)), hp.q), rc = hp.rc || 2.5;
-      if (yc > bot - rc) { var u = (yc - (bot - rc)) / rc; w = Math.min(w, (hp.chin + 0.3) * Math.sqrt(Math.max(0, 1 - u * u))); }
-      return w;
+      return orig(yA) * Math.pow(Math.max(0, 1 - Math.pow((yc - yA) / (bot - yA), hp.m)), 1 / hp.m);
     }
     var hw = [], i, k, o = {};
     for (i = 0; i < bot - top; i++) hw.push(at(top + i + 0.5));
@@ -2738,6 +2734,7 @@
     for (k in S0) if (S0.hasOwnProperty(k)) o[k] = S0[k];
     o.m = mix(S0.b, S0.s, 0.5);
     o.d = mix(S0.s, S0.d, 0.55);
+    o.bl = mix(S0.b, S0.l, 0.5); o.bm = mix(S0.b, o.m, 0.5); // in-between tones for the hd face light
     o.outline = mix(S0.s, H('#3a1420'), 0.62);
     o.line = mix(S0.s, o.outline, 0.7);
     o.blush = mix(S0.b, mix(S0.blush, H('#ff6f86'), 0.2), 0.62); // designs paint this directly: keep it gentle
@@ -2773,10 +2770,10 @@
   }
   function drawNeckH(P) {
     var f = P.f, S = P.skin, B = P.B, nw = (P.d.neckW || 5) - 0.2, y0 = f.bot - 6, y1 = 59;
-    M64().fn(function (x, y) { var yc = y + 0.5; return yc > y0 && yc < y1 && Math.abs(x + 0.5 - 32) < nw + Math.max(0, yc - f.bot - 1) * 0.3; }).eachF(function (X, Y) {
-      var u = (DX(X) - 32) / nw;
-      B.setF(X, Y, u < -0.5 ? S.b : u < 0.25 ? S.m : u < 0.72 ? S.s : S.d, TAG.SKIN);
-    });
+    for (var Y = 0; Y < B.h; Y++) {
+      var yc = DY(Y), hw = nw + Math.max(0, yc - f.bot - 1) * 0.3; if (yc <= y0 || yc >= y1) continue;
+      for (var X = 0; X < B.w; X++) { var dx = DX(X) - 32, u = dx / nw; if (Math.abs(dx) < hw) B.setF(X, Y, u < -0.5 ? S.b : u < 0.25 ? S.m : u < 0.72 ? S.s : S.d, TAG.SKIN); }
+    }
   }
   function drawEarsH(P) {
     var f = P.f, S = P.skin, B = P.B, N = B.w, y0 = f.earY, hwE = f.hwAt(y0 + 3.5);
@@ -2786,7 +2783,7 @@
       stampF(B, ['mm.', 'msm', 'sds', 'sds', 'ssm', 'sm.', 'm..'], 32 + k, y0, { m: S.m, s: S.s, d: S.d }, TAG.SKIN);
       return;
     }
-    var s = XF.s, Xc = fxX(32 - hwE - 1.1), Yc = fxY(y0 + 3.4), RX = 2.15 * s, RY = 3.75 * s;
+    var s = XF.s, Xc = fxX(32 - hwE - 1.25), Yc = fxY(y0 + 3.4), RX = 1.75 * s, RY = 3.6 * s;
     M64().ellipseF(Xc, Yc, RX, RY).eachF(function (X, Y) {
       var u = (X + 0.5 - Xc) / RX, v = (Y + 0.5 - Yc) / RY, d = u * u + v * v, cl = S.b, cr = S.s;
       if (u > 0.5) { cl = S.m; cr = S.d; } // root, in the head's shadow
@@ -2798,16 +2795,17 @@
   function paintFaceH(P) { // soft light from the upper left: a shadow band follows the right contour and widens towards the
     // jaw, the jaw turns under and shades the neck, light gathers on the lit cheek, the brow and the chin
     var f = P.f, S = P.skin, B = P.B, k = XF ? XF.s : 1, cx = f.ecx, cy = f.ecy, span = Math.max(4, f.bot - cy);
-    var M = M64().fn(function (x, y) { var hw = f.hw[y - f.top]; return hw != null && Math.abs(x + 0.5 - 32) < hw; });
+    var M = M64(), rowW = [], X0, Y0; // the face mask, row by row (frame pixels)
+    for (Y0 = 0; Y0 < M.h; Y0++) { var w0 = f.hwAt(DY(Y0)); rowW.push(w0); if (w0 != null) for (X0 = 0; X0 < M.w; X0++) if (Math.abs(DX(X0) - 32) < w0) M.putF(X0, Y0); }
     P.faceM = M;
     function blob(x, y, bx, by, rx, ry) { var d = sq((x - bx) / rx) + sq((y - by) / ry); return d < 1 ? 1 - d : 0; }
     M.eachF(function (X, Y) {
-      var x = DX(X), y = DY(Y), hw = f.hwAt(y), dxr = hw - (x - 32), dyb = (stepsF(M, X, Y, 0, 1, Math.ceil(4 * k)) - 0.5) / k;
+      var x = DX(X), y = DY(Y), hw = rowW[Y], dxr = hw - (x - 32), dyb = (stepsF(M, X, Y, 0, 1, Math.ceil(4 * k)) - 0.5) / k;
       var j = Math.max(0, Math.min(1, (y - cy + 2) / (span + 2))), wr = 1.6 + 2.6 * j, v = 1;
       v -= 0.62 * Math.pow(Math.max(0, Math.min(1, (wr - dxr) / wr)), 0.85);
       v -= 0.55 * Math.max(0, Math.min(1, (2.1 - dyb) / 2.1)) * (x > 32 ? 1 : 0.6);
       v += 0.42 * blob(x, y, cx - 1.2, cy + 3.6, 3.2, 2.3) + 0.24 * blob(x, y, 28, cy - 6, 3.6, 2) + 0.3 * blob(x, y, 30.8, f.bot - 2.4, 2.2, 1.4) + 0.12 * blob(x, y, 64 - cx, cy + 3.6, 2.6, 2);
-      B.setF(X, Y, v > 1.22 ? S.l : v > 0.78 ? S.b : v > 0.5 ? S.m : v > 0.28 ? S.s : S.d, TAG.SKIN);
+      B.setF(X, Y, v > 1.22 ? S.l : XF && v > 1.06 ? S.bl : v > 0.78 ? S.b : XF && v > 0.66 ? S.bm : v > 0.5 ? S.m : v > 0.28 ? S.s : S.d, TAG.SKIN);
     });
     var n = Math.max(1, Math.round(2 * k)), x, y, j;
     for (y = 0; y < B.h; y++) for (x = 0; x < B.w; x++) {
@@ -2819,7 +2817,7 @@
   // wing (liner flick), thick (bolder lash line), soft (gentler lashes), bags, lower (lower lashes), lidIn (narrowed inner lid)
   var HEYE = {
     std: {}, kind: { hood: 1, smile: 1, soft: 1 }, kid: { w: 1, h: 1 }, almond: { wing: 2, thick: 1 }, small: { w: -1 },
-    twinkle: { smile: 1, soft: 1 }, doe: { w: 1, h: 1, lower: 1 }, beady: { w: -1, bags: 1, soft: 1 }, tired: { lid: 1, bags: 1 },
+    twinkle: { smile: 1, soft: 1 }, doe: { w: 1, h: 1, lower: 1 }, beady: { w: -1, bags: 1, soft: 1, sock: 1, iwK: -1 }, tired: { lid: 1, bags: 1 },
     sharp: { thick: 1, lidIn: 1 }, star: { thick: 1 }, lidded: { lid: 1, wing: 1 }, soft: { lid: 1, wing: 1, lower: 1 },
     cute: { w: 1, h: 1 }, cutewing: { w: 1, h: 1, wing: 2, thick: 1 }, cutelid: { w: 1, h: 1, lid: 1 }
   };
@@ -2828,8 +2826,8 @@
     for (k in c) if (c.hasOwnProperty(k)) o[k] = c[k];
     for (k in hint) if (hint.hasOwnProperty(k)) o[k] = hint[k];
     o.w = (hd ? 9 : 6) + (c.w || 0);
-    o.h = (hd ? 5 : 3) + (c.h || 0) - (hd && hint.masc ? 1 : 0);
-    o.iw = hd ? (o.w >= 9 && !hint.masc ? 5 : 4) : (o.w >= 7 ? 4 : 3);
+    o.h = (hd ? 5 : 3) + (c.h || 0) - (hd && hint.masc && !hint.kid ? 1 : 0);
+    o.iw = (hd ? (o.w >= 9 && (!hint.masc || hint.kid) ? 5 : 4) : (o.w >= 7 ? 4 : 3)) + (c.iwK || 0);
     if (hint.masc) { o.thick = 0; o.wing = Math.min(o.wing || 0, 1); }
     return o;
   }
@@ -2854,7 +2852,7 @@
     }
     if (mode === 'closed') { // blink: the lid rests on the lower lash line
       for (c = 0; c < w; c++) {
-        var u2 = (c + 0.5) / w, cr = Math.round(h - (hd ? 1.1 : 1.1) - (hd ? 1.2 : 0.7) * (1 - Math.sin(Math.PI * u2)));
+        var u2 = (c + 0.5) / w, cr = Math.round(h - 1.1 - (hd ? 1.2 : 0.7) * (1 - Math.sin(Math.PI * u2)));
         put(c, cr, 'K');
         if (hd && c < thickN + 1) put(c, cr - 1, 'K');
         if (hd && c > 0 && c < w - 1) put(c, cr + 1, 'k');
@@ -2873,7 +2871,7 @@
     if (mode === 'wide') for (c = 1; c < w - 1; c++) { tops[c] -= 1; nat[c] -= 1; }
     if (st.lid && mode !== 'wide') for (c = 0; c < w; c++) tops[c] = Math.min(bots[c] - 1, tops[c] + st.lid);
     if (st.lidIn && mode !== 'wide') for (c = w - 2; c < w; c++) tops[c] = Math.min(bots[c] - 1, tops[c] + 1);
-    if (st.smile && mode === 'open') for (c = 1; c < w - 1; c++) bots[c] = Math.max(tops[c] + 2, bots[c] - 1);
+    if (st.smile && hd && mode === 'open') for (c = 1; c < w - 1; c++) bots[c] = Math.max(tops[c] + 2, bots[c] - 1);
     function lower(c, n) { tops[c] = Math.min(bots[c] - (c === 0 || c === w - 1 ? 0 : 1), tops[c] + n); } // a corner may close completely
     if (mode === 'sad') for (c = 0; c < w; c++) lower(c, hd ? (c < w * 0.34 ? 2 : c < w * 0.67 ? 1 : 0) : (c < w * 0.5 ? 1 : 0));
     if (mode === 'angry') for (c = 0; c < w; c++) lower(c, hd ? (c >= w * 0.67 ? 2 : c >= w * 0.34 ? 1 : 0) : (c >= w * 0.5 ? 1 : 0));
@@ -2889,13 +2887,14 @@
     if (st.wing) { put(-2, tops[0] - 2, 'K'); if (st.wing > 1) { put(-3, tops[0] - 3, 'K'); if (hd) put(-2, tops[0] - 3, 'K'); } }
     if (hd) put(w, tops[w - 1], 'k');
     // lower lid, lower lashes, crease, bags
-    for (c = 1; c < w - (hd ? 1 : 1); c++) if (get(c, bots[c]) === '.') put(c, bots[c], 'l');
+    for (c = 1; c < w - 1; c++) if (get(c, bots[c]) === '.') put(c, bots[c], 'l');
     if (hd || st.lower) { put(0, bots[0], 'q'); if (hd && !st.masc) put(-1, bots[0] - 1, 'q'); }
-    if (hd || st.hood) for (c = hd ? 1 : 1; c < w - 1; c++) {
+    if (hd || st.hood) for (c = 1; c < w - 1; c++) {
       var cr2 = Math.min(tops[c], nat[c]) - (c < thickN ? 3 : 2) - (hd && !st.hood ? 1 : 0);
       if (get(c, cr2) === '.' && get(c, cr2 + 1) === '.') put(c, cr2, 'c');
     }
     if (st.bags || (hd && st.old)) for (c = 1; c < w - 1; c++) if (get(c, bots[c] + 1) === '.') put(c, bots[c] + 1, 'v');
+    if (st.sock) { for (c = -1; c <= w; c++) for (r = -3; r < h + 2; r++) if (get(c, r) === '.' && (get(c + 1, r) !== '.' || get(c - 1, r) !== '.' || get(c, r + 1) !== '.' || get(c, r - 1) !== '.') && get(c, r - 1) !== 'c') put(c, r, 'd'); }
     return out();
   }
   function humanEyeGeom(P) {
@@ -2904,9 +2903,10 @@
   }
   function humanEyeLegend(P, st) {
     var S = P.skin, ic = P.eyeC, lash = P.lash != null ? mix(P.lash, H('#2a1420'), 0.25) : mix(H('#3a1a24'), ic[0], 0.22);
+    lash = mix(lash, H('#140a12'), Math.max(0, Math.min(0.6, (0.5 - lum(S.b)) * 2.2))); // deeper skin: darker lashes stay readable
     if (st.soft) lash = mix(lash, S.s, 0.28);
-    return { K: [lash, TAG.EYE], k: [mix(lash, S.s, 0.45), TAG.EYE], W: [mix(H('#eeebf5'), S.b, 0.1), TAG.EYE], w: [mix(H('#c8c4d8'), S.s, 0.15), TAG.EYE], L: [S.m, TAG.SKIN],
-      c: [mix(S.m, S.s, 0.55), TAG.SKIN], l: [mix(S.s, S.m, 0.35), TAG.SKIN], q: [mix(lash, S.s, 0.35), TAG.EYE], v: [mix(S.m, H('#8a6ab0'), 0.2), TAG.SKIN] };
+    return { K: [lash, TAG.EYE], k: [mix(lash, S.s, 0.45), TAG.EYE], W: [mix(H('#f4f2fa'), S.b, 0.06), TAG.EYE], w: [mix(H('#d4d1e2'), S.s, 0.12), TAG.EYE], L: [S.m, TAG.SKIN],
+      c: [mix(S.m, S.s, 0.55), TAG.SKIN], l: [mix(S.s, S.m, 0.35), TAG.SKIN], q: [mix(lash, S.s, 0.35), TAG.EYE], v: [mix(S.m, H('#8a6ab0'), 0.2), TAG.SKIN], d: [mix(S.s, S.d, 0.4), TAG.SKIN] };
   }
   function paintIrisH(B, T, ox, oy, flip, st, ic, gaze, mode) {
     if (!T.open.length) return;
@@ -2940,7 +2940,7 @@
     P.heye = g;
     var mode = P.blink ? 'closed' : e === 'happy' ? 'happy' : wide ? 'wide' : e === 'sad' ? 'sad' : e === 'angry' ? 'angry' : 'open';
     var T = humanEyeTpl(st, mode), TW = T.rows[0].length, ox = g.X0 - T.L, oy = g.Y0 - T.T, oxR = N - 1 - (ox + TW - 1), L = humanEyeLegend(P, st);
-    var gaze = d.gaze ? Math.round(d.gaze(P) * (XF ? XF.s : 1)) : 0;
+    var g0 = d.gaze ? d.gaze(P) : 0, gaze = g0 ? (g0 > 0 ? 1 : -1) * Math.round(Math.abs(g0) * (XF ? XF.s : 1) - 0.01) : 0; // same size glance either way
     if (!d.hideEyeL) { stampF(B, T.rows, ox, oy, L, TAG.EYE, false); paintIrisH(B, T, ox, oy, false, st, P.eyeC, gaze, mode); }
     if (!d.hideEyeR) { stampF(B, T.rows, oxR, oy, L, TAG.EYE, true); paintIrisH(B, T, oxR, oy, true, st, P.eyeC, gaze, mode); }
     if (P.tears) [[1, 1], [1, 2], [0, 3]].forEach(function (q, i) {
@@ -2979,8 +2979,10 @@
       return;
     }
     var X = Math.round(fxX(nx + 1)), Y = ptY(tip);
-    var hl = mix(S.b, S.l, 0.6);
-    [[-1, -3, hl], [0, -2, S.m], [-1, -1, S.l], [0, -1, S.m], [1, -1, S.m], [-2, 0, S.m], [-1, 0, S.m], [0, 0, S.s], [1, 0, S.s]].forEach(function (q) { B.setF(X + q[0], Y + q[1], q[2], TAG.SKIN); });
+    var hb = mix(S.b, S.l, 0.4), ht = mix(S.b, S.l, 0.75), sm = mix(S.m, S.s, 0.4), pts = rows.length < 3 ? [[-1, -1, hb], [0, -1, S.bm], [-1, 0, S.m], [0, 0, sm]] : [[-1, -1, ht], [0, -1, S.m], [-1, 0, S.m], [0, 0, sm], [1, 0, S.s]];
+    if (rows.length >= 3) pts = pts.concat([[0, -2, S.m], [1, -1, S.m], [-2, 0, S.m]]); // a fuller nose for the designs that draw one
+    if (rows.length >= 4) pts = pts.concat([[-1, -3, hb], [0, -3, S.m]]);
+    pts.forEach(function (q) { B.setF(X + q[0], Y + q[1], q[2], TAG.SKIN); });
   }
   function widenRows(rows, add) { // stretch a mouth stamp by repeating its centre columns (corners stay crisp)
     var w = stampW(rows), a = Math.floor(w / 2) - (w % 2 ? 0 : 1), b = Math.floor(w / 2);
@@ -2994,11 +2996,11 @@
     stampF(B, rows, X0, Y0, {
       D: [line, TAG.MOUTH], d: [S.s, TAG.MOUTH], s: [lipS, TAG.SKIN], l: [S.l, TAG.SKIN], m: [H('#5e2434'), TAG.MOUTH], t: [H('#fbf8fc'), TAG.MOUTH],
       T: [H('#dcd6e6'), TAG.MOUTH], u: [H('#d86a86'), TAG.MOUTH], g: [GOLD[2], TAG.MOUTH], G: [GOLD[1], TAG.MOUTH], p: [S.lip, TAG.MOUTH], P: [S.lipD, TAG.MOUTH],
-      b: [d.mouthLine ? mix(d.mouthLine, S.b, 0.15) : line, TAG.MOUTH], L: [mix(S.lip, WHITE, 0.4), TAG.MOUTH]
+      b: [d.mouthLine ? mix(d.mouthLine, S.b, 0.15) : line, TAG.MOUTH], L: [mix(S.lip, WHITE, 0.26), TAG.MOUTH]
     }, TAG.MOUTH, d.mouthFlip);
-    for (var r = rows.length - 1; r >= 0; r--) { // 1px highlight on the lower lip
+    if (rows.join('').indexOf('L') < 0) for (var r = rows.length - 1; r >= 0; r--) { // 1px highlight on the lower lip, unless the design has one
       var cols = []; for (var i = 0; i < rows[r].length; i++) if (rows[r].charAt(i) === 's' || rows[r].charAt(i) === 'p') cols.push(i);
-      if (cols.length >= 2) { var ci = cols[Math.floor((cols.length - 1) / 2)]; B.setF(d.mouthFlip ? X0 + (w - 1 - ci) : X0 + ci, Y0 + r, mix(S.lip, WHITE, 0.38), TAG.MOUTH); break; }
+      if (cols.length >= 2) { var ci = cols[Math.floor((cols.length - 1) / 2)]; B.setF(d.mouthFlip ? X0 + (w - 1 - ci) : X0 + ci, Y0 + r, mix(S.lip, WHITE, 0.3), TAG.MOUTH); break; }
     }
   }
   function blushH(P) { // a soft rosy cheek under the outer half of each eye (skin pixels only)
@@ -3009,17 +3011,17 @@
     for (var Y = Math.floor(cy - ry - 1); Y <= Math.ceil(cy + ry + 1); Y++) for (var X = Math.floor(cx - rx - 1); X <= Math.ceil(cx + rx + 1); X++) {
       var dd = sq((X + 0.5 - cx) / rx) + sq((Y + 0.5 - cy) / ry); if (dd > 1) continue;
       var c = dd < 0.45 ? c1 : c2;
-      [X, N - 1 - X].forEach(function (xx) { var cc = B.getF(xx, Y); if (B.tgF(xx, Y) === TAG.SKIN && (cc === S.b || cc === S.l || cc === S.m)) B.setF(xx, Y, c, TAG.SKIN); });
+      [X, N - 1 - X].forEach(function (xx) { var cc = B.getF(xx, Y); if (B.tgF(xx, Y) === TAG.SKIN && (cc === S.b || cc === S.l || cc === S.m || cc === S.bl || cc === S.bm)) B.setF(xx, Y, c, TAG.SKIN); });
     }
   }
   function castShadowH(P, rows) { // hair and hats shade the brow, in frame pixels
     var B = P.B, S = P.skin, hits = [], n = Math.max(2, Math.round((rows || 2) * (XF ? XF.s : 1))), x, y, k;
     for (y = 0; y < B.h; y++) for (x = 0; x < B.w; x++) {
       if (B.tgF(x, y) !== TAG.SKIN) continue;
-      var c = B.getF(x, y); if (c !== S.b && c !== S.l && c !== S.m) continue;
+      var c = B.getF(x, y); if (c !== S.b && c !== S.l && c !== S.m && c !== S.bl && c !== S.bm) continue;
       for (k = 1; k <= n; k++) { var t = B.tgF(x - (k > 1 ? 1 : 0), y - k); if (t === TAG.HAIR || t === TAG.HAT) { hits.push(x, y, k); break; } }
     }
-    for (var i = 0; i < hits.length; i += 3) { var c2 = B.getF(hits[i], hits[i + 1]); B.setF(hits[i], hits[i + 1], hits[i + 2] === 1 ? (c2 === S.m ? S.s : S.m) : (c2 === S.l ? S.b : S.m), TAG.SKIN); }
+    for (var i = 0; i < hits.length; i += 3) { var c2 = B.getF(hits[i], hits[i + 1]); B.setF(hits[i], hits[i + 1], hits[i + 2] === 1 ? (c2 === S.m || c2 === S.bm ? S.s : S.m) : (c2 === S.l || c2 === S.bl ? S.b : S.m), TAG.SKIN); }
   }
 
   /* ================================================================== player look tables */
