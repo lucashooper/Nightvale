@@ -7,20 +7,14 @@
   'use strict';
   const IA = window.InteriorArt, K = IA && IA._kit;
   if (!K) return;
-  const { Pix, hash, noise, fbm, bay, clamp, OUT, mix, rampAt, sprite, build, L, flame, candle, bottle, crown, stamp, teddy,
+  const { Pix, hash, noise, fbm, bay, clamp, OUT, mix, rampAt, sprite, build, L, flame, candle, crown, stamp, teddy,
     bedBody, quiltPatch, honeyJar, cupcake, flatBook, fillBooks, ellTop, sky, stampRune, spine, FLOORS, WALLS } = K;
-  const { HONEY, WALNUT, WOOD, GOLD, BRASS, COPPER, IRON, SILVER, PSTONE, WAX, PAPER, VIOLET, MIDNIGHT, TEALC, CHAR, LAV,
-    CRIMSON, LEAF, MAGIC, EMER, TERRA, LIQ, GLASS, CREAM, PINK, STRAW, TEDDY, TEDDY_CREAM, MINT, HONEYG, BOOK_R, GL, HEART,
-    L_CANDLE, CANDLE, AMBER, ORANGE } = K;
+  const { WOOD, GOLD, BRASS, COPPER, IRON, SILVER, PSTONE, PAPER, TEALC, CRIMSON, LEAF, MAGIC, EMER, TERRA, LIQ, GLASS,
+    PINK, STRAW, TEDDY, TEDDY_CREAM, MINT, HONEYG, HEART, L_CANDLE, AMBER, ORANGE } = K;
   const def = (id, n, make) => K.def(id, n, make);
 
   // ================================================================== shared helpers
   const lit = (nx, ny) => -nx * 0.6 - ny * 0.75; // light from the upper left
-  // a shaded ellipse on a dark -> light ramp, dithered, a touch darker at the rim
-  function ball(P, cx, cy, rx, ry, R, t0, t1) {
-    t0 = t0 == null ? 0.08 : t0; t1 = t1 == null ? 0.98 : t1;
-    P.ell(cx, cy, rx, ry, (x, y, nx, ny) => { const d = nx * nx + ny * ny; P.set(x, y, rampAt(R, t0 + (t1 - t0) * clamp(0.52 + lit(nx, ny) * 0.5 - (d > 0.78 ? 0.14 : 0), 0, 1), x, y)); });
-  }
   // a turned shape standing on row `by`: half-width hw(j) for j = 0 (bottom) .. h-1 (top), lit from the left
   function lathe(P, cx, by, h, hw, R) {
     const n = R.length;
@@ -40,7 +34,6 @@
       P.set(x, y, R[clamp(k, 0, n - 1)]);
     }
   }
-  const px = (P, list, c) => { for (const [x, y] of list) P.set(x, y, c); };
   const clear = (P, x, y) => { if (x >= 0 && y >= 0 && x < P.w && y < P.h) P.d[y * P.w + x] = 0; };
   // a stylised five-petal blossom (3x3) and a daisy (plus shape)
   function daisy(P, x, y, petal, mid, shade) { P.set(x, y - 1, petal); P.set(x - 1, y, petal); P.set(x + 1, y, shade || petal); P.set(x, y + 1, shade || petal); P.set(x, y, mid); }
@@ -200,7 +193,7 @@
     const draw = (f) => {
       const P = new Pix(W, H);
       // the flue climbing to the ceiling, with a copper band
-      for (let y = 1; y <= b - 34; y++) for (let x = 12; x <= 19; x++) { const lx = x - 12, course = Math.floor(y / 3), off = course % 2 ? 2 : 0; let k = ((lx + off) % 4 === 0 || y % 3 === 2) ? 2 : lx < 2 ? 5 : lx > 5 ? 3 : 4; P.set(x, y, BRISK(k)); }
+      for (let y = 1; y <= b - 34; y++) for (let x = 12; x <= 19; x++) { const lx = x - 12, course = Math.floor(y / 3), off = course % 2 ? 2 : 0; const k = ((lx + off) % 4 === 0 || y % 3 === 2) ? 2 : lx < 2 ? 5 : lx > 5 ? 3 : 4; P.set(x, y, BRICK[k]); }
       for (let x = 11; x <= 20; x++) { P.set(x, 14, COPPER[x < 13 ? 5 : 4]); P.set(x, 15, COPPER[2]); }
       // a stone plinth with a log niche
       for (let y = b - 11; y <= b - 1; y++) for (let x = 1; x <= 30; x++) { const lx = (x + (Math.floor((y - b + 11) / 4) % 2) * 5) % 10, ly = (y - b + 11) % 4; let c = ly === 3 || lx === 0 ? PSTONE[2] : x < 4 ? PSTONE[6] : x > 27 ? PSTONE[3] : PSTONE[5]; if (y === b - 11) c = PSTONE[7]; P.set(x, y, c); }
@@ -240,7 +233,6 @@
     };
     return build({ ax: 16, ay: b, foot: [2, 1], solid: true, lights: [L(15.5, b - 15, 58, [255, 140, 60], 0.85, 1), L(15.5, b - 13, 20, [255, 200, 120], 0.5, 1)] }, draw, 4, 6);
   });
-  function BRISK(k) { return BRICK[clamp(k, 0, 6)]; }
 
   def('baking_counter_b', 1, () => {
     const W = 32, H = 40, b = H - 1, P = new Pix(W, H);
@@ -1031,7 +1023,7 @@
   def('hammock_b', 1, () => {
     const W = 32, H = 44, b = H - 1, P = new Pix(W, H);
     // a striped canvas hammock slung from the rafters, a patchwork quilt, a pillow and a book left open
-    for (let y = 0; y <= b - 14; y++) { P.set(2 + Math.round(y * 0.05), y, '#c8b088'); P.set(29 - Math.round(y * 0.05), y, '#a89068'); }
+    const ropeTop = 2;
     const sag = (x) => Math.round(Math.sin(((x - 2) / 27) * Math.PI) * 6);
     const STR = [MUST[4], '#f4ecd8', NAVY[3], '#f4ecd8'];
     for (let x = 3; x <= 28; x++) { const y0 = b - 16 + sag(x); for (let j = 0; j < 5; j++) { const c = STR[Math.floor((x - 3) / 4) % 4]; P.set(x, y0 + j, j === 4 ? mix(c, '#120c1c', 0.35) : j === 0 ? mix(c, '#ffffff', 0.25) : c); } }
@@ -1040,7 +1032,10 @@
     for (let x = 9; x <= 24; x += 2) P.set(x, b - 8 + sag(x), '#f4ecd8');
     P.ell(6.5, b - 15 + sag(6), 3.2, 2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? '#fffaf0' : '#e0d6c4'));
     flatBook(P, 16, b - 11 + sag(16), 5, 2, CRIMSON, true);
-    P.outline(OUT); P.shadow(16, b, 13, 1.6);
+    P.outline(OUT);
+    // twisted ropes rising into the dark of the rafters (drawn after the outline, fading as they go)
+    for (let y = ropeTop; y <= b - 15 + sag(3); y++) { const a = Math.min(255, 90 + (y - ropeTop) * 9); P.set(2 + Math.round(y * 0.03), y, (y % 2) ? '#d8c098' : '#a88a60', a); P.set(29 - Math.round(y * 0.03), y, (y % 2) ? '#c8ac80' : '#8a6e48', a); }
+    P.shadow(16, b, 13, 1.6);
     return sprite({ c: P.canvas(), ax: 16, ay: b, foot: [2, 1], solid: true });
   });
 
@@ -1161,6 +1156,48 @@
     else { P.line(6, y, 11, y - 3, '#f4ecd8'); P.line(6, y + 1, 11, y - 2, '#d8ccb0'); }
     P.outline(OUT); P.shadow(9, b, 7, 1.4);
     return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('star_trunk_b', 1, () => {
+    const W = 32, H = 24, b = H - 1, P = new Pix(W, H);
+    // an old travel trunk plastered with star stickers and luggage labels, a rolled chart on its lid
+    for (let y = b - 13; y <= b - 1; y++) for (let x = 2; x <= 29; x++) P.set(x, y, y === b - 13 ? NAVY[5] : y <= b - 10 ? NAVY[4] : x === 2 ? NAVY[4] : x === 29 ? NAVY[1] : y === b - 1 ? NAVY[1] : NAVY[3]);
+    for (let x = 2; x <= 29; x++) { P.set(x, b - 9, BRASS[3]); P.set(x, b - 8, BRASS[1]); }
+    for (const bx of [7, 24]) for (let y = b - 13; y <= b - 1; y++) P.set(bx, y, y % 3 ? PINE[4] : PINE[3]);
+    P.rect(14, b - 9, 4, 3, BRASS[4]); P.set(15, b - 8, BRASS[1]);
+    for (const [sx, sy, c] of [[11, b - 5, MUST[5]], [20, b - 4, '#f4ecd8'], [27, b - 6, MUST[5]], [4, b - 4, '#f0a8a0']]) { P.set(sx, sy, c); P.set(sx - 1, sy, c); P.set(sx + 1, sy, c); P.set(sx, sy - 1, c); P.set(sx, sy + 1, c); }
+    for (let y = b - 7; y <= b - 3; y++) for (let x = 17; x <= 21; x++) P.set(x, y, y === b - 7 ? PAPER[4] : PAPER[3]); P.hline(18, 20, b - 5, CRIMSON[4]);
+    P.hline(5, 25, b - 15, PAPER[3]); P.hline(5, 25, b - 14, PAPER[2]); P.set(25, b - 15, '#8a7a6a'); P.set(5, b - 15, '#c8b8a0');
+    P.outline(OUT); P.shadow(17, b, 15, 1.4);
+    return sprite({ c: P.canvas(), ax: 16, ay: b, foot: [2, 1], solid: true });
+  });
+
+  def('cushion_pile_b', 1, () => {
+    const W = 16, H = 16, b = H - 1, P = new Pix(W, H);
+    // a heap of floor cushions for lying back and counting stars
+    P.ell(8, b - 3, 7, 3, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? NAVY[5] : lit(nx, ny) > -0.3 ? NAVY[4] : NAVY[2]));
+    P.ell(6.5, b - 7, 5, 2.6, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? MUST[6] : lit(nx, ny) > -0.3 ? MUST[5] : MUST[3]));
+    P.ell(10, b - 9.5, 3.4, 2.2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.2 ? '#f0a8a0' : '#c86a5a'));
+    P.set(6, b - 7, MUST[3]); P.set(8, b - 3, NAVY[2]); stamp(P, 3, b - 4, ['.#.', '###', '.#.'], { '#': MUST[5] });
+    P.outline(OUT);
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true });
+  });
+
+  def('lantern_b', 1, () => {
+    const W = 16, H = 22, b = H - 1;
+    let fl = null;
+    const draw = (f) => {
+      const P = new Pix(W, H);
+      // a tin lantern pierced with stars, a candle burning inside
+      P.ell(7.5, 2, 2, 1.6, (x, y, nx, ny) => { if (nx * nx + ny * ny > 0.35) P.set(x, y, IRON[4]); });
+      for (let x = 4; x <= 11; x++) { P.set(x, 4, IRON[5]); P.set(x, 5, IRON[3]); P.set(x, b - 1, IRON[4]); P.set(x, b, IRON[2]); }
+      for (let y = 6; y <= b - 2; y++) for (let x = 4; x <= 11; x++) { const edge = x === 4 || x === 11; P.set(x, y, edge ? (x === 4 ? IRON[5] : IRON[2]) : ((x + y * 2) % 5 === 0 ? '#ffe8a0' : '#f6c870')); }
+      fl = candle(P, 7, b - 3, 4, 2, f);
+      P.outline(OUT); P.shadow(9, b, 5, 1.3);
+      return P;
+    };
+    draw(0);
+    return build({ ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(7.5, b - 9, 56, L_CANDLE, 0.8, 1)] }, draw, 4, 6);
   });
 
   // ================================================================== Amara's study, look C: the Delft Blue Study
@@ -1928,36 +1965,29 @@
   const PEACH = ['#6a3020', '#a4523a', '#d6805a', '#f2aa80', '#ffd2b0', '#fff0e0'];
   function floorRoseHollow(w, h, seed) {
     const P = new Pix(w, h);
-    // big smooth rosy stones worn round, soft moss pooling between them, rose quartz sprouting here and there
+    const SANDR = ['#3a1e26', '#4e2a32', '#64383e', '#7a484c', '#90585a', '#a66a6a', '#ba7e7a', '#cc948c'];
+    // rose sandstone worn smooth into flowing strata, moss pooled in the hollows, rose quartz sprouting from the cracks
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const gx0 = Math.floor(x / 26), gy0 = Math.floor(y / 19);
-      let d1 = 1e9, d2 = 1e9, best = 0, dx1 = 0, dy1 = 0;
-      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-        const gx = gx0 + i, gy = gy0 + j, ox = gx * 26 + 4 + hash(gx, gy, seed) * 18, oy = gy * 19 + 3 + hash(gx, gy, seed + 1) * 13;
-        const d = Math.hypot((x - ox) * 0.78, y - oy);
-        if (d < d1) { d2 = d1; d1 = d; best = hash(gx, gy, seed + 2); dx1 = x - ox; dy1 = y - oy; } else if (d < d2) d2 = d;
-      }
-      const moss = fbm(x / 26, y / 18, seed + 5), gap = d2 - d1;
-      let c;
-      if (gap < 1.4) c = moss > 0.44 ? MOSS[3] : ROSEROCK[2];
-      else if (gap < 4.5 && moss > 0.46) c = rampAt(MOSS, 0.34 + (moss - 0.46) * 1.6 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
-      else {
-        const sh = clamp(0.55 + lit(dx1 / 14, dy1 / 10) * 0.3 - (gap < 3 ? 0.08 : 0), 0, 1);
-        c = rampAt(ROSEROCK, 0.36 + best * 0.14 + sh * 0.38 + (noise(x / 6, y / 6, seed + 3) - 0.5) * 0.1, x, y);
-        if (moss > 0.64) c = rampAt(MOSS, 0.4 + (moss - 0.64) * 2 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
-      }
+      const t = y / 9 + fbm(x / 40, y / 26, seed) * 4.2 + Math.sin(x / 37 + seed) * 0.6, band = Math.floor(t), f = t - band;
+      const tone = hash(band, 0, seed + 1);
+      let k = tone < 0.3 ? 3 : tone < 0.75 ? 4 : 5;
+      if (f < 0.1) k = 2; else if (f < 0.22) k++; else if (f > 0.88) k--;
+      let c = rampAt(SANDR, (k + (noise(x / 5, y / 3, seed + 2) - 0.5) * 0.9) / 7, x, y);
+      const moss = fbm(x / 24, y / 17, seed + 5) + (f > 0.8 ? 0.06 : 0);
+      if (moss > 0.6) c = rampAt(MOSS, 0.34 + (moss - 0.6) * 2.2 + (noise(x / 3, y / 3, seed + 6) - 0.5) * 0.2, x, y);
+      else if (moss > 0.56 && bay(x, y) < (moss - 0.56) * 20) c = MOSS[3];
       P.set(x, y, c);
     }
     // clover flowers in the moss and glints of quartz in the stone
     for (let k = 0; k < (w * h) / 240; k++) {
       const x = Math.floor(hash(k, 1, seed + 7) * w), y = Math.floor(hash(k, 2, seed + 7) * h);
-      if (fbm(x / 26, y / 18, seed + 5) > 0.55) { P.set(x, y, k % 3 ? '#fff4f8' : '#f8c4d4'); P.set(x + 1, y + 1, MOSS[5]); }
+      if (fbm(x / 24, y / 17, seed + 5) > 0.6) { P.set(x, y, k % 3 ? '#fff4f8' : '#f8c4d4'); P.set(x + 1, y + 1, MOSS[5]); }
       else if (k % 4 === 0) P.set(x, y, k % 2 ? RQ[5] : '#ffffff');
     }
     for (let k = 0; k < (w * h) / 700; k++) {
       const x = 3 + Math.floor(hash(k, 1, seed + 9) * (w - 6)), y = 6 + Math.floor(hash(k, 2, seed + 9) * (h - 7)), C = k % 3 ? RQ : PEACH;
       for (const [dx, hh] of [[-1, 2], [0, 4], [1, 3]]) for (let j = 0; j < hh; j++) P.set(x + dx, y - j, j === hh - 1 ? C[5] : dx < 0 ? C[4] : dx > 0 ? C[2] : C[3]);
-      P.set(x - 1, y + 1, ROSEROCK[1]); P.set(x, y + 1, ROSEROCK[1]); P.set(x + 1, y + 1, ROSEROCK[1]);
+      P.set(x - 1, y + 1, SANDR[1]); P.set(x, y + 1, SANDR[1]); P.set(x + 1, y + 1, SANDR[1]);
     }
     return P;
   }
@@ -2096,20 +2126,14 @@
 
   def('crystal_flower_c', 3, (v) => {
     const W = 16, H = 30, b = H - 1, P = new Pix(W, H), C = GEMC[v];
-    // a crystal bellflower: a stem curling over like a shepherd's crook, three glassy bells hanging from it
+    // a crystal lily: blade leaves, a slender stem, one faceted bloom open to the light and a bud beside it
     for (const [sx, sy] of [[4, b], [11, b], [8, b]]) P.ell(sx, sy - 1, 2.2, 1.1, (x, y, nx) => P.set(x, y, nx < 0 ? MOSS[5] : MOSS[3]));
-    const pts = []; for (let t = 0; t <= 1.0001; t += 0.03) { const a = t * Math.PI * 1.15; pts.push([4.5 + (1 - Math.cos(Math.min(a, Math.PI * 0.5))) * 0 + Math.sin(a) * 6.5 * (t > 0.45 ? 1 : t / 0.45), b - 2 - Math.min(t / 0.55, 1) * 19 + (t > 0.55 ? (t - 0.55) / 0.45 * 7 : 0)]); }
-    for (const [x, y] of pts) { P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
-    stamp(P, 1, b - 8, ['..#', '.##', '###'], { '#': (i) => (i < 1 ? LEAF[5] : LEAF[3]) }); stamp(P, 6, b - 12, ['#..', '##.'], { '#': LEAF[4] });
-    const bell = (bx, by) => {
-      P.vline(Math.round(bx), Math.round(by), Math.round(by) + 1, LEAF[3]);
-      const top = Math.round(by) + 2;
-      for (let j = 0; j < 4; j++) { const hw = [1.5, 2, 2.4, 2.8][j]; for (let x = Math.round(bx - hw); x <= Math.round(bx + hw) - 1; x++) { const rel = (x + 0.5 - (bx - hw)) / (2 * hw); P.set(x, top + j, j === 3 ? (rel < 0.5 ? C[1] : C[0]) : C[rel < 0.35 ? 5 : rel < 0.65 ? 4 : 3]); } }
-      P.set(Math.round(bx), top + 4, C[5]);
-    };
-    for (const t of [0.6, 0.78, 0.96]) { const [bx, by] = pts[Math.round(t * (pts.length - 1))]; bell(bx, by); }
+    for (let y = b - 15; y <= b - 2; y++) { const x = 8 + Math.round(Math.sin((y - b) * 0.18) * 0.6); P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
+    P.line(7, b - 2, 3, b - 11, LEAF[5]); P.line(8, b - 2, 4, b - 10, LEAF[3]); P.line(10, b - 3, 13, b - 10, LEAF[3]); P.line(10, b - 2, 12, b - 8, LEAF[2]);
+    P.line(9, b - 9, 12, b - 13, LEAF[3]); P.ell(12.5, b - 14.5, 1.3, 1.8, (x, y, nx) => P.set(x, y, nx < 0 ? C[4] : C[2])); P.set(12, b - 16, C[5]);
+    stamp(P, 4, b - 24, ['....l....', '...lmd...', 'l..lmd..d', 'ml.lmd.dm', '.mlmcmdm.', '..mmcdd..', '...mdd...', '....d....'], { l: C[5], m: C[4], d: C[3], c: '#ffffff' });
     P.outline(OUT);
-    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(10, b - 14, 32, GEM_RGB[v], 0.6)] });
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 20, 32, GEM_RGB[v], 0.6)] });
   });
 
   def('glowcap_c', 2, (v) => {
@@ -2160,4 +2184,27 @@
     P.outline(OUT);
     return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: false, lights: [L(8, b - 12, 24, [150, 255, 200], 0.4)] });
   });
+
+  // ================================================================== names for Settings > Designs (A is the original)
+  const NOTES = (window.ALT_NOTES = window.ALT_NOTES || {});
+  NOTES.home_jasmine = {
+    b: { name: 'Honey Bakery', note: 'Butter-yellow walls, honeycomb tiles, a brick bread oven and a skep-topped bed.' },
+    c: { name: 'Wisteria Sunroom', note: 'Lilac shiplap, sage diamond tiles, a canopy bed and a window of honey jars.' },
+    rec: 'b',
+  };
+  NOTES.home_amara = {
+    b: { name: 'Attic Stargazer', note: 'Pine boards under the roof, a round moon window, a cork board of stars and a hammock.' },
+    c: { name: 'Delft Blue Study', note: 'White plaster and blue-and-white tiles, a porcelain orrery and a cobalt chaise.' },
+    rec: 'b',
+  };
+  NOTES.rare_observatory = {
+    b: { name: 'Tidal Observatory', note: 'Half drowned: verdigris instruments, tide pools and drifting moon jellies.' },
+    c: { name: 'Sunstone Hall', note: 'Sandstone rings round a sun mosaic, an ember sun turning at the centre.' },
+    rec: 'b',
+  };
+  NOTES.rare_crystal = {
+    b: { name: 'Rose Quartz Hollow', note: 'Rosy stone and soft moss, crystal roses and a heart-shaped spring.' },
+    c: { name: 'Emerald Grotto', note: 'Deep moss, a waterfall spring, crystal lilies and golden glowcaps.' },
+    rec: 'c',
+  };
 })();

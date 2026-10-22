@@ -356,7 +356,8 @@
       m.piece('low_shelf_b', 0, 8, 3); m.piece('tall_bookcase_b', 0, 11, 3);
       m.piece('big_telescope_b', 0, 9, 4, { interact: fl('amara_telescope') });
       m.piece('moon_rug_b', 0, 6, 5); m.piece('hammock_b', 0, 7, 6); m.piece('celestial_globe_b', 0, 4, 6);
-      m.piece('mustard_armchair_b', 0, 11, 6); m.piece('book_stack_b', 1, 12, 7); m.piece('book_stack_b', 0, 1, 7);
+      m.piece('mustard_armchair_b', 0, 11, 6); m.piece('book_stack_b', 1, 12, 6); m.piece('book_stack_b', 0, 1, 6);
+      m.piece('star_trunk_b', 0, 1, 8); m.piece('cushion_pile_b', 0, 10, 7); m.piece('lantern_b', 0, 12, 8);
       m.glow(4, 4, 50, [150, 255, 190], 0.25); m.glow(9.5, 2.5, 70, [200, 200, 255], 0.3);
     } else { // the Delft Blue Study: white plaster and blue-and-white tiles, a porcelain orrery and a cobalt chaise
       m.piece('plate_wall_c', 0, 3, 2); m.piece('arch_window_c', 0, 10, 2);
