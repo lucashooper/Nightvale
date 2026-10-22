@@ -841,7 +841,7 @@
   }
   function edSide(P, fly, f, back, front) {
     var S = P.S, Bl = P.belly, k, W = ED_W, Hh = ED_H;
-    var rz = fly ? 10 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f; // lift in the frame; idle breath
+    var rz = fly ? 4 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f; // lift in the frame; idle breath
     var Y = function (y) { return y - rz; };
     var hx = fly ? 2 : 0, hyy = fly ? 4 : -br * 0.5; // the head stretches forward and a little lower in flight
     // ---- far wing (behind everything)
@@ -957,7 +957,7 @@
   }
   function edDown(P, fly, f, back, front) {
     var S = P.S, Bl = P.belly, W = ED_W, Hh = ED_H, k;
-    var rz = fly ? 10 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f;
+    var rz = fly ? 4 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f;
     var Y = function (y) { return y - rz; };
     // ---- back layer: wings, hind legs, the barrel, saddle
     for (var sd = -1; sd <= 1; sd += 2) {
@@ -1012,7 +1012,7 @@
   ];
   function edUp(P, fly, f, back, front) {
     var S = P.S, Bl = P.belly, W = ED_W, Hh = ED_H, k;
-    var rz = fly ? 10 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f;
+    var rz = fly ? 4 + [0, 1, 2, 1][f] : 0, br = fly ? 0 : f;
     var Y = function (y) { return y - rz; };
     // ---- back layer: the neck rising away to the head (above the rider), wings, front legs, barrel, saddle
     var nm = M(W, Hh); mBez(nm, [[44, Y(36)], [44, Y(28)], [44, Y(22)], [44, Y(16)]], 5.6, 4);
@@ -1069,6 +1069,6 @@
   }
   ['dragon_amethyst', 'dragon_emerald', 'dragon_ember'].forEach(function (id) {
     K.defMount(id + '__b', { w: ED_W, h: ED_H, ax: ED_AX, ay: 70, seat: { x: ED_AX, y: 37 }, anims: { idle: 2, fly: 4 }, fps: { idle: 2, fly: 7 },
-      seatDy: { idle: [0, 0], fly: [-10, -11, -12, -11] }, base: 'idle', draw: function (anim, dir, f) { return drawDrake(ED[id], anim, dir, f); } });
+      seatDy: { idle: [0, 0], fly: [-4, -5, -6, -5] }, base: 'idle', draw: function (anim, dir, f) { return drawDrake(ED[id], anim, dir, f); } });
   });
 })();
