@@ -14,8 +14,8 @@
     elowen: ['Elowen', 'Warden of Whisperwood'], grizelda: ['Grizelda', 'Witch of the Mire'], corvin: ['Corvin', 'Gravekeeper'], lune: ['Lune', 'Captain of Glimmermere'], elvis: ['Elvis', 'Barkeep'],
     isolde: ['Isolde', 'Threads & Tomes'], seraphine: ['Seraphine', 'Keeper of the Silver Veil'], fennick: ['Fennick', 'Wandering merchant'], laura: ['Laura', 'Monster hunter'], jasmine: ['Jasmine', 'Beekeeper & baker'],
     amara: ['Amara', 'Star-cartographer'], ronan: ['Ronan', 'Runesmith'], caspian: ['Caspian', 'Dragon tamer'], gideon: ['Gideon', 'Guildmaster'], nightmerchant: ['The Night Merchant', 'Night Market'], player: ['You', 'the Keeper'] };
-  const FACE_CAST = ['laura', 'jasmine', 'amara', 'ronan', 'caspian', 'mirabel', 'brann', 'grizelda', 'player'];
-  const FACE_EXPR = ['happy', 'neutral', 'surprised', 'happy', 'neutral', 'happy', 'angry', 'neutral', 'happy'];
+  const FACE_CAST = ['jasmine', 'amara', 'laura', 'ronan', 'caspian', 'mirabel', 'brann', 'grizelda', 'player'];
+  const FACE_EXPR = ['neutral', 'neutral', 'surprised', 'neutral', 'happy', 'neutral', 'angry', 'neutral', 'happy'];
   const STYLES = [['a', 'Classic', 'The faces in the game today.'], ['human', 'Human', 'Rebuilt as cute, real people at today\'s size: a chin, ears and a neck, a small nose and lips, almond eyes with lashes.'], ['human_hd', 'Human HD', 'The same faces drawn at 96 pixels instead of 64, so they come out sharper and smoother.']]
     .filter((s) => s[0] === 'a' || (window.CharArt && (CharArt.portraitStyles || []).includes(s[0])));
 
@@ -39,31 +39,38 @@
     return s;
   }
   const mountId = (id, v) => (v === 'a' ? id : id + '__' + v);
-  function mountStage(ids, v) {
-    const infos = ids.map((id) => MobArt.mountInfo(mountId(id, v))), dragon = ids[0].startsWith('dragon');
-    const cell = Math.max(...infos.map((i) => i.w)) + 4, W = cell * ids.length + 8, H = Math.max(...infos.map((i) => i.h)) + (dragon ? 18 : 8);
-    const s = h('div', 'stage'), [c, x] = canvas(W, H, W * 2); s.appendChild(c);
+  // every option of a subject shares one stage size, so A, B and C show at their true sizes side by side
+  function mountSize(ids, vs) {
+    const infos = [].concat(...vs.map((v) => ids.map((id) => MobArt.mountInfo(mountId(id, v)))));
+    return { W: Math.max(...infos.map((i) => i.w)) + 12, H: Math.max(...infos.map((i) => i.ay + 2)) + (ids[0].startsWith('dragon') ? 22 : 12) };
+  }
+  const COATS = { horse_midnight: 'Midnight', horse_silver: 'Silver Dapple', horse_chestnut: 'Chestnut', dragon_amethyst: 'Amethyst', dragon_emerald: 'Emerald', dragon_ember: 'Ember' };
+  function mountStage(ids, v, size) {
+    const dragon = ids[0].startsWith('dragon'), { W, H } = size;
+    const s = h('div', 'stage'), [c, x] = canvas(W, H, W * 3), coat = h('div', 'coat'); s.appendChild(c); s.appendChild(coat);
     const ri = (window.CharArt && CharArt.rideInfo) || { ax: 10, ay: 26 };
     animate(x, (x, t) => {
-      const dir = ['down', 'right', 'up', 'left'][Math.floor(t / 2200) % 4];
-      ids.forEach((id0, i) => {
-        const id = mountId(id0, v), info = infos[i], anim = dragon ? 'fly' : 'walk', n = info.anims[anim] || 2, fr = Math.floor((t / 1000) * (info.fps[anim] || 8)) % n;
-        const parts = MobArt.mount(id, anim, dir, fr); if (!parts) return;
-        const gx = 4 + cell * (i + 0.5), gy = H - 5, lift = dragon ? 12 : 0;
-        x.globalAlpha = dragon ? 0.28 : 0.38; x.fillStyle = '#0e0818'; x.beginPath(); x.ellipse(Math.round(gx), gy, dragon ? info.w * 0.24 : 11, dragon ? info.w * 0.08 : 3.5, 0, 0, 7); x.fill(); x.globalAlpha = 1;
-        const x0 = Math.round(gx - info.ax), y0 = Math.round(gy - info.ay - lift);
-        x.drawImage(parts.back, x0, y0);
-        const sdy = (info.seatDy[anim] && info.seatDy[anim][fr]) || 0, rider = window.CharArt && CharArt.playerRide ? CharArt.playerRide(LOOK, dir, fr % 2) : null;
-        if (rider) x.drawImage(rider, Math.round(x0 + info.seat.x - ri.ax), Math.round(y0 + info.seat.y + sdy - ri.ay));
-        if (parts.front) x.drawImage(parts.front, x0, y0);
-      });
+      const turn = Math.floor(t / 2200), dir = ['down', 'right', 'up', 'left'][turn % 4], id0 = ids[Math.floor(turn / 4) % ids.length]; // one coat at a time, all the way round
+      const id = mountId(id0, v), info = MobArt.mountInfo(id), anim = dragon ? 'fly' : 'walk', n = info.anims[anim] || 2, fr = Math.floor((t / 1000) * (info.fps[anim] || 8)) % n;
+      if (coat.textContent !== COATS[id0]) coat.textContent = COATS[id0];
+      const parts = MobArt.mount(id, anim, dir, fr); if (!parts) return;
+      const gx = Math.round(W / 2), gy = H - 6, lift = dragon ? 10 : 0;
+      x.globalAlpha = dragon ? 0.28 : 0.38; x.fillStyle = '#0e0818'; x.beginPath(); x.ellipse(gx, gy, dragon ? info.w * 0.24 : info.w * 0.32, dragon ? info.w * 0.08 : info.w * 0.1, 0, 0, 7); x.fill(); x.globalAlpha = 1;
+      const x0 = Math.round(gx - info.ax), y0 = Math.round(gy - info.ay - lift);
+      x.drawImage(parts.back, x0, y0);
+      const sdy = (info.seatDy[anim] && info.seatDy[anim][fr]) || 0, rider = window.CharArt && CharArt.playerRide ? CharArt.playerRide(LOOK, dir, fr % 2) : null;
+      if (rider) x.drawImage(rider, Math.round(x0 + info.seat.x - ri.ax), Math.round(y0 + info.seat.y + sdy - ri.ay));
+      if (parts.front) x.drawImage(parts.front, x0, y0);
     });
     return s;
   }
   const mobId = (id, v) => (v === 'a' || !K.TYPES[id + '__' + v] ? id : id + '__' + v);
-  function mobStage(mobs, cycle, v) {
-    const infos = mobs.map(([id]) => MobArt.info(mobId(id, v)));
-    const W = Math.max(150, Math.max(...infos.map((i) => i.w)) * 1.9 + 20) | 0, H = Math.max(...infos.map((i) => i.h)) + 14;
+  function mobSize(mobs, vs) {
+    const infos = [].concat(...vs.map((v) => mobs.map(([id]) => MobArt.info(mobId(id, v)))));
+    return { W: Math.max(150, Math.max(...infos.map((i) => i.w)) * 1.9 + 20) | 0, H: Math.max(...infos.map((i) => i.h)) + 14 };
+  }
+  function mobStage(mobs, cycle, v, size) {
+    const infos = mobs.map(([id]) => MobArt.info(mobId(id, v))), { W, H } = size;
     const s = h('div', 'stage dark'), [c, x] = canvas(W, H, W * 2); s.appendChild(c);
     animate(x, (x, t) => {
       const seq = cycle || ['idle', 'move', 'attack'], a = seq[Math.floor(t / 1700) % seq.length];
@@ -187,8 +194,9 @@
     const made = {};
     for (const [sec, key, title, where, kind, o] of SUBJECTS) {
       if (!made[sec]) made[sec] = section(sec, SECTIONS[sec][0], SECTIONS[sec][1]);
-      const opts = optionsFor(key, kind, o);
-      subject(made[sec], key, title, where, opts, (v, name) => kind === 'mount' ? mountStage(o.ids, v) : kind === 'mob' ? mobStage(o.mobs, o.cycle, v) : shot(key, v, `${title}, ${name}`));
+      const opts = optionsFor(key, kind, o), vs = opts.map((x) => x[0]);
+      const size = kind === 'mount' ? mountSize(o.ids, vs) : kind === 'mob' ? mobSize(o.mobs, vs) : null;
+      subject(made[sec], key, title, where, opts, (v, name) => kind === 'mount' ? mountStage(o.ids, v, size) : kind === 'mob' ? mobStage(o.mobs, o.cycle, v, size) : shot(key, v, `${title}, ${name}`));
     }
     count();
   }

@@ -38,7 +38,9 @@ h2 { font-size: 26px; margin: 0 0 4px; font-weight: 700; text-wrap: balance; }
 .stage { display: grid; place-items: center; min-height: 150px; border-radius: 8px; background: radial-gradient(circle at 50% 62%, var(--grass), var(--grass2) 78%); overflow: hidden; }
 .stage.dark { background: radial-gradient(circle at 50% 60%, var(--cave), var(--cave2) 78%); }
 .stage.face { background: radial-gradient(circle at 50% 40%, #3b2d62, #1a1230 70%); }
+.stage { position: relative; }
 .stage canvas { image-rendering: pixelated; max-width: 100%; height: auto; display: block; }
+.stage .coat { position: absolute; left: 10px; bottom: 6px; font-size: 13px; color: var(--muted); }
 img.shot { width: 100%; height: auto; display: block; border-radius: 8px; border: 2px solid var(--ink); background: var(--cave2); }
 button { font: inherit; color: var(--text); cursor: pointer; }
 .choose { justify-self: start; font-size: 15px; background: #221a37; border: 2px solid var(--ink); border-radius: 6px; padding: 5px 12px; box-shadow: inset 0 0 0 1px var(--edge); }
