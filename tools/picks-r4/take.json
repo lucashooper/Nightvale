@@ -1,6 +1,34 @@
 {
-  "portraits": ["human_hd", "The 96-pixel faces are the ones that finally read as real, cute people: you can see the lashes, the light in the eyes and the shape of the lips. B is the same drawing at today's size, if you'd rather change less."],
-  "gloopgarr": ["c", "The most fun to fight and the easiest to read: the pink stands out against the green bog, and his swallowed loot spills out when he splits."],
-  "grimjaw": ["b", "He stays a real wolf leading his moss-wolf pack, and the white mane and the broken spear tell his story at a glance, even at night."],
-  "wyrm": ["b", "His head opens into crystal petals just before he sprays shards, so you see the attack coming, and he matches the geodes he drops."]
+  "portraits": [
+    "human_hd",
+    "The 96-pixel faces are the ones that finally read as real, cute people: you can see the lashes, the light in the eyes and the shape of the lips. B is the same drawing at today's size, if you'd rather change less."
+  ],
+  "gloopgarr": [
+    "c",
+    "The most fun to fight and the easiest to read: the pink stands out against the green bog, and his swallowed loot spills out when he splits."
+  ],
+  "grimjaw": [
+    "b",
+    "He stays a real wolf leading his moss-wolf pack, and the white mane and the broken spear tell his story at a glance, even at night."
+  ],
+  "wyrm": [
+    "b",
+    "His head opens into crystal petals just before he sprays shards, so you see the attack coming, and he matches the geodes he drops."
+  ],
+  "home_jasmine": [
+    "b",
+    "Honey, baking and bears in one warm room: the bread oven, the honey hutch, and Sir Bartholomew hugging a honey pot. It's the most Jasmine of the three."
+  ],
+  "home_amara": [
+    "b",
+    "A cosy attic under the stars, with a round moon window, a cork board of constellations tied with red string, and a hammock. It has the most of her nerdy personality, and it glows at night."
+  ],
+  "rare_observatory": [
+    "b",
+    "It makes the “Sunken” in its name real: a half-drowned star chart with glinting tide pools and drifting moon jellies. C is the showpiece if you'd like drama."
+  ],
+  "rare_crystal": [
+    "c",
+    "The liveliest fairy garden: a brook, a little waterfall spring and glowing crystal lilies. In B and C each flower's colour also matches the gem it gives you."
+  ]
 }

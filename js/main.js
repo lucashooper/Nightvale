@@ -55,7 +55,7 @@
     G.Input.endFrame();
   }
   function frame(now) {
-    const dt = Math.min(0.05, (now - (last || now)) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - (last || now)) / 1000)); // never negative after Main.step
     last = now;
     tick(dt);
     requestAnimationFrame(frame);
