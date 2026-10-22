@@ -2028,16 +2028,6 @@
     return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 14, 36, v ? [255, 190, 150] : [255, 160, 200], 0.55)] });
   });
 
-  def('geode_b', 1, () => {
-    const W = 16, H = 20, b = H - 1, P = new Pix(W, H);
-    // a round stone cracked open, pink crystals glittering inside
-    P.ell(8, b - 7, 7, 6.4, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.4 ? ROSEROCK[6] : lit(nx, ny) > -0.1 ? ROSEROCK[5] : ROSEROCK[3]));
-    P.ell(8.4, b - 6.6, 4.6, 4, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.7 ? '#f4ece8' : (Math.round(Math.atan2(ny, nx) * 4) & 1) ? RQ[4] : RQ[2]));
-    P.ell(8.4, b - 6.6, 2, 1.8, (x, y) => P.set(x, y, RQ[1])); P.set(7, b - 8, '#ffffff'); P.set(10, b - 5, RQ[5]);
-    P.outline(OUT); P.shadow(9, b, 7, 1.5);
-    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(8, b - 7, 22, [255, 160, 200], 0.4)] });
-  });
-
   // ================================================================== the Crystal Garden, look C: the Emerald Grotto
   const STREAM = [[184, 70], [160, 92], [134, 118], [112, 140], [86, 160], [62, 186], [40, 224]];
   function floorEmerald(w, h, seed) {
@@ -2106,19 +2096,20 @@
 
   def('crystal_flower_c', 3, (v) => {
     const W = 16, H = 30, b = H - 1, P = new Pix(W, H), C = GEMC[v];
-    // a crystal bellflower: an arching stem hung with three glassy bells
+    // a crystal bellflower: a stem curling over like a shepherd's crook, three glassy bells hanging from it
     for (const [sx, sy] of [[4, b], [11, b], [8, b]]) P.ell(sx, sy - 1, 2.2, 1.1, (x, y, nx) => P.set(x, y, nx < 0 ? MOSS[5] : MOSS[3]));
-    const stem = []; for (let t = 0; t <= 1.0001; t += 0.04) { const x = 5 + Math.sin(t * 2.4) * 6, y = b - 2 - Math.sin(t * Math.PI * 0.62) * 20; stem.push([x, y]); P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
-    stamp(P, 2, b - 7, ['..#', '.##', '###'], { '#': (i) => (i < 1 ? LEAF[5] : LEAF[3]) });
-    for (const [ti, r] of [[0.42, 2.4], [0.7, 2.8], [0.96, 2.2]]) {
-      const [bx, by] = stem[Math.round(ti * (stem.length - 1))];
+    const pts = []; for (let t = 0; t <= 1.0001; t += 0.03) { const a = t * Math.PI * 1.15; pts.push([4.5 + (1 - Math.cos(Math.min(a, Math.PI * 0.5))) * 0 + Math.sin(a) * 6.5 * (t > 0.45 ? 1 : t / 0.45), b - 2 - Math.min(t / 0.55, 1) * 19 + (t > 0.55 ? (t - 0.55) / 0.45 * 7 : 0)]); }
+    for (const [x, y] of pts) { P.set(x, y, LEAF[4]); P.set(x + 1, y, LEAF[2]); }
+    stamp(P, 1, b - 8, ['..#', '.##', '###'], { '#': (i) => (i < 1 ? LEAF[5] : LEAF[3]) }); stamp(P, 6, b - 12, ['#..', '##.'], { '#': LEAF[4] });
+    const bell = (bx, by) => {
       P.vline(Math.round(bx), Math.round(by), Math.round(by) + 1, LEAF[3]);
       const top = Math.round(by) + 2;
-      for (let j = 0; j < Math.round(r * 2); j++) { const hw = r * (0.5 + j / (r * 2) * 0.6); for (let x = Math.round(bx - hw); x <= Math.round(bx + hw) - 1; x++) { const rel = (x + 0.5 - (bx - hw)) / (2 * hw); P.set(x, top + j, C[j === Math.round(r * 2) - 1 ? 2 : rel < 0.35 ? 5 : rel < 0.65 ? 4 : 3]); } }
-      P.set(Math.round(bx), top + Math.round(r * 2), C[5]);
-    }
+      for (let j = 0; j < 4; j++) { const hw = [1.5, 2, 2.4, 2.8][j]; for (let x = Math.round(bx - hw); x <= Math.round(bx + hw) - 1; x++) { const rel = (x + 0.5 - (bx - hw)) / (2 * hw); P.set(x, top + j, j === 3 ? (rel < 0.5 ? C[1] : C[0]) : C[rel < 0.35 ? 5 : rel < 0.65 ? 4 : 3]); } }
+      P.set(Math.round(bx), top + 4, C[5]);
+    };
+    for (const t of [0.6, 0.78, 0.96]) { const [bx, by] = pts[Math.round(t * (pts.length - 1))]; bell(bx, by); }
     P.outline(OUT);
-    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(9, b - 14, 32, GEM_RGB[v], 0.6)] });
+    return sprite({ c: P.canvas(), ax: 8, ay: b, foot: [1, 1], solid: true, lights: [L(10, b - 14, 32, GEM_RGB[v], 0.6)] });
   });
 
   def('glowcap_c', 2, (v) => {

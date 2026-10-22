@@ -137,7 +137,7 @@
       piece(map, 'fairy_fountain_b', 0, 13, 7, { interact: rare('fountain') });
       for (const [x, y, v] of [[7, 5, 0], [20, 6, 1], [6, 12, 2], [21, 12, 0], [10, 14, 1], [17, 4, 2]]) piece(map, 'crystal_flower_b', v, x, y, { interact: rare('flower') });
       for (const [x, y, v] of [[4, 8, 0], [23, 9, 1], [16, 13, 1], [4, 15, 0], [11, 4, 1]]) piece(map, 'glow_puff_b', v, x, y);
-      piece(map, 'quartz_cluster_b', 0, 9, 9); piece(map, 'quartz_cluster_b', 1, 18, 10); piece(map, 'geode_b', 0, 22, 4); piece(map, 'geode_b', 0, 4, 4);
+      piece(map, 'quartz_cluster_b', 0, 9, 9); piece(map, 'quartz_cluster_b', 1, 18, 10); piece(map, 'quartz_cluster_b', 1, 22, 4); piece(map, 'quartz_cluster_b', 0, 4, 4);
     } else { // the Emerald Grotto: deep moss, a waterfall spring, golden glowcaps
       piece(map, 'fairy_fountain_c', 0, 13, 5, { interact: rare('fountain') });
       for (const [x, y, v] of [[6, 6, 0], [21, 5, 1], [8, 13, 2], [19, 11, 0], [12, 10, 1], [16, 10, 2]]) piece(map, 'crystal_flower_c', v, x, y, { interact: rare('flower') });
