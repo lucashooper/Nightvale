@@ -207,6 +207,7 @@
     var C = P.C, Mn = P.M;
     return { 1: C[0], 2: C[1], 3: C[2], 4: C[3], 5: C[4], a: Mn[0], b: Mn[1], c: Mn[2], d: Mn[3], k: '#1a1426', w: '#ffffff', e: P.eye, n: P.nose, x: P.blaze || C[3] };
   }
+  function dim(map) { var o = {}; for (var k in map) o[k] = map[k]; o[2] = map[1]; o[3] = map[2]; o[4] = map[3]; o[5] = map[4]; return o; }
   function part(b, S, map, dx, dy) { spr(b, S.rows, map, S.x + dx, S.y + dy); return b; }
   var SHS_BODY = { x: 12, y: 2, rows: [
     '.............................dc3.....',
@@ -362,7 +363,7 @@
     shade2(hl, hm, C, { r: 1.6, off: -1 });
     shHoofF(hl, P, 26.6, ga, false); shHoofF(hl, P, 33.4, gb, false);
     over(back, hl, OL);
-    var bl = layer(W, Hh); part(bl, SHD_BARREL, map, 0, oy);
+    var bl = layer(W, Hh); part(bl, SHD_BARREL, dim(map), 0, oy);
     if (P.dapple) { var bm = M(W, Hh); mRows(bm, SHD_BARREL.rows, SHD_BARREL.x, SHD_BARREL.y + oy); dapples(bl, bm, P, 20, 13 + oy, 41, 25 + oy); }
     over(back, bl, OL);
     var tk = layer(W, Hh);
@@ -375,8 +376,8 @@
     shade2(ll, lm, C, { r: 1.8 });
     var fr = layer(W, Hh);
     over(fr, ll, OL);
-    var ch = layer(W, Hh); part(ch, SHD_CHEST, map, 0, oy); over(fr, ch, OL);
-    var hf = layer(W, Hh); shHoofF(hf, P, 24.6, la + 1, true); shHoofF(hf, P, 35.4, lb + 1, true); over(fr, hf, OL);
+    var ch = layer(W, Hh); part(ch, SHD_CHEST, dim(map), 0, oy); over(fr, ch, OL);
+    var hf = layer(W, Hh); shHoofF(hf, P, 24.6, la, true); shHoofF(hf, P, 35.4, lb, true); over(fr, hf, OL);
     var col = layer(W, Hh);
     pline(col, off([21.6, 29, 25, 30.6, 35, 30.6, 38.4, 29], 0, oy), TK.L[2]);
     px(col, 23, 29.8 + oy, TK.gold[2]); px(col, 37, 29.8 + oy, TK.gold[2]);
@@ -437,7 +438,7 @@
     shade2(ll, lm, C, { r: 1.8 });
     var fr = layer(W, Hh);
     over(fr, ll, OL);
-    var hf = layer(W, Hh); shHoofF(hf, P, 24, la + 1, true); shHoofF(hf, P, 36, lb + 1, true); over(fr, hf, OL);
+    var hf = layer(W, Hh); shHoofF(hf, P, 24, la, true); shHoofF(hf, P, 36, lb, true); over(fr, hf, OL);
     var rp = layer(W, Hh); part(rp, SHU_RUMP, map, 0, oy);
     if (P.dapple) { var rm = M(W, Hh); mRows(rm, SHU_RUMP.rows, SHU_RUMP.x, SHU_RUMP.y + oy); dapples(rp, rm, P, 20, 19 + oy, 41, 28 + oy); }
     over(fr, rp, OL);
@@ -457,11 +458,13 @@
       px(b, cx, cy, P.dapple[0]); if (h < 0.3) px(b, cx + 1, cy, P.dapple[1]);
     }
   }
+  function pad(b, W, H, dx, dy) { var o = mk(W, H); K.blit(o, b, dx, dy); return o; }
   function drawShire(P, anim, dir, f) {
     var g = SHG[anim][f], back = mk(SH_W, SH_H), front = mk(SH_W, SH_H);
     if (dir === 'down') shDown(P, g, back, front);
     else if (dir === 'up') shUp(P, g, back, front);
     else shSide(P, g, back, front);
+    back = pad(back, SH_W, SH_H + 2, 0, 2); front = pad(front, SH_W, SH_H + 2, 0, 2);
     outline(back, OL); outline(front, OL);
     return { back: back, front: front };
   }
@@ -526,21 +529,21 @@
     '.....2233.',
     '......12..'
   ] };
-  var FCD_FACE = { x: 21, y: 15, rows: [
-    '4.....4',
-    '54...45',
-    '5545455',
-    '.44544.',
-    'wk4x4wk',
-    'kk4x4kk',
-    '.34x43.',
-    '.34x43.',
-    '.23x32.',
-    '.23x32.',
-    '.33x33.',
-    'n34443n',
-    '.23332.',
-    '..222..'
+  var FCD_FACE = { x: 19, y: 16, rows: [ // the courser looking at us: tall ears, big soft eyes, a fine muzzle
+    '.4.......4.',
+    '.54.....45.',
+    '.5545.5455.',
+    '..445x544..',
+    'wk4445x444wk',
+    'kk3445x443kk',
+    '.33445x4433.',
+    '..334x4433..',
+    '..2344x432..',
+    '..2344x432..',
+    '..233x4332..',
+    '..2n3443n2..',
+    '...223322...',
+    '....2222....'
   ] };
   var FCD_CHEST = { x: 19, y: 25, rows: [
     '..2333332..',
@@ -685,11 +688,11 @@
     var ga = fcLegF(hm, 21.6, 23 + oy, Lg[3][1] ? 2 : 0) - 3, gb = fcLegF(hm, 26.4, 23 + oy, Lg[2][1] ? 2 : 0) - 3;
     shade2(hl, hm, C, { r: 1.2, off: -1 }); fcHoofF(hl, P, 21.6, ga, false, null); fcHoofF(hl, P, 26.4, gb, false, null);
     over(back, hl, OL);
-    var bl = layer(W, Hh); part(bl, FCD_BARREL, map, 0, oy);
+    var bl = layer(W, Hh); part(bl, FCD_BARREL, dim(map), 0, oy);
     if (P.dapple) { var bm = M(W, Hh); mRows(bm, FCD_BARREL.rows, FCD_BARREL.x, FCD_BARREL.y + oy); dapples(bl, bm, P, 16.0, 13 + oy, 32.0, 22 + oy); }
     over(back, bl, OL);
     var tk = layer(W, Hh);
-    silkSide(tk, 15, 17 + oy, -1); silkSide(tk, 31, 17 + oy, 1);
+    spr(tk, ['sSSSSSSSSSs', 'tsasssssast'], { s: SILK[1], S: SILK[2], a: STAR[1], t: STAR[0] }, 18.6, 15.4 + oy);
     spr(tk, ['lLLLLLLLl', 'lLLLLLLLl', '.lllllll.'], { l: TK.L[1], L: TK.L[2] }, 19.6, 13 + oy);
     over(back, tk, OL);
     // ---- front layer: fine front legs, slim chest + silver breastplate, luminous mane locks, the refined face
@@ -698,17 +701,16 @@
     shade2(ll, lm, C, { r: 1.3 });
     var fr = layer(W, Hh); over(fr, ll, OL);
     var hf = layer(W, Hh); fcHoofF(hf, P, 20.6, la, true, P.sock); fcHoofF(hf, P, 27.4, lb, true, P.sock); over(fr, hf, OL);
-    var ch = layer(W, Hh); part(ch, FCD_CHEST, map, 0, oy); over(fr, ch, OL);
+    var ch = layer(W, Hh); part(ch, FCD_CHEST, dim(map), 0, oy); over(fr, ch, OL);
     var bp = layer(W, Hh); pline(bp, off([19.6, 26.6, 22, 28.4, 26, 28.4, 28.4, 26.6], 0, oy), STAR[0]); spr(bp, ['c.c', '.C.'], { c: STAR[1], C: STAR[2] }, 23.0, 28.6 + oy); over(fr, bp, null);
     var ms = run ? [0.6, 1.2, 1.6, 1.2][ph] : [0, 0.5][ph];
-    var rib = [{ p: wave([22.4, 16 + hy], [19.4 - ms, 23 + oy], 0, 0.6, ph), w0: 1.5, w1: 0.8 }, { p: wave([25.6, 16 + hy], [28.4 + ms * 0.6, 22 + oy], 0, 0.6, ph + 1), w0: 1.4, w1: 0.8 },
-      { p: wave([22.8, 18 + hy], [20.4 - ms, 25 + oy], 0, 0.5, ph + 2), w0: 1.2, w1: 0.7 }];
+    var rib = [{ p: wave([21, 18 + hy], [18.6 - ms, 25 + oy], 0, 0.5, ph), w0: 1.2, w1: 0.6 }, { p: wave([27, 18 + hy], [29.4 + ms * 0.6, 24 + oy], 0, 0.5, ph + 1), w0: 1.1, w1: 0.6 }];
     over(fr, hair(fr, rib, P, 40 + ph, 2), OL);
     var hd = layer(W, Hh); part(hd, FCD_FACE, map, 0, hy);
-    line(hd, 22.0, 24.6 + hy, 26.0, 24.6 + hy, SILK[1]); px(hd, 21.4, 24.6 + hy, STAR[1]); px(hd, 26.6, 24.6 + hy, STAR[1]);
+    line(hd, 22, 25.6 + hy, 26, 25.6 + hy, SILK[1]); px(hd, 21.6, 25.6 + hy, STAR[1]); px(hd, 26.4, 25.6 + hy, STAR[1]);
     over(fr, hd, OL);
-    over(fr, hair(fr, [{ p: wave([24.0, 16 + hy], [24.4, 20 + hy], 0, 0.4, ph), w0: 1.1, w1: 0.6 }], P, 50 + ph, 1), OL); // forelock
-    spr(fr, ['.c.', 'cCc'], { c: STAR[1], C: STAR[2] }, 23.0, 14.6 + hy); // crescent charm
+    over(fr, hair(fr, [{ p: wave([24, 17.4 + hy], [24.4, 20.6 + hy], 0, 0.4, ph), w0: 1, w1: 0.5 }], P, 50 + ph, 1), OL); // forelock
+    spr(fr, ['c.c', '.C.'], { c: STAR[1], C: STAR[2] }, 23, 16.4 + hy); // crescent charm
     over(front, fr, null);
   }
   function fcUp(P, g, back, front) {
@@ -725,7 +727,7 @@
     if (P.dapple) { var bm = M(W, Hh); mRows(bm, FCD_BARREL.rows, FCD_BARREL.x, FCD_BARREL.y + oy); dapples(bl, bm, P, 16.0, 13 + oy, 32.0, 22 + oy); }
     over(back, bl, OL);
     var tk = layer(W, Hh);
-    silkSide(tk, 15, 17 + oy, -1); silkSide(tk, 31, 17 + oy, 1);
+    spr(tk, ['sSSSSSSSSSs', 'tsasssssast'], { s: SILK[1], S: SILK[2], a: STAR[1], t: STAR[0] }, 18.6, 15.4 + oy);
     spr(tk, ['.lllllll.', 'lLLLLLLLl', 'lLLLLLLLl'], { l: TK.L[1], L: TK.L[2] }, 19.6, 13 + oy);
     over(back, tk, OL);
     // ---- front layer: long hind legs, the slim rump and the plume of starlit tail cascading over it
@@ -747,16 +749,17 @@
     if (dir === 'down') fcDown(P, g, back, front);
     else if (dir === 'up') fcUp(P, g, back, front);
     else fcSide(P, g, back, front);
+    back = pad(back, FC_W + 4, FC_H + 2, 2, 2); front = pad(front, FC_W + 4, FC_H + 2, 2, 2);
     outline(back, OL); outline(front, OL);
     return { back: back, front: front };
   }
   ['horse_midnight', 'horse_silver', 'horse_chestnut'].forEach(function (id) {
-    K.defMount(id + '__c', { w: FC_W, h: FC_H, ax: FC_AX, ay: 39, seat: { x: FC_AX, y: 15 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 9 },
+    K.defMount(id + '__c', { w: FC_W + 4, h: FC_H + 2, ax: FC_AX + 2, ay: 41, seat: { x: FC_AX + 2, y: 17 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 9 },
       seatDy: { idle: [0, 0], walk: [0, -1, -2, -1] }, base: 'idle', draw: function (anim, dir, f) { return drawCourser(FC[id], anim, dir, f); } });
   });
 
   ['horse_midnight', 'horse_silver', 'horse_chestnut'].forEach(function (id) {
-    K.defMount(id + '__b', { w: SH_W, h: SH_H, ax: SH_AX, ay: 40, seat: { x: SH_AX, y: 15 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 8 },
+    K.defMount(id + '__b', { w: SH_W, h: SH_H + 2, ax: SH_AX, ay: 42, seat: { x: SH_AX, y: 17 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 8 },
       seatDy: { idle: [0, 0], walk: [0, -1, 0, -1] }, base: 'idle', draw: function (anim, dir, f) { return drawShire(SH[id], anim, dir, f); } });
   });
 
@@ -813,9 +816,9 @@
   // wing poses (relative to the shoulder): wrist, finger tips [3], for idle-folded and the 4 flight frames
   var EDW = [
     { wr: [-6, -20], tips: [[-24, -27], [-33, -17], [-27, -5]] },  // up
-    { wr: [-11, -9], tips: [[-34, -13], [-38, -3], [-27, 4]] },    // mid, sweeping down
+    { wr: [-11, -9], tips: [[-32, -13], [-34.4, -3], [-26, 4]] },  // mid, sweeping down
     { wr: [-7, 5], tips: [[-20, 21], [-29, 15], [-30, 6]] },       // down
-    { wr: [-11, -11], tips: [[-33, -16], [-37, -6], [-28, 1]] }    // mid, rising
+    { wr: [-11, -11], tips: [[-31.6, -16], [-34, -6], [-27, 1]] }  // mid, rising
   ];
   // membrane between the arm and the fingers, bones on top, a thumb claw at the wrist
   function edWing(b, P, sx, sy, pose, far, hip) {
@@ -862,7 +865,7 @@
     over(back, fll, OL);
     // ---- tail: long and tapering, curling up at the end into a spade
     var ts = fly ? Math.sin(f * Math.PI / 2) * 2.5 : br * 0.8;
-    var tP = fly ? [[28, Y(45)], [16, Y(46) + ts * 0.3], [8, Y(44) - ts], [1.6, Y(38) + ts * 0.6]] : [[28, 45], [17, 47.6], [8, 57 - ts * 0.3], [3, 51.6 - ts]];
+    var tP = fly ? [[28, Y(45)], [18, Y(46) + ts * 0.3], [12, Y(44) - ts], [8.6, Y(38.6) + ts * 0.6]] : [[28, 45], [17.6, 47.6], [9.4, 56.6 - ts * 0.3], [6.4, 51.4 - ts]];
     var tm = M(W, Hh); mBez(tm, tP, 6, 1.6);
     var tl = layer(W, Hh); var TT = shade2(tl, tm, S, { r: 3 });
     var tq = bezPts(tP, 16);
@@ -981,21 +984,16 @@
     // ---- front layer: front legs, chest, the neck dipping forward to the head, and the face
     var fr = layer(W, Hh);
     var lm = M(W, Hh), ll = layer(W, Hh);
-    if (!fly) { mLimb(lm, [[36, Y(52)], [35.4, Y(60)], [35.6, 67.4]], [7, 5, 4]); mLimb(lm, [[52, Y(52)], [52.6, Y(60)], [52.4, 67.4]], [7, 5, 4]); }
-    else { mLimb(lm, [[36, Y(52)], [34, Y(57)], [36, Y(61)]], [6, 4.4, 3.4]); mLimb(lm, [[52, Y(52)], [54, Y(57)], [52, Y(61)]], [6, 4.4, 3.4]); }
+    if (!fly) { mLimb(lm, [[35.6, Y(50)], [34.6, Y(58)], [35.4, 67.4]], [6.4, 4.6, 3.8]); mLimb(lm, [[52.4, Y(50)], [53.4, Y(58)], [52.6, 67.4]], [6.4, 4.6, 3.8]); }
+    else { mLimb(lm, [[35.6, Y(50)], [33.6, Y(55)], [35.6, Y(59)]], [5.6, 4.2, 3.2]); mLimb(lm, [[52.4, Y(50)], [54.4, Y(55)], [52.4, Y(59)]], [5.6, 4.2, 3.2]); }
     shade2(ll, lm, S, { r: 2 });
     if (!fly) { spr(ll, ['c.c.c'], { c: P.horn[2] }, 33.6, 68.4); spr(ll, ['c.c.c'], { c: P.horn[2] }, 50.4, 68.4); }
     else { spr(ll, ['c.c'], { c: P.horn[2] }, 35, Y(62)); spr(ll, ['c.c'], { c: P.horn[2] }, 51, Y(62)); }
     over(fr, ll, OL);
-    var cm = M(W, Hh); mEll(cm, 44, Y(52.6), 11, 7.6);
-    var cl = layer(W, Hh); shade2(cl, cm, S, { r: 4 });
-    for (var y = Math.round(Y(49)); y <= Math.round(Y(59)); y++) for (var x = 40; x <= 48; x++) if (mGet(cm, x, y) && (x + y) % 3) px(cl, x, y, y % 2 ? Bl[1] : Bl[0]);
+    var cm = M(W, Hh); mEll(cm, 44, Y(50.6), 11, 7.2);
+    var cl = layer(W, Hh); shade2(cl, cm, S, { r: 4, off: -1, min: 1 });
     over(fr, cl, OL);
-    var nm = M(W, Hh); mBez(nm, [[44, Y(43)], [44, Y(45)], [44, Y(47) - br * 0.4], [44, Y(49) - br * 0.4]], 4.4, 4.4);
-    var nl = layer(W, Hh); shade2(nl, nm, S, { r: 3, off: -1, min: 1 });
-    for (k = 0; k < 3; k++) { rect(nl, 42, Y(42 + k * 2.2) - br * 0.2, 5, 1, k % 2 ? Bl[1] : Bl[2]); }
-    over(fr, nl, OL);
-    var hd = layer(W, Hh); spr(hd, EDD_FACE, edMap(P), 34, Y(46) - br * 0.5);
+    var hd = layer(W, Hh); spr(hd, EDD_FACE, edMap(P), 34, Y(41.4) - br * 0.5);
     over(fr, hd, OL);
     over(front, fr, null);
   }
@@ -1071,4 +1069,270 @@
     K.defMount(id + '__b', { w: ED_W, h: ED_H, ax: ED_AX, ay: 70, seat: { x: ED_AX, y: 37 }, anims: { idle: 2, fly: 4 }, fps: { idle: 2, fly: 7 },
       seatDy: { idle: [0, 0], fly: [-4, -5, -6, -5] }, base: 'idle', draw: function (anim, dir, f) { return drawDrake(ED[id], anim, dir, f); } });
   });
+
+  // ======================================================================= DRAGONS · C "Cloud Serpent"
+  // An eastern lung dragon: a long sinuous body that swims through the air on wisps of cloud, short clawed
+  // legs, branched antlers, a flowing mane, long whiskers, and a lacquered saddle on the first coil.
+  var CS = {
+    dragon_amethyst: { S: ['#1c1236', '#30225c', '#4c388c', '#6c56b8', '#9680e0'], belly: ['#a68ccc', '#cbb6ec', '#efe4ff'], H: ['#7a64b4', '#a28cdc', '#cbbcf2', '#efe8ff'], spark: ['#ffffff', '#fff3c4'],
+      horn: ['#7a6e58', '#b8aa88', '#ece0c0'], eye: ['#ffbc62', '#fff1c8'], cloud: ['#3a3266', '#6a62a0', '#a49cd6', '#d8d2f6', '#ffffff'] },
+    dragon_emerald: { S: ['#0a2018', '#143a2c', '#20583e', '#2e7a54', '#4ea070'], belly: ['#86b07a', '#b8d8a4', '#e4f6d4'], H: ['#b89a5a', '#dcc488', '#f4e6b8', '#fffbe8'], spark: ['#ffffff', '#fff6d8'],
+      horn: ['#7a6e58', '#b8aa88', '#ece0c0'], eye: ['#ffd27a', '#fff6d8'], cloud: ['#2c4a48', '#5a8480', '#96c0b4', '#d0ece2', '#ffffff'] },
+    dragon_ember: { S: ['#2a0c0a', '#561812', '#8a2a1a', '#c04a24', '#e87a3a'], belly: ['#d08a40', '#f0b45e', '#ffe0a0'], H: ['#e8902c', '#ffb848', '#ffe08a', '#fff8d8'], spark: ['#ffffff', '#fff1c8'],
+      horn: ['#3a2a28', '#7a6458', '#b8a090'], eye: ['#fff1c8', '#ffffff'], cloud: ['#5a3a3a', '#8e6262', '#c49a8e', '#f0d4c4', '#ffffff'] }
+  };
+  var CSS_HEAD = [ // in profile: branched antlers, a heavy brow over a big eye, a bulbous nose, mane at the cheek
+    '...h.....h..........',
+    '...hH...hH..h.......',
+    '....hH.hH..hH.......',
+    '.....hHHhHHH........',
+    '......jHH455.....45.',
+    '...mq44555554...4554',
+    '..mMq4kkE55554445554',
+    '.mMmq34kk4444444455n',
+    'mMMq333444444444444.',
+    '.mMq2333333333444443',
+    '..mq.22233333333332.',
+    '...q...22r2222t222..',
+    '.......222bbbbbbb2..',
+    '........111111111...'
+  ];
+  var CS_W = 88, CS_H = 64, CS_GY = 61, CS_AX = 44;
+  function csMap(P) { var S = P.S; return { 1: S[0], 2: S[1], 3: S[2], 4: S[3], 5: S[4], h: P.horn[2], H: P.horn[1], j: P.horn[0], k: '#140c1c', e: P.eye[0], E: P.eye[1], t: '#fff6e8', b: P.belly[1], B: P.belly[2], m: P.H[2], M: P.H[3], q: P.H[0], n: S[0], r: '#c8485a', o: OL }; }
+  // Catmull-Rom through control points -> dense samples
+  function crPts(C, per) {
+    var o = [];
+    for (var i = 0; i < C.length - 1; i++) {
+      var p0 = C[Math.max(0, i - 1)], p1 = C[i], p2 = C[i + 1], p3 = C[Math.min(C.length - 1, i + 2)];
+      for (var k = 0; k < per; k++) {
+        var t = k / per, t2 = t * t, t3 = t2 * t;
+        o.push([0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+                0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]);
+      }
+    }
+    o.push(C[C.length - 1].slice());
+    return o;
+  }
+  // body control points from the back of the head (t = 0) to the tail tip; flying = a wave travelling down the body
+  var CS_IDLE = [[65, 33], [59, 39], [52, 45], [44, 47], [37, 52], [30.4, 52.4], [24.6, 46.6], [18.4, 47.6], [13, 53], [9, 54], [6.4, 49]];
+  function csCtrl(fly, f, br) {
+    if (!fly) return CS_IDLE.map(function (q, i) { return [q[0], q[1] + (i > 1 && i < 9 ? br * (i % 2 ? 0.5 : -0.5) : 0) + (i >= 9 ? br * 0.6 : 0)]; });
+    var o = [], N = 11;
+    for (var i = 0; i < N; i++) { var t = i / (N - 1), x = 67 - t * 56, amp = 0.6 + t * 4.4; o.push([x, 43.4 + t * 6 - (1 - t) * (1 - t) * 6 + amp * Math.sin(t * 8.4 - f * Math.PI / 2 + 0.6)]); }
+    return o;
+  }
+  function csRad(t) { return t < 0.14 ? lerp(4.4, 5.6, t / 0.14) : t < 0.42 ? 5.6 : lerp(5.6, 1.4, (t - 0.42) / 0.58); }
+  // the seat: the body's top at x = 44 (for seatDy)
+  function csTopAt(pts, x) { var best = pts[0], bd = 1e9; for (var i = 0; i < pts.length; i++) { var d = Math.abs(pts[i][0] - x); if (d < bd) { bd = d; best = pts[i]; } } return best; }
+  // the top of the body under the saddle (side view, frame lift included) — every view keeps the saddle there
+  function csSeatY(fly, f) { var pts = crPts(csCtrl(fly, f, fly ? 0 : (f ? 1 : 0)), 6); return csTopAt(pts, 44)[1] - (fly ? 4 : 0) - 5.6; }
+  function csSide(P, fly, f, back, front) {
+    var S = P.S, Bl = P.belly, W = CS_W, Hh = CS_H, k, i;
+    var rz = fly ? 4 : 0, br = fly ? 0 : (f ? 1 : 0);
+    var ctrl = csCtrl(fly, f, br).map(function (q) { return [q[0], q[1] - rz]; });
+    var pts = crPts(ctrl, 6), n = pts.length;
+    // normals (pointing "up" = to the left of travel from head to tail)
+    var nor = pts.map(function (q, j) { var a = pts[Math.max(0, j - 1)], c = pts[Math.min(n - 1, j + 1)], dx = c[0] - a[0], dy = c[1] - a[1], l = Math.hypot(dx, dy) || 1; return [-dy / l, dx / l]; });
+    var radAt = function (j) { return csRad(j / (n - 1)); };
+    // ---- far legs (behind)
+    var fl = M(W, Hh), fll = layer(W, Hh);
+    var sh = pts[Math.round(n * 0.2)], hp = pts[Math.round(n * 0.54)];
+    if (!fly) { mLimb(fl, [[sh[0] - 2, sh[1] + 2], [sh[0] - 3, sh[1] + 9], [sh[0] - 1.6, CS_GY - 0.4]], [4.4, 3.2, 2.8]); mLimb(fl, [[hp[0] - 2, hp[1] + 2], [hp[0] - 1, hp[1] + 9], [hp[0] - 3, CS_GY - 0.4]], [4.6, 3.2, 2.8]); }
+    else { var pa = [0, 2, 0, -2][f]; mLimb(fl, [[sh[0] - 2, sh[1] + 2], [sh[0] + 1 + pa, sh[1] + 7], [sh[0] + 4 + pa, sh[1] + 8]], [4, 3, 2.6]); mLimb(fl, [[hp[0] - 2, hp[1] + 2], [hp[0] - 6 - pa, hp[1] + 6], [hp[0] - 10 - pa, hp[1] + 6]], [4, 3, 2.6]); }
+    shade2(fll, fl, S, { r: 1.4, off: -1 });
+    over(back, fll, OL);
+    // ---- body tube
+    var bm = M(W, Hh);
+    for (i = 0; i < n; i++) mEll(bm, pts[i][0], pts[i][1], radAt(i), radAt(i));
+    var bl = layer(W, Hh); shade2(bl, bm, S, { r: 3.4 });
+    // belly plates on the underside (banded), a scale pattern of soft arcs on the flank
+    for (i = 0; i < n - 3; i++) {
+      var q = pts[i], r = radAt(i), nx = nor[i][0], ny = nor[i][1];
+      var bx = q[0] - nx * (r - 0.8), by = q[1] - ny * (r - 0.8);
+      px(bl, bx, by, i % 4 === 0 ? Bl[0] : Bl[1]); if (r > 2.4) px(bl, q[0] - nx * (r - 1.8), q[1] - ny * (r - 1.8), i % 4 === 0 ? Bl[0] : Bl[2]);
+      if (i % 4 === 2 && r > 2.6) px(bl, q[0] + nx * 0.6, q[1] + ny * 0.6, S[2]);
+    }
+    over(back, bl, OL);
+    // ---- dorsal fins: flame-like tufts along the back, and a big tuft at the tail tip
+    var rib = [];
+    for (i = 9; i < n - 5; i += 7) { var q2 = pts[i], r2 = radAt(i), nx2 = nor[i][0], ny2 = nor[i][1], tdx = pts[Math.min(n - 1, i + 3)][0] - q2[0], tdy = pts[Math.min(n - 1, i + 3)][1] - q2[1];
+      var b0 = [q2[0] + nx2 * (r2 - 0.6), q2[1] + ny2 * (r2 - 0.6)], b1 = [b0[0] + nx2 * 2 + tdx * 0.6, b0[1] + ny2 * 2 + tdy * 0.6];
+      if (Math.abs(q2[0] - 44) < 6) continue; // not under the saddle
+      rib.push({ p: [b0, b1], w0: 1.1, w1: 0.4 }); }
+    var tt = pts[n - 1], tdir = [pts[n - 1][0] - pts[n - 4][0], pts[n - 1][1] - pts[n - 4][1]], tl0 = Math.hypot(tdir[0], tdir[1]) || 1;
+    tdir = [tdir[0] / tl0, tdir[1] / tl0];
+    var tw = fly ? [0, 1, 0, -1][f] : br;
+    rib.push({ p: wave([tt[0] + tdir[0], tt[1] + tdir[1]], [tt[0] + tdir[0] * 7 + nor[n - 1][0] * 2, tt[1] + tdir[1] * 7 + nor[n - 1][1] * 2 + tw], 0, 1, f), w0: 2.4, w1: 1 });
+    rib.push({ p: wave([tt[0], tt[1]], [tt[0] + tdir[0] * 6 - nor[n - 1][0] * 2.4, tt[1] + tdir[1] * 6 - nor[n - 1][1] * 2.4 - tw], 0, 0.8, f + 1), w0: 2, w1: 0.8 });
+    over(back, hair(back, rib, P, 90 + f, 2), OL);
+    // ---- the mane streaming back along the neck
+    var hp0 = pts[0], mrib = [];
+    for (k = 0; k < 3; k++) { var a0 = pts[Math.min(n - 1, k * 3)], an = nor[Math.min(n - 1, k * 3)], fl2 = fly ? 2 + k : 1 + k * 0.6;
+      mrib.push({ p: wave([a0[0] + an[0] * 3.4, a0[1] + an[1] * 3.4], [a0[0] - 5 - fl2, a0[1] - 2 + k * 1.4 + (fly ? [0, 1, 0, -1][(f + k) % 4] : br * 0.5)], 0, 0.7, k + f), w0: 1.5 - k * 0.2, w1: 0.6 }); }
+    over(back, hair(back, mrib, P, 30 + f, 2), OL);
+    // ---- head (antlers, brow, bulbous nose) + long whiskers
+    var hX = hp0[0] - 4, hY = hp0[1] - 9;
+    var hd = layer(W, Hh); spr(hd, CSS_HEAD, csMap(P), hX, hY);
+    var ws = fly ? [0, 1, 2, 1][f] : br;
+    var wh = layer(W, Hh);
+    pline(wh, [hX + 19.4, hY + 8, hX + 20.6, hY + 10.6, hX + 19, hY + 13.6 + ws * 0.4, hX + 15, hY + 15.6 + ws * 0.8, hX + 10 - ws, hY + 16 + ws], P.H[2]);
+    pline(wh, [hX + 18.4, hY + 9.6, hX + 18.6, hY + 12, hX + 16, hY + 14 + ws * 0.4, hX + 12 - ws * 0.6, hY + 14.6 + ws * 0.6], P.H[1]);
+    over(hd, wh, null);
+    over(back, hd, OL);
+    // ---- the lacquered saddle on the first coil, with a gold-capped tassel
+    var top = csTopAt(pts, 44), tk = layer(W, Hh);
+    spr(tk, ['r.........R', 'Rr.......rR', 'RRrrrrrrrRr', 'gGgGgGgGgGg', '.ddddddddd.'], { r: '#8a1e2e', R: '#c43848', g: TK.gold[1], G: TK.gold[2], d: '#5a1220' }, 38.6, top[1] - 8.4);
+    var tsw = fly ? [0, 1, 0, -1][f] : 0;
+    line(tk, 40, top[1] - 1, 39.4 + tsw * 0.5, top[1] + 3, TK.gold[1]); spr(tk, ['g', 'r', 'R', 'r'], { g: TK.gold[2], r: '#8a1e2e', R: '#c43848' }, 39 + tsw, top[1] + 3);
+    over(back, tk, OL);
+    // ---- near legs
+    var nl = M(W, Hh), nll = layer(W, Hh);
+    if (!fly) { mLimb(nl, [[sh[0] + 1, sh[1] + 2], [sh[0] + 0.6, sh[1] + 9], [sh[0] + 2.4, CS_GY - 0.4]], [5, 3.4, 3]); mLimb(nl, [[hp[0] + 1, hp[1] + 2], [hp[0] + 2, hp[1] + 9], [hp[0], CS_GY - 0.4]], [5.2, 3.4, 3]); }
+    else { var pb = [2, 0, -2, 0][f]; mLimb(nl, [[sh[0] + 1, sh[1] + 2], [sh[0] + 4 + pb, sh[1] + 6], [sh[0] + 8 + pb, sh[1] + 6]], [4.4, 3.2, 2.6]); mLimb(nl, [[hp[0] + 1, hp[1] + 2], [hp[0] - 4 - pb, hp[1] + 7], [hp[0] - 8 - pb, hp[1] + 8]], [4.4, 3.2, 2.6]); }
+    shade2(nll, nl, S, { r: 1.8 });
+    over(back, nll, S[0]);
+    var cl = layer(W, Hh);
+    if (!fly) { spr(cl, ['c.c.c'], { c: P.horn[2] }, sh[0], CS_GY); spr(cl, ['c.c.c'], { c: P.horn[2] }, hp[0] - 2, CS_GY); }
+    else { spr(cl, ['cc', '.c'], { c: P.horn[2] }, sh[0] + 8 + pb, sh[1] + 5); spr(cl, ['cc', 'c.'], { c: P.horn[2] }, hp[0] - 10 - pb, hp[1] + 7); }
+    over(back, cl, null);
+    // ---- clouds it rides on while flying
+    if (fly) {
+      var cf = f * 1.5, cb = [];
+      cb.push([sh[0] + 5 - cf, sh[1] + 9.6, 2.4], [sh[0] + 1 - cf, sh[1] + 10.4, 2], [sh[0] + 8.6 - cf, sh[1] + 10.6, 1.6], [hp[0] - 7 - cf, hp[1] + 9.6, 2.6], [hp[0] - 11.4 - cf, hp[1] + 10.4, 2], [hp[0] - 3 - cf, hp[1] + 10.6, 1.6]);
+      var cm = layer(W, Hh); K.cloud(cm, cb, [P.cloud[1], P.cloud[2], P.cloud[3], P.cloud[4], P.cloud[4]], 1, P.cloud[1]); over(back, cm, null);
+    }
+    // ---- front layer: the near stirrup
+    rect(front, 44, top[1] + 1, 1, 2, TK.L[1]); rect(front, 43, top[1] + 3, 3, 1, TK.gold[1]);
+  }
+  var CSD_FACE = [ // facing us: antlers, a ruff of mane at the cheeks, a big-eyed brow, the bulbous nose, fangs
+    '..h.h........h.h..',
+    '..hHh........hHh..',
+    '...hH.h....h.Hh...',
+    '....HHH....HHH....',
+    '....jH544445Hj....',
+    '..qq3455555543qq..',
+    '.qMm3kkE44kkE3mMq.',
+    'qMmq4kk4444kk4qmMq',
+    '.qmq3444554444qmq.',
+    '..qq.334444433.qq.',
+    '....q3344554433q..',
+    '.....3n444444n3...',
+    '.....t23333332t...',
+    '......22222222....',
+    '.......2bbbb2.....',
+    '........1111......'
+  ];
+  var CSU_HEAD = [ // the back of the head: antlers, the mane flowing down
+    '.h...h....h...h.',
+    '.hH.hH....Hh.Hh.',
+    '..hHH......HHh..',
+    '...jH544445Hj...',
+    '..mmq455554qmm..',
+    '.mMmq344443qmMm.',
+    '..mMqm3333mqMm..',
+    '...mMmmmmmmMm...',
+    '....mmMmmMmm....',
+    '.....mmmmmm.....'
+  ];
+  // a coiled body through screen-space control points (far end first), shaded, with dorsal fins on the upper side
+  function csCoil(b, P, ctrl, r0, r1, fins, tuft, seed) {
+    var pts = crPts(ctrl, 6), n = pts.length, m = M(b.w, b.h), i;
+    for (i = 0; i < n; i++) { var r = lerp(r0, r1, i / (n - 1)); mEll(m, pts[i][0], pts[i][1], r, r); }
+    var l = layer(b.w, b.h); shade2(l, m, P.S, { r: 3.2 });
+    var rib = [];
+    if (fins) for (i = 4; i < n - 3; i += 7) { var r2 = lerp(r0, r1, i / (n - 1)); rib.push({ p: [[pts[i][0], pts[i][1] - r2 + 0.6], [pts[i][0] + (pts[i + 2][0] - pts[i][0]) * 0.6, pts[i][1] - r2 - 1.6]], w0: 1.1, w1: 0.4 }); }
+    if (tuft) { var e = pts[tuft > 0 ? n - 1 : 0], e2 = pts[tuft > 0 ? n - 4 : 3], dx = e[0] - e2[0], dy = e[1] - e2[1], dl = Math.hypot(dx, dy) || 1;
+      rib.push({ p: wave(e, [e[0] + dx / dl * 6, e[1] + dy / dl * 6 - 1], 0, 0.8, seed), w0: 2.2, w1: 0.9 }, { p: wave(e, [e[0] + dx / dl * 5 + 2, e[1] + dy / dl * 5 + 1], 0, 0.6, seed + 1), w0: 1.8, w1: 0.7 }); }
+    if (rib.length) over(l, hair(l, rib, P, seed, 1), OL);
+    return l;
+  }
+  function csDown(P, fly, f, back, front) {
+    var S = P.S, W = CS_W, Hh = CS_H, rz = fly ? 4 : 0, br = fly ? 0 : (f ? 1 : 0), ph = fly ? f * Math.PI / 2 : 0;
+    var so = Math.round(csSeatY(fly, f)) - Math.round(csSeatY(false, 0)), Y = function (y) { return y + so; }, sw = function (k) { return fly ? Math.sin(ph + k) * 2.4 : 0; };
+    // ---- back layer: the coils trailing away behind the rider (far first), hind legs, the saddle
+    var coil = [[60 + sw(2.4), Y(19)], [65 + sw(2), Y(23)], [64 + sw(1.6), Y(28.6)], [58 + sw(1.2), Y(33)], [60 + sw(0.8), Y(38)], [55 + sw(0.4), Y(42)], [48, Y(44)], [44, Y(45)]];
+    var hl = M(W, Hh), hll = layer(W, Hh);
+    if (!fly) { mLimb(hl, [[62, Y(36)], [64, Y(42)], [63.6, Y(48)]], [4, 3, 2.6]); mLimb(hl, [[57, Y(43)], [58.6, Y(49)], [58.4, 55]], [4, 3, 2.6]); }
+    else { mLimb(hl, [[62, Y(36)], [66, Y(39)], [68, Y(39)]], [3.6, 2.8, 2.4]); mLimb(hl, [[57, Y(43)], [60.6, Y(46)], [62.6, Y(46)]], [3.6, 2.8, 2.4]); }
+    shade2(hll, hl, S, { r: 1.4, off: -1 }); over(back, hll, OL);
+    over(back, csCoil(back, P, coil, 1.6, 5.4, true, -1, 40 + f), OL);
+    if (fly) { var cm = layer(W, Hh); K.cloud(cm, [[67 + f, Y(41), 2.2], [70 + f, Y(42), 1.8], [61 + f, Y(49), 2.4], [64 + f, Y(50), 1.8]], [P.cloud[1], P.cloud[2], P.cloud[3], P.cloud[4], P.cloud[4]], 1, P.cloud[1]); over(back, cm, null); }
+    var tk = layer(W, Hh);
+    spr(tk, ['RRRRRRRRRRR', 'rrrrrrrrrrr', 'gGgGgGgGgGg'], { r: '#8a1e2e', R: '#c43848', g: TK.gold[1], G: TK.gold[2] }, 38.6, Y(37.6));
+    over(back, tk, OL);
+    // ---- front layer: front legs, the neck coming to us and the face with its mane and whiskers
+    var fr = layer(W, Hh);
+    var lm = M(W, Hh), ll = layer(W, Hh);
+    if (!fly) { mLimb(lm, [[36, Y(50)], [34.6, Y(55)], [35, 60.6]], [5, 3.6, 3]); mLimb(lm, [[52, Y(50)], [53.4, Y(55)], [53, 60.6]], [5, 3.6, 3]); }
+    else { mLimb(lm, [[36, Y(50)], [33, Y(54)], [32, Y(57)]], [4.4, 3.2, 2.6]); mLimb(lm, [[52, Y(50)], [55, Y(54)], [56, Y(57)]], [4.4, 3.2, 2.6]); }
+    shade2(ll, lm, S, { r: 1.8 });
+    if (!fly) { spr(ll, ['c.c'], { c: P.horn[2] }, 34, 61); spr(ll, ['c.c'], { c: P.horn[2] }, 52, 61); }
+    over(fr, ll, OL);
+    var nm = M(W, Hh); mBez(nm, [[44, Y(43)], [44, Y(46)], [44, Y(48)], [44, Y(50)]], 4.6, 5);
+    var nl = layer(W, Hh); shade2(nl, nm, S, { r: 3 });
+    for (var k = 0; k < 3; k++) rect(nl, 42, Y(44 + k * 2) , 5, 1, k % 2 ? P.belly[1] : P.belly[2]);
+    over(fr, nl, OL);
+    var hX = 35, hY = Y(44) - br * 0.5, hd = layer(W, Hh); spr(hd, CSD_FACE, csMap(P), hX, hY);
+    var ws = fly ? [0, 1, 2, 1][f] : br, wh = layer(W, Hh);
+    pline(wh, [hX + 5, hY + 11.6, hX + 3, hY + 12.6, hX + 1.4, hY + 14.4 + ws * 0.4, hX + 1, hY + 16 + ws * 0.6], P.H[2]); pline(wh, [hX + 13, hY + 11.6, hX + 15, hY + 12.6, hX + 16.6, hY + 14.4 + ws * 0.4, hX + 17, hY + 16 + ws * 0.6], P.H[2]);
+    over(hd, wh, null);
+    over(fr, hd, OL);
+    if (fly) { var cm2 = layer(W, Hh); K.cloud(cm2, [[38 - f, Y(60), 2.4], [34 - f, Y(61), 1.8], [50 + f, Y(60.4), 2.2], [54 + f, Y(61), 1.8]], [P.cloud[1], P.cloud[2], P.cloud[3], P.cloud[4], P.cloud[4]], 1, P.cloud[1]); over(fr, cm2, null); }
+    over(front, fr, null);
+  }
+  function csUp(P, fly, f, back, front) {
+    var S = P.S, W = CS_W, Hh = CS_H, rz = fly ? 4 : 0, br = fly ? 0 : (f ? 1 : 0), ph = fly ? f * Math.PI / 2 : 0;
+    var so = Math.round(csSeatY(fly, f)) - Math.round(csSeatY(false, 0)), Y = function (y) { return y + so; }, sw = function (k) { return fly ? Math.sin(ph + k) * 2.4 : 0; };
+    // ---- back layer: the neck rising away to the head (above the rider), front legs, saddle
+    var nm = M(W, Hh); mBez(nm, [[44, Y(40)], [44, Y(33)], [44, Y(27)], [44, Math.max(10, Y(21))]], 5, 4);
+    var nl = layer(W, Hh); shade2(nl, nm, S, { r: 3 }); over(back, nl, OL);
+    over(back, hair(back, [{ p: wave([44, Y(20)], [41 - (fly ? 2 : 0), Y(33)], 0, 0.6, f), w0: 1.6, w1: 0.8 }, { p: wave([45, Y(22)], [47.6 + (fly ? 1 : 0), Y(34)], 0, 0.6, f + 1), w0: 1.4, w1: 0.8 }], P, 70 + f, 1), OL);
+    var hd = layer(W, Hh); spr(hd, CSU_HEAD, csMap(P), 36, Math.max(1, Y(10)) - br * 0.5); over(back, hd, OL);
+    var fl = M(W, Hh), fll = layer(W, Hh);
+    if (!fly) { mLimb(fl, [[38, Y(42)], [36.6, Y(48)], [37, 54]], [4, 3, 2.6]); mLimb(fl, [[50, Y(42)], [51.4, Y(48)], [51, 54]], [4, 3, 2.6]); }
+    else { mLimb(fl, [[38, Y(42)], [35, Y(46)], [33.6, Y(48)]], [3.6, 2.8, 2.4]); mLimb(fl, [[50, Y(42)], [53, Y(46)], [54.4, Y(48)]], [3.6, 2.8, 2.4]); }
+    shade2(fll, fl, S, { r: 1.4, off: -1 }); over(back, fll, OL);
+    var tk = layer(W, Hh);
+    spr(tk, ['gGgGgGgGgGg', 'rrrrrrrrrrr', 'RRRRRRRRRRR'], { r: '#8a1e2e', R: '#c43848', g: TK.gold[1], G: TK.gold[2] }, 38.6, Y(37.6));
+    over(back, tk, OL);
+    // ---- front layer: the coils winding toward us, the hind legs, the tail tuft at the bottom
+    var fr = layer(W, Hh);
+    var coil = [[44, Y(40)], [52 + sw(0.4), Y(43.4)], [59 + sw(0.8), Y(47.6)], [53 + sw(1.2), Y(52)], [40 + sw(1.6), Y(54)], [29 + sw(2), Y(57)], [33 + sw(2.4), Y(60)], [43 + sw(2.8), Y(60.6)], [51 + sw(3.2), Y(59.4)]];
+    var hl = M(W, Hh), hll = layer(W, Hh);
+    if (!fly) { mLimb(hl, [[60, Y(49)], [62, Y(54)], [61.6, 60.6]], [4.6, 3.4, 3]); mLimb(hl, [[28, Y(57)], [26, Y(59.6)], [26.4, 61]], [4.6, 3.4, 3]); }
+    else { mLimb(hl, [[60, Y(49)], [64, Y(51)], [66, Y(51)]], [4, 3, 2.6]); mLimb(hl, [[28, Y(57)], [24, Y(58)], [22, Y(57.6)]], [4, 3, 2.6]); }
+    shade2(hll, hl, S, { r: 1.6 }); over(fr, hll, OL);
+    over(fr, csCoil(fr, P, coil, 5.4, 1.6, true, 1, 50 + f), OL);
+    if (fly) { var cm = layer(W, Hh); K.cloud(cm, [[64 + f, Y(54), 2.4], [67 + f, Y(55), 1.8], [24 - f, Y(60), 2.2], [21 - f, Y(60.4), 1.8]], [P.cloud[1], P.cloud[2], P.cloud[3], P.cloud[4], P.cloud[4]], 1, P.cloud[1]); over(fr, cm, null); }
+    over(front, fr, null);
+  }
+  function drawSerpent(P, anim, dir, f) {
+    var fly = anim === 'fly', back = mk(CS_W, CS_H), front = mk(CS_W, CS_H);
+    if (dir === 'down') csDown(P, fly, f, back, front);
+    else if (dir === 'up') csUp(P, fly, f, back, front);
+    else csSide(P, fly, f, back, front);
+    outline(back, OL); outline(front, OL);
+    return { back: back, front: front };
+  }
+  (function () {
+    var base = Math.round(csSeatY(false, 0));
+    var sd = [0, 1, 2, 3].map(function (f) { return Math.round(csSeatY(true, f)) - base; }), si = [0, 1].map(function (f) { return Math.round(csSeatY(false, f)) - base; });
+    ['dragon_amethyst', 'dragon_emerald', 'dragon_ember'].forEach(function (id) {
+      K.defMount(id + '__c', { w: CS_W, h: CS_H, ax: CS_AX, ay: 62, seat: { x: CS_AX, y: base }, anims: { idle: 2, fly: 4 }, fps: { idle: 2, fly: 7 },
+        seatDy: { idle: si, fly: sd }, base: 'idle', draw: function (anim, dir, f) { return drawSerpent(CS[id], anim, dir, f); } });
+    });
+  })();
+
+  // ======================================================================= names for the Designs menu
+  var NOTES = (ROOT.ALT_NOTES = ROOT.ALT_NOTES || {});
+  NOTES.horses = {
+    b: { name: 'Shire Giant', note: 'A big feathered-hoof draught horse with saddlebags and a lantern.' },
+    c: { name: 'Starlit Courser', note: 'A slender fae steed with a glowing mane and a plume of a tail.' },
+    rec: 'b'
+  };
+  NOTES.dragons = {
+    b: { name: 'Elder Drake', note: 'A majestic horned dragon with vast wings and a war saddle.' },
+    c: { name: 'Cloud Serpent', note: 'A long eastern dragon with antlers that swims the sky on clouds.' },
+    rec: 'b'
+  };
 })();
