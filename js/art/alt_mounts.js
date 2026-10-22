@@ -10,15 +10,14 @@
   if (!MA || !MA._kit) return;
   var K = MA._kit;
   var OL = K.OL, mk = K.mk, px = K.px, rect = K.rect, line = K.line, spr = K.spr, over = K.over, outline = K.outline;
-  var hash = K.hash, mix = K.mix, A = K.A, inE = K.inE, bez3 = K.bez3, clr = K.clr;
+  var hash = K.hash, mix = K.mix, inE = K.inE, bez3 = K.bez3;
 
-  // ======================================================================= volume masks + directional shading
-  // Parts are built as boolean masks (unions of ellipses, polygons and tapered tubes), then shaded as one
-  // volume: each pixel's tone comes from how far it sits from the lit edge (toward the upper left) versus
-  // the shadow edge, so joined shapes read as one smooth form instead of a stack of shaded blobs.
+  // ======================================================================= volume masks + height-field shading
+  // Organic parts (legs, necks, tails, wings, coils) are built as boolean masks (unions of ellipses, polygons
+  // and tapered tubes) and shaded as one volume, so joined shapes read as one smooth form. The key character
+  // parts (heads, bodies, rumps, faces) are hand-pixelled ASCII sprites drawn with each coat's ramp.
   function M(w, h) { return { w: w, h: h, d: new Uint8Array(w * h) }; }
   function mSet(m, x, y) { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.d[y * m.w + x] = 1; }
-  function mClr(m, x, y) { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.d[y * m.w + x] = 0; }
   function mGet(m, x, y) { return x >= 0 && y >= 0 && x < m.w && y < m.h ? m.d[y * m.w + x] : 0; }
   function mEll(m, cx, cy, rx, ry) {
     for (var y = Math.floor(cy - ry - 1); y <= Math.ceil(cy + ry + 1); y++)
@@ -56,36 +55,10 @@
   }
   function bezPts(P, n) { var o = []; for (var i = 0; i <= n; i++) o.push(bez3(P, i / n)); return o; }
   function mBez(m, P, r0, r1) { return mTube(m, bezPts(P, 16), r0, r1); }
-  function mOr(a, b) { for (var i = 0; i < a.d.length; i++) a.d[i] |= b.d[i]; return a; }
-  function mSub(a, b) { for (var i = 0; i < a.d.length; i++) if (b.d[i]) a.d[i] = 0; return a; }
   // ASCII mask: rows of '#' (or any non-'.' char) placed with its top-left at (ox, oy)
   function mRows(m, rows, ox, oy) {
     for (var y = 0; y < rows.length; y++) for (var x = 0; x < rows[y].length; x++) { var c = rows[y].charAt(x); if (c !== '.' && c !== ' ') mSet(m, ox + x, oy + y); }
     return m;
-  }
-  function mCount(m) { var n = 0; for (var i = 0; i < m.d.length; i++) n += m.d[i]; return n; }
-  // tone of every mask pixel: 0 (core shadow) .. 4 (highlight); o.off shifts the whole ramp (far parts -1)
-  var LX = -0.6, LY = -0.8;
-  function toneAt(m, x, y, o) {
-    var dl = 0, ds = 0, n;
-    for (n = 1; n <= 24; n++) { if (!mGet(m, Math.floor(x + 0.5 + LX * n), Math.floor(y + 0.5 + LY * n))) break; dl++; }
-    for (n = 1; n <= 24; n++) { if (!mGet(m, Math.floor(x + 0.5 - LX * n), Math.floor(y + 0.5 - LY * n))) break; ds++; }
-    var t = (dl + 0.5) / (dl + ds + 1);
-    if (o && o.tb) t = t * (1 - o.tb) + o.tb * Math.max(0, Math.min(1, (y - o.y0) / (o.y1 - o.y0))); // extra top-down falloff
-    var k = t < 0.2 ? 4 : t < 0.45 ? 3 : t < 0.72 ? 2 : t < 0.9 ? 1 : 0;
-    if (k === 4 && mGet(m, x, y - 1) && dl > 1) k = 3; // the brightest tone only along the upper rim
-    if (!mGet(m, x, y - 1) && t < 0.55 && k < 3) k = 3;
-    if (o && o.off) k += o.off;
-    if (o && o.max != null) k = Math.min(k, o.max);
-    return Math.max(0, Math.min(4, k));
-  }
-  function shade(b, m, R, o) {
-    for (var y = 0; y < m.h; y++) for (var x = 0; x < m.w; x++) {
-      if (!m.d[y * m.w + x]) continue;
-      var k = toneAt(m, x, y, o);
-      px(b, x, y, R[Math.min(R.length - 1, k)]);
-    }
-    return b;
   }
   // height-field shading: distance to the silhouette edge -> a rounded bevel of radius o.r -> normals -> lit from the upper left.
   // o: { r: bevel radius, off: ramp shift, tb: top->bottom darkening [0..1] over y0..y1, lz: light height, rim: upper-rim highlight }
@@ -136,7 +109,6 @@
     for (var y = 0; y < m.h; y++) for (var x = 0; x < m.w; x++) { var k = T[y * m.w + x]; if (k >= 0) px(b, x, y, R[Math.min(R.length - 1, k)]); }
     return T;
   }
-  function fill(b, m, c) { for (var y = 0; y < m.h; y++) for (var x = 0; x < m.w; x++) if (m.d[y * m.w + x]) px(b, x, y, typeof c === 'function' ? c(x, y) : c); return b; }
   function layer(w, h) { return mk(w, h); }
   function lerp(a, b, t) { return a + (b - a) * t; }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -168,7 +140,7 @@
            { bob: 0, legs: [[-2, 0], [3, 0], [2, 0], [-3, 0]], sw: 2, nod: 0 },
            { bob: -1, legs: [[0, 0], [1, 3], [-1, 3], [0, 0]], sw: 3, nod: -1 }]
   };
-  var SH_W = 60, SH_H = 42, SH_GY = 39, SH_AX = 30; // frame, ground row, centre (the seat)
+  var SH_W = 60, SH_H = 42, SH_GY = 39, SH_AX = 30; // design canvas, ground row, centre (the seat); frames get 2px of headroom (pad)
   function off(pts, dx, dy) { var o = []; for (var i = 0; i < pts.length; i += 2) o.push(pts[i] + dx, pts[i + 1] + dy); return o; }
   // tapered limb through joints [[x, y], ...] with widths [w, ...]: quads between joints + round joints
   function mLimb(m, pts, ws) {
@@ -488,7 +460,7 @@
            { bob: -2, legs: [[5, 2], [4, 3], [-4, 2], [-3, 3]], ph: 2, nod: 0 },
            { bob: -1, legs: [[1, 0], [3, 2], [-2, 3], [1, 2]], ph: 3, nod: 1 }]
   };
-  var FC_W = 48, FC_H = 42, FC_GY = 38, FC_AX = 24;
+  var FC_W = 48, FC_H = 42, FC_GY = 38, FC_AX = 24; // design canvas; frames are padded 2px on every side but the bottom
     var FCS_BODY = { x: 12, y: 4, rows: [
       '......................445..',
       '.....................44443.',
@@ -676,11 +648,6 @@
   function fcLegF(m, cx, top, lift) { var gy = FC_GY - lift; mLimb(m, [[cx, top], [cx, lerp(top, gy, 0.5) - lift * 0.3], [cx, gy - 1]], [3, 2.2, 2]); return gy; }
   function fcHoofF(b, P, cx, gy, near, sock) { var x = Math.round(cx) - 1; if (sock) rect(b, x, gy - 2, 2, 2, sock); rect(b, x, gy, 2, 1, P.hoof[near ? 1 : 0]); }
   function fcMapOf(P) { return coatMap({ C: P.C, M: [P.H[0], P.H[1], P.H[2], P.H[3]], eye: P.eye, nose: P.nose, blaze: P.blaze }); }
-  // the silk cloth hanging down one side, seen from the front/back (scalloped, star-stitched hem); s = -1 left, 1 right
-  function silkSide(b, x, y, s, n) {
-    var rows = ['ss', 'sS', 'sS', 'aS', 'sS', 'sS', 'sa', 'sS', 't.'];
-    spr(b, rows, { s: SILK[1], S: SILK[s < 0 ? 3 : 2], a: STAR[1], t: STAR[0] }, x, y, s > 0);
-  }
   function fcDown(P, g, back, front) {
     var C = P.C, oy = g.bob, Lg = g.legs, W = FC_W, Hh = FC_H, map = fcMapOf(P), ph = g.ph, k;
     var hy = oy + g.nod * 0.6, run = Lg[0][1] + Lg[1][1] + Lg[2][1] + Lg[3][1] > 0;
@@ -813,7 +780,7 @@
   function edMap(P) { var S = P.S; return { 1: S[0], 2: S[1], 3: S[2], 4: S[3], 5: S[4], h: P.horn[2], H: P.horn[1], j: P.horn[0], k: '#140c1c', e: P.eye[0], E: P.eye[1], t: '#fff6e8', b: P.belly[1], B: P.belly[2], s: P.spine[0], S: P.spine[1], o: OL, n: S[0] }; }
   // a small dorsal plate at (x, y) pointing along (nx, ny)
   function plate(b, x, y, nx, ny, P) { px(b, x, y, P.spine[0]); px(b, x + nx, y + ny, P.spine[0]); px(b, x + nx * 2, y + ny * 2, P.spine[1]); px(b, x - ny * 0.8, y + nx * 0.8, P.spine[0]); }
-  // wing poses (relative to the shoulder): wrist, finger tips [3], for idle-folded and the 4 flight frames
+  // wing poses for the 4 flight frames (relative to the shoulder): wrist and 3 finger tips; landed, the wings fold
   var EDW = [
     { wr: [-6, -20], tips: [[-24, -27], [-33, -17], [-27, -5]] },  // up
     { wr: [-11, -9], tips: [[-32, -13], [-34.4, -3], [-26, 4]] },  // mid, sweeping down
@@ -871,8 +838,8 @@
     var tq = bezPts(tP, 16);
     for (k = 2; k < 15; k += 2) { var a0 = tq[k], a1 = tq[k + 1], nx0 = a1[1] - a0[1], ny0 = -(a1[0] - a0[0]), nl0 = Math.hypot(nx0, ny0) || 1, rr = lerp(5.4, 1.4, k / 16);
       // belly plates on the underside, spines on top
-      px(tl, a0[0] - nx0 / nl0 * (rr - 1), a0[1] - ny0 / nl0 * (rr - 1), Bl[1]);
-      if (k % 4 === 2) { px(tl, a0[0] + nx0 / nl0 * (rr + 0.6), a0[1] + ny0 / nl0 * (rr + 0.6), P.spine[0]); px(tl, a0[0] + nx0 / nl0 * (rr + 1.6), a0[1] + ny0 / nl0 * (rr + 1.6), P.spine[1]); }
+      px(tl, a0[0] + nx0 / nl0 * (rr - 1), a0[1] + ny0 / nl0 * (rr - 1), Bl[1]);
+      if (k % 4 === 2) { px(tl, a0[0] - nx0 / nl0 * (rr + 0.6), a0[1] - ny0 / nl0 * (rr + 0.6), P.spine[0]); px(tl, a0[0] - nx0 / nl0 * (rr + 1.6), a0[1] - ny0 / nl0 * (rr + 1.6), P.spine[1]); }
     }
     var tip = tq[16], tdir = [tq[16][0] - tq[14][0], tq[16][1] - tq[14][1]], tdl = Math.hypot(tdir[0], tdir[1]) || 1; tdir = [tdir[0] / tdl, tdir[1] / tdl];
     var tn = [-tdir[1], tdir[0]], spd = M(W, Hh);
@@ -889,8 +856,10 @@
     // belly plates (banded) along the underside of the neck, chest and belly
     for (var y = Math.round(Y(51)); y <= Math.round(Y(58)); y++) for (var x = 36; x <= 58; x++) if (mGet(bd, x, y) && !mGet(bd, x, y + 2)) px(bl, x, y, (x + y) % 4 ? Bl[1] : Bl[0]);
     var nq = bezPts(nP, 12);
+    var nq2 = bezPts(nP, 36);
+    for (k = 3; k < 34; k++) { var q0 = nq2[k], q1 = nq2[k + 1], qx = q1[1] - q0[1], qy = -(q1[0] - q0[0]), ql = Math.hypot(qx, qy) || 1, rq = lerp(6.4, 3.6, k / 36), seg = k % 4 === 0;
+      px(bl, q0[0] - qx / ql * (rq - 0.6), q0[1] - qy / ql * (rq - 0.6), seg ? Bl[0] : Bl[1]); px(bl, q0[0] - qx / ql * (rq - 1.6), q0[1] - qy / ql * (rq - 1.6), seg ? Bl[0] : Bl[2]); }
     for (k = 1; k < 12; k++) { var p0 = nq[k], p1 = nq[k + 1], nnx = p1[1] - p0[1], nny = -(p1[0] - p0[0]), nnl = Math.hypot(nnx, nny) || 1, r2 = lerp(6.4, 3.6, k / 12);
-      px(bl, p0[0] - nnx / nnl * (r2 - 1.2), p0[1] - nny / nnl * (r2 - 1.2), k % 2 ? Bl[1] : Bl[2]); px(bl, p0[0] - nnx / nnl * (r2 - 0.4), p0[1] - nny / nnl * (r2 - 0.4), Bl[0]);
       if (k % 3 === 0 && k > 1) plate(bl, p0[0] + nnx / nnl * (r2 - 0.2), p0[1] + nny / nnl * (r2 - 0.2), Math.round(nnx / nnl), Math.round(nny / nnl), P); }
     // back spines behind the saddle
     [[34, 39.6], [29.6, 39.2], [25, 40.2]].forEach(function (q) { plate(bl, q[0], Y(q[1]), 0, -1, P); });

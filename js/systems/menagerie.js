@@ -220,6 +220,7 @@
   // ---------------------------------------------------------------- drawing
   function mountParts(id, anim, dir, frame) { try { return MA().mount(G.altArt(id), anim, dir, frame); } catch (e) { return null; } }
   function mountInfo(id) { try { return MA().mountInfo(G.altArt(id)); } catch (e) { return null; } }
+  const shadowK = (id) => { const i = mountInfo(id); return i ? Math.max(1, i.w / 48) : 1; }; // bigger dragons cast bigger shadows
   function shadow(ctx, x, y, w, a) { ctx.globalAlpha = a; ctx.fillStyle = '#0e0818'; ctx.beginPath(); ctx.ellipse(Math.round(x), Math.round(y), w, w * 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
   // the player riding: the mount behind, the rider in the saddle, the near side of the mount in front
   Mg.drawRider = function (ctx, p, ox, oy) {
@@ -246,10 +247,10 @@
     for (const q of Mg.pets) if (q.map === map.id) list.push({ sortY: q.y, draw: (c, ox, oy) => drawPet(c, q, ox, oy) });
     if (map.id === 'menagerie') for (const q of Mg.shopPets) list.push({ sortY: q.y, draw: (c, ox, oy) => drawPet(c, q, ox, oy) });
     if (map.id === 'village') for (const a of Mg.paddock) list.push({ sortY: a.y, draw: (c, ox, oy) => drawMountAt(c, a.id, a.anim, a.dir, a.t, a.x, a.y, 0, ox, oy) });
-    if (Mg.ride && Mg.alt > 0) list.push({ sortY: p.y - 2, draw: (c, ox, oy) => shadow(c, p.x + ox, p.y + oy, 12 - Math.min(5, Mg.alt / 6), 0.32 - Math.min(0.14, Mg.alt / 200)) });
+    if (Mg.ride && Mg.alt > 0) list.push({ sortY: p.y - 2, draw: (c, ox, oy) => shadow(c, p.x + ox, p.y + oy, (12 - Math.min(5, Mg.alt / 6)) * shadowK(Mg.ride.id), 0.32 - Math.min(0.14, Mg.alt / 200)) });
     const c = Mg.calling;
     if (c) {
-      if (c.alt > 0) list.push({ sortY: c.y - 2, draw: (cx, ox, oy) => shadow(cx, c.x + ox, c.y + oy, 11, 0.25) });
+      if (c.alt > 0) list.push({ sortY: c.y - 2, draw: (cx, ox, oy) => shadow(cx, c.x + ox, c.y + oy, 11 * shadowK(c.id), 0.25) });
       list.push({ sortY: c.alt > 6 ? 1e5 : c.y, draw: (cx, ox, oy) => drawMountAt(cx, c.id, c.kind === 'dragon' ? 'fly' : 'walk', c.dir || 'down', c.t, c.x, c.y, c.alt, ox, oy) });
     }
   };
