@@ -154,7 +154,7 @@
   // A big-boned draught horse: arched crest, broad chest, feathered hooves, a long wavy mane and a
   // traveller's kit (quilted pad, brass-studded breast collar, saddlebags with a little lantern).
   var SH = {
-    horse_midnight: { C: ['#0c0a18', '#18152c', '#262242', '#38345c', '#524e7e'], M: ['#4a4a66', '#7a7c9a', '#b4b6cc', '#e6e8f4'], feather: ['#7a7c9a', '#b4b6cc', '#e6e8f4'],
+    horse_midnight: { C: ['#100e1e', '#1e1a34', '#2e2a4c', '#43406a', '#5f5c8e'], M: ['#4a4a66', '#7a7c9a', '#b4b6cc', '#e6e8f4'], feather: ['#7a7c9a', '#b4b6cc', '#e6e8f4'],
       hoof: ['#14101e', '#2a2436'], blaze: '#e8eeff', eye: '#ffbc62', nose: '#2a2442' },
     horse_silver: { C: ['#55576e', '#7c8098', '#a2a6be', '#c8cbdc', '#eceef6'], M: ['#a8acc2', '#cfd2e2', '#eef0f8', '#ffffff'], feather: ['#c4c8da', '#e6e8f2', '#ffffff'],
       hoof: ['#3a3848', '#5a586a'], blaze: null, dapple: ['#8e92aa', '#b2b6ca'], eye: '#2a2238', nose: '#6a6c84' },
@@ -168,7 +168,7 @@
            { bob: 0, legs: [[-2, 0], [3, 0], [2, 0], [-3, 0]], sw: 2, nod: 0 },
            { bob: -1, legs: [[0, 0], [1, 3], [-1, 3], [0, 0]], sw: 3, nod: -1 }]
   };
-  var SH_W = 56, SH_H = 42, SH_GY = 39, SH_AX = 28; // frame, ground row, centre (the seat)
+  var SH_W = 60, SH_H = 42, SH_GY = 39, SH_AX = 30; // frame, ground row, centre (the seat)
   function off(pts, dx, dy) { var o = []; for (var i = 0; i < pts.length; i += 2) o.push(pts[i] + dx, pts[i + 1] + dy); return o; }
   // tapered limb through joints [[x, y], ...] with widths [w, ...]: quads between joints + round joints
   function mLimb(m, pts, ws) {
@@ -201,133 +201,272 @@
     var rows = near ? ['.bc..', 'abbc.', 'abbcc', 'hhhhh'] : ['.bc.', 'bbcc', 'bbcc.', 'hhhhh'];
     spr(b, rows, { a: F[2], b: near ? F[1] : F[0], c: near ? F[0] : mix(F[0], '#120c1c', 0.25), h: near ? P.hoof[1] : P.hoof[0] }, x - 2, y);
   }
-  // the body + neck in profile (x 8.., y 5..): croup, the dip of the back, withers, an arched crest, deep chest
-  var SH_BODY = [
-    //        x=8       18        28        38
-    '...............................#..........', // y 5
-    '..............................####........', // 6
-    '.............................#####........',
-    '............................#######.......',
-    '...........................########.......',
-    '..........................#########.......', // 10
-    '..........................#########.......',
-    '.........................##########.......',
-    '.........................#########........',
-    '........................##########........',
-    '......########.........###########........', // 15
-    '.....##############################.......',
-    '....###############################.......',
-    '...################################.......',
-    '...################################.......',
-    '..#################################.......', // 20
-    '..#################################.......',
-    '..#################################.......',
-    '..################################........',
-    '..################################........',
-    '...###############################........', // 25
-    '...##############################.........',
-    '....############################..........',
-    '.....######.#################.............',
-    '......####..............######............'  // 29
-  ];
-  var SH_HEAD = [ // ears, broad forehead, Roman nose, big soft muzzle, round jaw (x 37.., y 0..)
-    '..#.#.........',
-    '..####........',
-    '..#####.......',
-    '.#######......',
-    '.########.....',
-    '##########....',
-    '###########...',
-    '############..',
-    '.############.',
-    '..###########.',
-    '...##########.',
-    '....#########.',
-    '.....#######..',
-    '.......###....'
-  ];
+  function pline(b, pts, c) { for (var i = 0; i + 3 < pts.length; i += 2) line(b, pts[i], pts[i + 1], pts[i + 2], pts[i + 3], c); }
+  // hand-pixelled parts: '1'-'5' coat ramp, 'a'-'d' mane ramp, 'k' eye, 'w' glint, 'n' nostril, 'x' blaze (or coat)
+  function coatMap(P) {
+    var C = P.C, Mn = P.M;
+    return { 1: C[0], 2: C[1], 3: C[2], 4: C[3], 5: C[4], a: Mn[0], b: Mn[1], c: Mn[2], d: Mn[3], k: '#1a1426', w: '#ffffff', e: P.eye, n: P.nose, x: P.blaze || C[3] };
+  }
+  function part(b, S, map, dx, dy) { spr(b, S.rows, map, S.x + dx, S.y + dy); return b; }
+  var SHS_BODY = { x: 12, y: 2, rows: [
+    '.............................dc3.....',
+    '............................dcb4.....',
+    '............................dcb44....',
+    '...........................dcbc44....',
+    '...........................dcb443....',
+    '..........................dcbc443....',
+    '..........................dcb4433....',
+    '.........................dcbc4433....',
+    '.........................dcb443332...',
+    '........................dcbc443332...',
+    '........................dcb4433332...',
+    '.......................dcbb44333322..',
+    '.....455554............dcb443333322..',
+    '...4555555544.........dcbb4433333322.',
+    '..455444444444555544cbb443333333322..',
+    '.4544433333334444444b44433333333322..',
+    '45443333333333333333444333333333322..',
+    '454333333333333333333344333333333322.',
+    '4433333333333333333333334333333333322',
+    '4433333333333333333333333433333333322',
+    '343333333333333333333333334333333322.',
+    '3433333222333333333333333334333322...',
+    '.333332222233333333333333333333322...',
+    '.2333322222222222222222222223333322..',
+    '..233322.22222222222222222223333332..',
+    '...33322..1111111111111111112333332..'
+  ] };
+  var SHS_HEAD = { x: 40, y: 0, rows: [
+    '...4..5......',
+    '..43.455.....',
+    '..4344555....',
+    '.34444x555...',
+    '3344kw4x55...',
+    '2334kk44x54..',
+    '23333444x544.',
+    '2233334444x4.',
+    '.2223334444x4',
+    '..222333344x4',
+    '....2233344x4',
+    '.....2233334n',
+    '......1223333',
+    '.......12233.',
+    '........111..'
+  ] };
   function shSide(P, g, back, front) {
-    var C = P.C, Mn = P.M, oy = g.bob, Lg = g.legs, k, j, W = SH_W, Hh = SH_H;
+    var C = P.C, Mn = P.M, oy = g.bob, Lg = g.legs, k, W = SH_W, Hh = SH_H, map = coatMap(P);
     var hy = oy + g.nod;
     // ---- far legs (one tone darker), behind the body
     var far = M(W, Hh), farL = layer(W, Hh);
-    var fF = shLeg(far, [34.4, 28 + oy], 34.6 + Lg[1][0], Lg[1][1], true);
-    var fH = shLeg(far, [17.2, 28 + oy], 16.4 + Lg[3][0], Lg[3][1], false);
+    var fF = shLeg(far, [41.4, 27 + oy], 41.6 + Lg[1][0], Lg[1][1], true);
+    var fH = shLeg(far, [19.6, 27 + oy], 19 + Lg[3][0], Lg[3][1], false);
     shade2(farL, far, C, { r: 1.5, off: -1 });
     shHoof(farL, P, fF.fet, fF.gy, false); shHoof(farL, P, fH.fet, fH.gy, false);
     over(back, farL, OL);
     // ---- tail: thick and wavy, falling almost to the hocks
     var sw = [0, 0.6, -0.8, -1.6][g.sw];
     var tm = M(W, Hh), tl = layer(W, Hh);
-    mBez(tm, [[11.6, 16.6 + oy], [7.6 + sw * 0.4, 17.6 + oy], [6.6 + sw, 24 + oy], [8 + sw * 1.4, 31.4 + oy]], 2.4, 1.6);
-    shade(tl, tm, [Mn[0], Mn[0], Mn[1], Mn[2], Mn[3]]);
-    for (k = 0; k < 5; k++) px(tl, lerp(8, 8.2 + sw * 1.2, k / 4) + (k % 2 ? 0.8 : 0), 20 + k * 2.4 + oy, k % 2 ? Mn[1] : Mn[0]);
+    mBez(tm, [[14.4, 16.4 + oy], [10.4 + sw * 0.4, 17.2 + oy], [9.2 + sw, 24 + oy], [10.6 + sw * 1.4, 31.6 + oy]], 2.5, 1.6);
+    shade2(tl, tm, [Mn[0], Mn[0], Mn[1], Mn[2], Mn[3]], { r: 2 });
+    for (k = 0; k < 5; k++) px(tl, lerp(10.8, 10.8 + sw * 1.2, k / 4) + (k % 2 ? 0.8 : 0), 20 + k * 2.4 + oy, k % 2 ? Mn[1] : Mn[0]);
     over(back, tl, OL);
-    // ---- body, neck, head and the tops of the near legs as one volume
-    var body = M(W, Hh);
-    mRows(body, SH_BODY, 8, 5 + oy);
-    mRows(body, SH_HEAD, 37, 1 + hy);
-    var nl = M(W, Hh);
-    var nF = shLeg(nl, [37, 28 + oy], 37.2 + Lg[0][0], Lg[0][1], true);
-    var nH = shLeg(nl, [14.8, 28 + oy], 14.2 + Lg[2][0], Lg[2][1], false);
-    mOr(body, nl);
+    // ---- the near legs' upper parts, then the hand-pixelled body + neck over them
+    var nl = M(W, Hh), nlL = layer(W, Hh);
+    var nF = shLeg(nl, [43.6, 27 + oy], 43.8 + Lg[0][0], Lg[0][1], true);
+    var nH = shLeg(nl, [17, 27 + oy], 16.4 + Lg[2][0], Lg[2][1], false);
+    shade2(nlL, nl, C, { r: 1.6 });
     var bl = layer(W, Hh);
-    shade2(bl, body, C, { r: 5, tb: 0.12, y0: 15 + oy, y1: 30 + oy });
-    // muscle definition: shoulder blade, elbow, the round of the hip, stifle; cheek on the head
-    pline(bl, off([33.4, 17.6, 36.4, 22.4, 38.4, 26], 0, oy), C[1]); px(bl, 34, 17.4 + oy, C[2]);
-    pline(bl, off([19.6, 26.4, 17.6, 28.2], 0, oy), C[1]);
-    px(bl, 14, 17 + oy, C[4]); px(bl, 15, 16.6 + oy, C[4]); px(bl, 13, 17.6 + oy, C[3]);
-    if (P.dapple) for (var dy = 15; dy < 30; dy++) for (var dx = 9; dx < 43; dx++) {
-      var yy = dy + oy, cell = rnd(Math.floor(dx / 3), Math.floor(dy / 3), 11);
-      if (!mGet(body, dx, yy) || !mGet(body, dx, yy - 1) || cell > 0.6) continue;
-      if (dx % 3 === (Math.floor(dy / 3) % 2) && dy % 3 === 1) { px(bl, dx, yy, P.dapple[1]); px(bl, dx + 1, yy, P.dapple[0]); }
-    }
-    pline(bl, off([42.4, 8.6, 43, 11, 44.6, 12.6], 0, hy), C[1]); // cheek
-    px(bl, 48.6, 11.6 + hy, P.nose); px(bl, 48.2, 12.6 + hy, P.nose); line(bl, 45.6, 14 + hy, 47.6, 13.6 + hy, C[0]); // nostril, mouth
-    if (P.blaze) { pline(bl, off([40.8, 3.8, 42.6, 5.6, 44.6, 8, 46.6, 10, 48, 11.6], 0, hy), P.blaze); px(bl, 41.6, 4, P.blaze); }
-    spr(bl, ['kk', 'ke'], { k: '#1a1426', e: P.eye }, 40.4, 6 + hy); px(bl, 40.4, 6 + hy, '#ffffff'); line(bl, 39.6, 5.2 + hy, 41.6, 5.2 + hy, C[0]); // eye + brow
-    spr(bl, ['.a', 'ab', 'ab'], { a: C[2], b: C[1] }, 37.4, 1 + hy); spr(bl, ['a.', 'ab', 'ab'], { a: C[4], b: C[2] }, 39.4, 0.4 + hy); // ears
+    part(bl, SHS_BODY, map, 0, oy);
+    if (P.dapple) { var bm = M(W, Hh); mRows(bm, SHS_BODY.rows, SHS_BODY.x, SHS_BODY.y + oy); dapples(bl, bm, P, 13, 15 + oy, 47, 27 + oy); }
     over(back, bl, OL);
-    // feathered hooves on the near legs
-    var hl = layer(W, Hh); shHoof(hl, P, nF.fet, nF.gy, true); shHoof(hl, P, nH.fet, nH.gy, true); over(back, hl, OL);
-    // ---- mane: a heavy band along the crest falling in waves down the near side; forelock between the ears
-    var mm = M(W, Hh), ms = [0, 0.5, 0, -0.5][g.sw];
-    var crest = [[39.6, 3.6 + hy], [38.2, 5.6 + hy], [36.8, 7.6 + oy], [35.4, 9.6 + oy], [34.2, 11.6 + oy], [33, 13.4 + oy], [31.8, 14.8 + oy]];
-    for (k = 0; k < crest.length; k++) {
-      var c0 = crest[k], len = [3, 4, 5, 6, 6, 5, 3][k];
-      for (j = 0; j < len; j++) mSet(mm, c0[0] - j * 0.35 + Math.sin(k * 1.7 + j) * 0.4 - (j > 2 ? ms : 0), c0[1] + j);
-      mSet(mm, c0[0] + 1, c0[1]); mSet(mm, c0[0] + 1, c0[1] + 1);
-    }
-    var mnl = layer(W, Hh);
-    shade(mnl, mm, [Mn[0], Mn[1], Mn[2], Mn[3], Mn[3]]);
-    spr(mnl, ['.ab', 'abb', 'bb.'], { a: Mn[3], b: Mn[2] }, 40, 2.4 + hy); // forelock
-    over(back, mnl, OL);
-    // ---- tack: bridle with a brass rosette, breast collar, a slim quilted pad, saddle, saddlebag + lantern, reins
+    over(back, nlL, C[0]);
+    // ---- head (nods on its own), contoured against the neck
+    var hd = layer(W, Hh); part(hd, SHS_HEAD, map, 0, hy);
+    over(back, hd, OL);
+    // ---- tack: bridle (cheekpiece, noseband, brass rosette), breast collar, quilted pad, saddle, saddlebag + lantern
     var tk = layer(W, Hh);
-    pline(tk, off([39.8, 3.8, 42, 8.6, 45.6, 13.6], 0, hy), TK.L[2]); line(tk, 42, 8.6 + hy, 48.2, 10.6 + hy, TK.L[2]);
-    px(tk, 42, 8.6 + hy, TK.gold[2]); px(tk, 45.8, 13.6 + hy, TK.silver[2]);
-    pline(tk, off([35.8, 17.6, 39.4, 20.6, 41.4, 23.4], 0, oy), TK.L[2]); px(tk, 37.6, 19 + oy, TK.gold[3]); px(tk, 39.6, 20.8 + oy, TK.gold[2]); px(tk, 41, 22.8 + oy, TK.gold[2]);
-    spr(tk, ['dpPPqPPqPPqPPd', 'dpPqPPqPPqPPpd', '.GgGgGgGgGgGg.'], { d: TK.plum[1], p: TK.plum[2], P: TK.plum[3], q: TK.plum[2], G: TK.gold[2], g: TK.gold[1] }, 21, 17 + oy);
-    spr(tk, ['l........lL', 'Ll.....llLl', 'LLLLLLLLLLl', '.lllllllll.'], { l: TK.L[2], L: TK.L[3] }, 23, 14 + oy);
-    // saddlebag behind the saddle + a little lantern swinging from it
-    spr(tk, ['.bbbb.', 'bBBBBb', 'bBgBBb', '.bbbb.'], { b: TK.L[1], B: TK.L[3], g: TK.gold[2] }, 15, 17 + oy);
+    line(tk, 43, 2.6 + hy, 47.6, 11.6 + hy, TK.L[1]); line(tk, 45.6, 8.4 + hy, 51.6, 8.4 + hy, TK.L[1]);
+    px(tk, 44, 4.6 + hy, TK.gold[2]); px(tk, 48, 12 + hy, TK.silver[2]);
+    pline(tk, off([36.6, 17.4, 41, 20.4, 45.8, 22.4], 0, oy), TK.L[2]); px(tk, 39, 19 + oy, TK.gold[3]); px(tk, 42, 21 + oy, TK.gold[2]); px(tk, 45, 22.2 + oy, TK.gold[2]);
+    line(tk, 33.6, 18 + oy, 33.6, 27 + oy, TK.L[1]); px(tk, 33.6, 23 + oy, TK.silver[1]); // girth + buckle
+    spr(tk, ['dpPPqPPqPPqPd', '.GgGgGgGgGgG.'], { d: TK.plum[1], p: TK.plum[2], P: TK.plum[3], q: TK.plum[2], G: TK.gold[2], g: TK.gold[1] }, 24, 16.6 + oy);
+    spr(tk, ['L........lL', 'Ll......lLl', 'lLLLLLLLLLl', '.lllllllll.'], { l: TK.L[2], L: TK.L[3] }, 25, 13.6 + oy);
+    spr(tk, ['bbbbb', 'BBBBb', 'BgBBb', 'bbbbb'], { b: TK.L[1], B: TK.L[3], g: TK.gold[2] }, 19, 16.6 + oy);
     var lsw = [0, 0, 1, 0][g.sw];
-    px(tk, 17 + lsw * 0.5, 21 + oy, TK.gold[1]); spr(tk, ['.g.', 'gLg', 'glg', '.g.'], { g: TK.gold[1], L: TK.lamp[3], l: TK.lamp[2] }, 16 + lsw, 21.6 + oy);
-    line(tk, 45.6, 13.6 + hy, 31.6, 12.4 + oy, TK.L[1]); // reins toward the rider's hands
+    px(tk, 21 + lsw * 0.5, 20.6 + oy, TK.gold[1]); spr(tk, ['.g.', 'gLg', 'glg', '.g.'], { g: TK.gold[1], L: TK.lamp[3], l: TK.lamp[2] }, 20 + lsw, 21.2 + oy);
+    line(tk, 48, 12 + hy, 34, 11.6 + oy, TK.L[1]); // reins toward the rider's hands
     over(back, tk, OL);
+    // feathered hooves on the near legs
+    var hf = layer(W, Hh); shHoof(hf, P, nF.fet, nF.gy, true); shHoof(hf, P, nH.fet, nH.gy, true); over(back, hf, OL);
     // ---- front layer: the near saddle flap and stirrup over the rider's leg
-    spr(front, ['LLLLLL', 'lLLLLL', 'llLLLl', '.llll.'], { l: TK.L[1], L: TK.L[2] }, 25, 18 + oy);
-    line(front, 29, 22 + oy, 29, 23 + oy, TK.L[1]); rect(front, 28, 24 + oy, 3, 1, TK.silver[1]);
+    spr(front, ['LLLLLL', 'lLLLLL', 'llLLLl', '.llll.'], { l: TK.L[1], L: TK.L[2] }, 27, 17.6 + oy);
+    line(front, 31, 21.6 + oy, 31, 22.6 + oy, TK.L[1]); rect(front, 30, 23.6 + oy, 3, 1, TK.silver[1]);
   }
-  function pline(b, pts, c) { for (var i = 0; i + 3 < pts.length; i += 2) line(b, pts[i], pts[i + 1], pts[i + 2], pts[i + 3], c); }
+  var SHD_HEAD = { x: 26, y: 16, rows: [
+    '4.......4',
+    '54.....45',
+    '554ddd455',
+    '.45dcd54.',
+    'wk4dxc4wk',
+    'kk44x44kk',
+    '.3344433.',
+    '.2344432.',
+    '.2344432.',
+    '.2344432.',
+    '233444332',
+    '234xxx432',
+    '2n34443n2',
+    '.2233322.',
+    '..22222..'
+  ] };
+  var SHD_CHEST = { x: 21, y: 27, rows: [
+    '..22333333333322..',
+    '.2233333333333322.',
+    '233333333333333322',
+    '333333333333333322',
+    '33333222222223332.',
+    '.3332.......2332..'
+  ] };
+  var SHD_BARREL = { x: 20, y: 12, rows: [
+    '......334443333......',
+    '....3344444333333....',
+    '..33444433333333332..',
+    '.3444333333333333332.',
+    '.3443333333333333332.',
+    '344333333333333333322',
+    '343333333333333333322',
+    '333333333333333333322',
+    '333333333333333333322',
+    '.33333333333333333222',
+    '.23333333333333333322',
+    '..223333333333333222.',
+    '....2222222222222....'
+  ] };
+  // feathered hoof seen from the front/back: a bell of silky hair over the hoof
+  function shHoofF(b, P, cx, gy, near) {
+    var F = P.feather, x = Math.round(cx) - 3;
+    spr(b, near ? ['.abbc.', 'abbbcc', 'abbbcc', 'hhhhhh'] : ['.bbc.', 'bbbcc', 'hhhhh'], { a: F[2], b: near ? F[1] : F[0], c: near ? F[0] : mix(F[0], '#120c1c', 0.3), h: near ? P.hoof[1] : P.hoof[0] }, near ? x : x + 0.5, gy - (near ? 3 : 2));
+  }
+  // a straight draught leg seen from the front: thick forearm, knee, cannon (lift raises the hoof and shortens the leg)
+  function shLegF(m, cx, top, lift) {
+    var gy = SH_GY - lift;
+    mLimb(m, [[cx, top], [cx, lerp(top, gy, 0.5) - lift * 0.3], [cx, gy - 2]], [5, 4, 3.4]);
+    return gy;
+  }
+  function shDown(P, g, back, front) {
+    var C = P.C, oy = g.bob, Lg = g.legs, W = SH_W, Hh = SH_H, map = coatMap(P);
+    var hy = oy + g.nod;
+    // ---- back layer: the far (hind) legs peeking out, the barrel and the saddle under the rider
+    var hm = M(W, Hh), hl = layer(W, Hh);
+    var ga = shLegF(hm, 26.6, 24 + oy, Lg[3][1] ? 2 : 0) - 3, gb = shLegF(hm, 33.4, 24 + oy, Lg[2][1] ? 2 : 0) - 3;
+    shade2(hl, hm, C, { r: 1.6, off: -1 });
+    shHoofF(hl, P, 26.6, ga, false); shHoofF(hl, P, 33.4, gb, false);
+    over(back, hl, OL);
+    var bl = layer(W, Hh); part(bl, SHD_BARREL, map, 0, oy);
+    if (P.dapple) { var bm = M(W, Hh); mRows(bm, SHD_BARREL.rows, SHD_BARREL.x, SHD_BARREL.y + oy); dapples(bl, bm, P, 20, 13 + oy, 41, 25 + oy); }
+    over(back, bl, OL);
+    var tk = layer(W, Hh);
+    spr(tk, ['pPPPPPPPPPPPp', 'GgGgGgGgGgGgG'], { p: TK.plum[1], P: TK.plum[3], G: TK.gold[2], g: TK.gold[1] }, 23.6, 15.4 + oy); // pad edge under the saddle
+    spr(tk, ['lLLLLLLLLLl', 'lLLLLLLLLLl', '.lllllllll.'], { l: TK.L[2], L: TK.L[3] }, 24.6, 13 + oy);
+    over(back, tk, OL);
+    // ---- front layer: chest, the front legs, breast collar, then the long face looking at us
+    var lm = M(W, Hh), ll = layer(W, Hh);
+    var la = shLegF(lm, 24.6, 31 + oy, Lg[0][1]), lb = shLegF(lm, 35.4, 31 + oy, Lg[1][1]);
+    shade2(ll, lm, C, { r: 1.8 });
+    var fr = layer(W, Hh);
+    over(fr, ll, OL);
+    var ch = layer(W, Hh); part(ch, SHD_CHEST, map, 0, oy); over(fr, ch, OL);
+    var hf = layer(W, Hh); shHoofF(hf, P, 24.6, la + 1, true); shHoofF(hf, P, 35.4, lb + 1, true); over(fr, hf, OL);
+    var col = layer(W, Hh);
+    pline(col, off([21.6, 29, 25, 30.6, 35, 30.6, 38.4, 29], 0, oy), TK.L[2]);
+    px(col, 23, 29.8 + oy, TK.gold[2]); px(col, 37, 29.8 + oy, TK.gold[2]);
+    over(fr, col, null);
+    var hd = layer(W, Hh); part(hd, SHD_HEAD, map, 0, hy);
+    line(hd, 27, 25.6 + hy, 33, 25.6 + hy, TK.L[1]); px(hd, 26.6, 25.6 + hy, TK.gold[2]); px(hd, 33.4, 25.6 + hy, TK.gold[2]); // noseband + brass rings
+    over(fr, hd, OL);
+    over(front, fr, null);
+  }
+  var SHU_RUMP = { x: 19, y: 18, rows: [
+    '......34444433333......',
+    '...3344555544333333....',
+    '..344555554433333332...',
+    '.34455555443333333332..',
+    '.344555443333333333322.',
+    '3445544333333333333322.',
+    '3445443333333333333322.',
+    '3444433333332333333222.',
+    '3344333333322233333222.',
+    '.333333333222223333322.',
+    '.23333332222.22223332..',
+    '..2233322.......22222..'
+  ] };
+  var SHU_NECK = { x: 26, y: 2, rows: [
+    '.4....4.',
+    '.54..45.',
+    '.544445.',
+    'd344444.',
+    'dc34443.',
+    'dc33332.',
+    'dcc3332.',
+    '.dc33332',
+    '.dc33332',
+    '..c333332'
+  ] };
+  function shUp(P, g, back, front) {
+    var C = P.C, Mn = P.M, oy = g.bob, Lg = g.legs, W = SH_W, Hh = SH_H, map = coatMap(P), k;
+    var hy = oy + g.nod;
+    // ---- back layer: front legs far away, the neck + back of the head going away, barrel, saddle
+    var fm = M(W, Hh), fl = layer(W, Hh);
+    var ga = shLegF(fm, 26.4, 25 + oy, Lg[0][1] ? 2 : 0) - 3, gb = shLegF(fm, 33.6, 25 + oy, Lg[1][1] ? 2 : 0) - 3;
+    shade2(fl, fm, C, { r: 1.6, off: -1 });
+    shHoofF(fl, P, 26.4, ga, false); shHoofF(fl, P, 33.6, gb, false);
+    over(back, fl, OL);
+    var nk = layer(W, Hh); part(nk, SHU_NECK, map, 0, hy); over(back, nk, OL);
+    var bl = layer(W, Hh); part(bl, SHD_BARREL, map, 0, oy);
+    if (P.dapple) { var bm = M(W, Hh); mRows(bm, SHD_BARREL.rows, SHD_BARREL.x, SHD_BARREL.y + oy); dapples(bl, bm, P, 20, 13 + oy, 41, 25 + oy); }
+    over(back, bl, OL);
+    var tk = layer(W, Hh);
+    spr(tk, ['pPPPPPPPPPPPp', 'GgGgGgGgGgGgG'], { p: TK.plum[1], P: TK.plum[3], G: TK.gold[2], g: TK.gold[1] }, 23.6, 16 + oy);
+    spr(tk, ['.lllllllll.', 'lLLLLLLLLLl', 'lLLLLLLLLLl'], { l: TK.L[2], L: TK.L[3] }, 24.6, 13.4 + oy);
+    spr(tk, ['bbb', 'BBb', 'Bgb', 'BBb', 'bbb'], { b: TK.L[1], B: TK.L[3], g: TK.gold[2] }, 18, 17.6 + oy);
+    spr(tk, ['bbb', 'bBB', 'bgB', 'bBB', 'bbb'], { b: TK.L[1], B: TK.L[2], g: TK.gold[2] }, 39, 17.6 + oy);
+    over(back, tk, OL);
+    // ---- front layer: the hind legs, the broad round rump, a heavy tail, saddlebags + the lantern
+    var lm = M(W, Hh), ll = layer(W, Hh);
+    var la = shLegF(lm, 24, 27 + oy, Lg[2][1]), lb = shLegF(lm, 36, 27 + oy, Lg[3][1]);
+    shade2(ll, lm, C, { r: 1.8 });
+    var fr = layer(W, Hh);
+    over(fr, ll, OL);
+    var hf = layer(W, Hh); shHoofF(hf, P, 24, la + 1, true); shHoofF(hf, P, 36, lb + 1, true); over(fr, hf, OL);
+    var rp = layer(W, Hh); part(rp, SHU_RUMP, map, 0, oy);
+    if (P.dapple) { var rm = M(W, Hh); mRows(rm, SHU_RUMP.rows, SHU_RUMP.x, SHU_RUMP.y + oy); dapples(rp, rm, P, 20, 19 + oy, 41, 28 + oy); }
+    over(fr, rp, OL);
+    var sw = [0, 0.5, -0.5, -1][g.sw];
+    var tm = M(W, Hh), tl = layer(W, Hh);
+    mBez(tm, [[30, 18.4 + oy], [30, 22 + oy], [30 + sw, 27 + oy], [30 + sw * 2, 33.4 + oy]], 2.4, 1.8);
+    shade2(tl, tm, [Mn[0], Mn[0], Mn[1], Mn[2], Mn[3]], { r: 2 });
+    for (k = 0; k < 4; k++) { px(tl, 29.4 + sw * (k / 2), 22 + k * 3 + oy, Mn[1]); px(tl, 31 + sw * (k / 2), 23 + k * 3 + oy, Mn[1]); }
+    over(fr, tl, OL);
+    over(front, fr, null);
+  }
+  function dapples(b, m, P, x0, y0, x1, y1) { // round dapples: a lighter ring with a darker heart, on a jittered grid
+    for (var gy = Math.floor(y0); gy < y1; gy += 3) for (var gx = Math.floor(x0) + ((gy / 3) % 2 ? 1 : 0); gx < x1; gx += 3) {
+      var h = rnd(gx, gy, 17); if (h > 0.62) continue;
+      var cx = gx + Math.floor(h * 3) % 2, cy = gy + 1;
+      if (!mGet(m, cx, cy) || !mGet(m, cx, cy - 2) || !mGet(m, cx + 1, cy)) continue;
+      px(b, cx, cy, P.dapple[0]); if (h < 0.3) px(b, cx + 1, cy, P.dapple[1]);
+    }
+  }
   function drawShire(P, anim, dir, f) {
     var g = SHG[anim][f], back = mk(SH_W, SH_H), front = mk(SH_W, SH_H);
-    shSide(P, g, back, front);
+    if (dir === 'down') shDown(P, g, back, front);
+    else if (dir === 'up') shUp(P, g, back, front);
+    else shSide(P, g, back, front);
     outline(back, OL); outline(front, OL);
     return { back: back, front: front };
   }
   ['horse_midnight', 'horse_silver', 'horse_chestnut'].forEach(function (id) {
-    K.defMount(id + '__b', { w: SH_W, h: SH_H, ax: SH_AX, ay: 40, seat: { x: SH_AX, y: 16 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 8 },
+    K.defMount(id + '__b', { w: SH_W, h: SH_H, ax: SH_AX, ay: 40, seat: { x: SH_AX, y: 15 }, anims: { idle: 2, walk: 4 }, fps: { idle: 2, walk: 8 },
       seatDy: { idle: [0, 0], walk: [0, -1, 0, -1] }, base: 'idle', draw: function (anim, dir, f) { return drawShire(SH[id], anim, dir, f); } });
   });
 })();

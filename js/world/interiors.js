@@ -322,12 +322,13 @@
       m.piece('yarn_basket_b', 0, 1, 7); m.piece('giant_bear_b', 0, 10, 7, { interact: fl('jasmine_bear') }); m.piece('sunflowers_b', 1, 12, 7);
       m.glow(5, 4, 60, [255, 160, 90], 0.3); m.glow(9, 3.5, 70, [255, 226, 160], 0.3);
     } else { // the Wisteria Sunroom: lilac shiplap, wicker, a window of honey jars and a peacock chair for the bear
-      m.piece('wisteria_garland_c', 0, 1, 2); m.piece('honey_window_c', 0, 9, 2, { interact: fl('jasmine_honey') }); m.piece('wisteria_garland_c', 0, 11, 2);
-      m.piece('canopy_bed_c', 0, 1, 3, { interact: fl('jasmine_bed') }); m.piece('lavender_crate_c', 0, 3, 3);
-      m.piece('retro_stove_c', 0, 6, 3, { interact: fl('jasmine_counter') }); m.piece('tea_cart_c', 0, 4, 3); m.piece('monstera_c', 0, 12, 3);
-      m.piece('oval_rug_c', 0, 6, 5); m.piece('bistro_table_c', 0, 8, 6); m.piece('wicker_chair_c', 0, 7, 6);
-      m.piece('peacock_bear_c', 0, 11, 5, { interact: fl('jasmine_bear') }); m.piece('birdcage_c', 0, 1, 7); m.piece('wisteria_tree_c', 0, 12, 7);
-      m.glow(9.5, 4, 70, [255, 214, 140], 0.32); m.glow(3, 5, 50, [214, 190, 255], 0.25);
+      m.piece('peg_rail_c', 0, 4, 2); m.piece('honey_window_c', 0, 9, 2, { interact: fl('jasmine_honey') }); m.piece('plant_shelf_c', 0, 11, 2);
+      m.piece('canopy_bed_c', 0, 1, 3, { interact: fl('jasmine_bed') }); m.piece('wicker_stand_c', 0, 3, 3); m.piece('tea_cart_c', 0, 4, 3);
+      m.piece('retro_stove_c', 0, 6, 3, { interact: fl('jasmine_counter') }); m.piece('birdcage_c', 0, 11, 3); m.piece('monstera_c', 0, 12, 3);
+      m.piece('lace_rug_c', 0, 6, 6); m.piece('peacock_bear_c', 0, 7, 6, { interact: fl('jasmine_bear') });
+      m.piece('bistro_chair_c', 0, 10, 5); m.piece('bistro_table_c', 0, 11, 5); m.piece('bistro_chair_c', 1, 12, 5);
+      m.piece('wisteria_tree_c', 0, 1, 7); m.piece('lavender_crate_c', 0, 12, 8);
+      m.glow(9.5, 4, 70, [255, 214, 140], 0.3); m.glow(11, 6, 50, [214, 190, 255], 0.22);
     }
     m.home = true; m.owner = 'jasmine'; m.look = look;
     return m;
@@ -348,10 +349,23 @@
     const B = look === 'b';
     const m = Room({ id: 'amara_home', name: "Amara's Study", zone: 'home', w: 14, h: 10, wall: 3, kind: 'study_' + look,
       ambDay: B ? [168, 150, 140] : [168, 172, 186], ambNight: B ? [100, 88, 110] : [96, 104, 132], door: { x: 6, to: 'village', at: 'amara_home' } });
-    if (B) {
-      // to be drawn
-    } else {
-      // to be drawn
+    if (B) { // the Attic Stargazer: pine boards under the roof slope, a round window, a hammock and a cork board of stars
+      m.piece('star_board_b', 0, 4, 2, { interact: fl('amara_chalkboard') }); m.piece('round_window_b', 0, 8, 2); m.piece('star_garland_b', 0, 1, 2);
+      m.piece('pothos_stool_b', 0, 1, 3); m.piece('drafting_desk_b', 0, 2, 3, { interact: fl('amara_desk') });
+      m.piece('armillary_b', 0, 6, 3, { interact: fl('amara_orrery') }); m.piece('book_stack_b', 0, 7, 3);
+      m.piece('low_shelf_b', 0, 8, 3); m.piece('tall_bookcase_b', 0, 11, 3);
+      m.piece('big_telescope_b', 0, 9, 4, { interact: fl('amara_telescope') });
+      m.piece('moon_rug_b', 0, 6, 5); m.piece('hammock_b', 0, 7, 6); m.piece('celestial_globe_b', 0, 4, 6);
+      m.piece('mustard_armchair_b', 0, 11, 6); m.piece('book_stack_b', 1, 12, 7); m.piece('book_stack_b', 0, 1, 7);
+      m.glow(4, 4, 50, [150, 255, 190], 0.25); m.glow(9.5, 2.5, 70, [200, 200, 255], 0.3);
+    } else { // the Delft Blue Study: white plaster and blue-and-white tiles, a porcelain orrery and a cobalt chaise
+      m.piece('plate_wall_c', 0, 3, 2); m.piece('arch_window_c', 0, 10, 2);
+      m.piece('tall_shelf_c', 0, 1, 3); m.piece('writing_desk_c', 0, 3, 3, { interact: fl('amara_desk') }); m.piece('lemon_tree_c', 0, 5, 3);
+      m.piece('blackboard_c', 0, 6, 3, { interact: fl('amara_chalkboard') }); m.piece('celestial_globe_c', 0, 8, 3);
+      m.piece('window_seat_c', 0, 10, 3); m.piece('map_chest_c', 0, 12, 3);
+      m.piece('refractor_c', 0, 9, 4, { interact: fl('amara_telescope') }); m.piece('orrery_c', 0, 11, 5, { interact: fl('amara_orrery') });
+      m.piece('chaise_c', 0, 7, 6);
+      m.glow(3.5, 4, 50, [255, 226, 180], 0.25); m.glow(10.5, 3, 70, [200, 214, 255], 0.3);
     }
     m.home = true; m.owner = 'amara'; m.look = look;
     return m;

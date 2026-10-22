@@ -38,7 +38,13 @@
   function dzY(Y) { var v = XF.iy ? XF.iy[Y] : XF.py + (Y + 0.5 - XF.PY) / XF.s - 0.5; if (v === undefined) v = XF.py + (Y + 0.5 - XF.PY) / XF.s - 0.5; return isI(v) ? v + 1e-7 : v; }
   function ptX(x) { return Math.floor(fxX(x + 0.5)); }
   function ptY(y) { return Math.floor(fxY(y + 0.5)); }
-  function spX(x) { return [Math.ceil(fxX(x) - 0.5), Math.ceil(fxX(x + 1) - 0.5) - 1]; }
+  function spX(x) {
+    if (XF.sym) { var a = fxX(x), b = fxX(x + 1); return b <= XF.PX ? [Math.floor(a - 0.5) + 1, Math.floor(b - 0.5)] : [Math.ceil(a - 0.5), Math.ceil(b - 0.5) - 1]; } // ties round towards the centre line: mirrored details stay mirrored
+    return [Math.ceil(fxX(x) - 0.5), Math.ceil(fxX(x + 1) - 0.5) - 1];
+  }
+  // texture coordinates: the design's integer grid, or frame pixels in the human_hd zoom (keeps knit, curls and stubble crisp)
+  function ti(x) { return XF && XF.sym ? ptX(x) : x; }
+  function tj(y) { return XF && XF.sym ? ptY(y) : y; }
   function spY(y) { return [Math.ceil(fxY(y) - 0.5), Math.ceil(fxY(y + 1) - 0.5) - 1]; }
 
   function Buf(w, h) { this.w = w; this.h = h; this.c = new Int32Array(w * h); this.c.fill(-1); this.t = new Uint8Array(w * h); this.xf = false; }
@@ -961,7 +967,7 @@
         // chemise ruffle: off-shoulder band
         var chem = M.clone().keep(function (x, y) { var dx = Math.abs(x + 0.5 - 32); return y >= 51 - (dx > 12 ? 2 : 0) && y <= 55 - (dx > 16 ? 1 : 0) + (dx < 9 ? 1 : 0); }).sub(neck);
         shadeFill(B, chem, CHEM, TAG.CLOTH, { cx: 18, cy: 48, rx: 30, ry: 12, edge: 0.3 });
-        chem.each(function (x, y) { if ((x % 3) === 0) B.set(x, y, mix(B.get(x, y), CHEM[0], 0.5)); });
+        chem.each(function (x, y) { if ((ti(x) % 3) === 0) B.set(x, y, mix(B.get(x, y), CHEM[0], 0.5)); });
         // gold trim along the bodice top (sweetheart dip)
         for (var x = 8; x <= 55; x++) { var dx = Math.abs(x + 0.5 - 32), y = 56 + (dx < 3 ? 1 : 0) - (dx > 16 ? 1 : 0); if (M.has(x, y)) { B.set(x, y, GOLD[2], TAG.METAL); B.set(x, y + 1, GOLD[1], TAG.METAL); } }
         // laced front
@@ -1469,7 +1475,7 @@
         P.faceM.each(function (x, y) {
           var dx = Math.abs(x + 0.5 - 32), hw = f.hw[y - top], edge = hw - dx;
           var jaw = (y >= 41 && edge <= 5) || (y >= 43) || (y === 39 && dx >= 2 && dx <= 5) || (dx > 9.5 && y >= 36 && edge <= 2.5);
-          if (!jaw || (x + y) % 2) return;
+          if (!jaw || (ti(x) + tj(y)) % 2) return;
           var c = B.get(x, y);
           if (c === S2.b || c === S2.l) B.set(x, y, mix(S2.b, R[1], 0.22), TAG.SKIN); else if (c === S2.s) B.set(x, y, mix(S2.s, R[0], 0.22), TAG.SKIN);
         });
@@ -1510,7 +1516,7 @@
         var st = M64().thick(bez([[36, 21], [34, 15], [30, 8], [25, 5]]), 1.2);
         st.and(cap).each(function (x, y) { B.set(x, y, tone(B.get(x, y), R, WH), TAG.HAIR); });
         // silvering temples
-        cap.each(function (x, y) { var dx = Math.abs(x + 0.5 - 32); if ((y >= 21 && dx >= 12) || (y >= 24 && dx >= 10.5) || (y >= 19 && dx >= 13.5 && (x + y) % 2 === 0)) B.set(x, y, tone(B.get(x, y), R, SIL), TAG.HAIR); });
+        cap.each(function (x, y) { var dx = Math.abs(x + 0.5 - 32); if ((y >= 21 && dx >= 12) || (y >= 24 && dx >= 10.5) || (y >= 19 && dx >= 13.5 && (ti(x) + tj(y)) % 2 === 0)) B.set(x, y, tone(B.get(x, y), R, SIL), TAG.HAIR); });
         // short silver sideburns
         [[20, 28], [20, 29], [20, 30], [43, 28], [43, 29], [43, 30]].forEach(function (p) { B.set(p[0], p[1], SIL[1], TAG.HAIR); });
         // a loose rockabilly curl falling onto the forehead
@@ -1752,14 +1758,14 @@
   };
   function cuteMouths(extra) { var o = {}, k; for (k in CUTE_M) o[k] = CUTE_M[k]; if (extra) for (k in extra) o[k] = extra[k]; return o; }
   function cuteCheeks(P, big) { // soft rosy blush; deeper when happy or flustered
-    if (XF) { P.blushBig = big || P.e === 'happy' || P.e === 'surprised'; return; } // close-ups: blushC paints it under the redrawn eyes
+    if (XF || (P.style && P.style.human)) { P.blushBig = big || P.e === 'happy' || P.e === 'surprised'; return; } // close-ups and human: the style's blush paints it under the redrawn eyes
     var S2 = P.skin, B = P.B, e = P.e, pts = [[22, 38], [23, 38], [24, 38], [23, 39]];
     if (big || e === 'happy' || e === 'surprised') pts = pts.concat([[21, 38], [25, 38], [22, 39], [24, 39]]);
     sym(B, pts, S2.blush, TAG.SKIN);
   }
   function tearDrops(P) {
     if (P.e !== 'sad' || P.blink) return;
-    if (XF) { P.tears = true; return; } // close-ups: drawn by drawEyesC at the new eye corners
+    if (XF || (P.style && P.style.human)) { P.tears = true; return; } // close-ups and human: drawn with the redrawn eyes
     var B = P.B; [[22, 37], [22, 38], [21, 39]].forEach(function (p, i) { B.set(p[0], p[1], i % 2 ? H('#8cc4f0') : H('#c4e6ff'), TAG.EYE); B.set(63 - p[0], p[1], i % 2 ? H('#8cc4f0') : H('#c4e6ff'), TAG.EYE); }); }
   function recolorRamp(B, M, from, to, test) { M.each(function (x, y) { if (test && !test(x, y)) return; var i = from.indexOf(B.get(x, y)); if (i >= 0) B.set(x, y, to[i], TAG.HAIR); }); }
   function bowAt(B, x, y, R) { stamp(B, ['bB.Bb', 'bBkBb', 'b...b'], x, y, { b: R[0], B: R[1], k: R[2] }, TAG.ACC); }
@@ -1901,7 +1907,7 @@
         shadeFill(B, M, DRESS, TAG.CLOTH, { cx: 18, cy: 46, rx: 32, ry: 24, edge: 0.3 });
         var card = M.clone().keep(function (x, y) { return Math.abs(x + 0.5 - 32) >= 8 + Math.max(0, y - 50) * 0.3; });
         shadeFill(B, card, CARD, TAG.CLOTH, { cx: 14, cy: 44, rx: 30, ry: 22, edge: 0.4, th: [-0.55, -0.05, 0.45] });
-        card.each(function (x, y) { if ((x + (y >> 1)) % 4 === 0 && B.get(x, y) !== CARD[0]) B.set(x, y, mix(B.get(x, y), CARD[0], 0.4), TAG.CLOTH); });
+        card.each(function (x, y) { if ((ti(x) + (tj(y) >> 1)) % 4 === 0 && B.get(x, y) !== CARD[0]) B.set(x, y, mix(B.get(x, y), CARD[0], 0.4), TAG.CLOTH); });
         card.each(function (x, y) { if (!card.has(x < 32 ? x + 1 : x - 1, y)) B.set(x, y, CARD[0], TAG.CLOTH); });
         [[22, 56], [22, 60], [41, 56], [41, 60]].forEach(function (p) { B.set(p[0], p[1], RIB[2], TAG.CLOTH); });
         // scalloped dress neckline + apron with a little bee
@@ -1970,7 +1976,7 @@
         shadeFill(B, ears, KNIT, TAG.HAT, { cx: 18, cy: 4, rx: 16, ry: 10, edge: 0.5 });
         [[21, 8], [43, 8]].forEach(function (c) { B.set(c[0], c[1], H('#c49a86'), TAG.HAT); B.set(c[0] - 1, c[1], H('#d8ae9a'), TAG.HAT); B.set(c[0], c[1] - 1, H('#d8ae9a'), TAG.HAT); });
         shadeFill(B, ber, KNIT, TAG.HAT, { cx: 24, cy: 8, rx: 20, ry: 10, edge: 0.5 });
-        ber.each(function (x, y) { if ((x + y) % 3 === 0 && y > 9) B.set(x, y, mix(B.get(x, y), KNIT[0], 0.35), TAG.HAT); });
+        ber.each(function (x, y) { if ((ti(x) + tj(y)) % 3 === 0 && y > 9) B.set(x, y, mix(B.get(x, y), KNIT[0], 0.35), TAG.HAT); });
         edgePx(ber, [[0, 1]]).forEach(function (p) { B.set(p[0], p[1], KNIT[0], TAG.HAT); B.set(p[0], p[1] - 1, (p[0] % 2) ? KNIT[1] : KNIT[2], TAG.HAT); });
         B.set(32, 6, KNIT[2], TAG.HAT); B.set(32, 5, KNIT[3], TAG.HAT);
       }
@@ -2000,12 +2006,12 @@
       body: function (P) {
         var B = P.B, M = torso(47, 9, 25, 8, 28);
         shadeFill(B, M, MUS, TAG.CLOTH, { cx: 18, cy: 46, rx: 32, ry: 24, edge: 0.3 });
-        M.each(function (x, y) { if (x % 3 === 0 && y % 2 === 0 && B.get(x, y) !== MUS[0]) B.set(x, y, mix(B.get(x, y), MUS[0], 0.3), TAG.CLOTH); });
+        M.each(function (x, y) { if (ti(x) % 3 === 0 && tj(y) % 2 === 0 && B.get(x, y) !== MUS[0]) B.set(x, y, mix(B.get(x, y), MUS[0], 0.3), TAG.CLOTH); });
         shadeFill(B, M64().poly([[27, 47], [37, 47], [33, 64], [31, 64]]).and(M), HS(['#cfc8c0', '#f4f0ea', '#ffffff']), TAG.CLOTH, { cx: 28, cy: 46, rx: 8, ry: 12 });
         stamp(B, ['.wwww..wwww.', 'wWWWWw.wWWWW', '.wwww..wwww.'], 26, 46, { w: H('#cfc8c0'), W: WHITE }, TAG.CLOTH);
         [[30, 54], [30, 58], [30, 62]].forEach(function (p) { B.set(p[0], p[1], H('#7a5410'), TAG.CLOTH); });
         // satchel strap across the chest
-        M64().thick(bez([[17, 48], [32, 56], [47, 64]]), 1).and(M).each(function (x, y) { B.set(x, y, (x + y) % 6 === 0 ? STRAP[2] : STRAP[1], TAG.ACC); });
+        M64().thick(bez([[17, 48], [32, 56], [47, 64]]), 1).and(M).each(function (x, y) { B.set(x, y, (ti(x) + tj(y)) % 6 === 0 ? STRAP[2] : STRAP[1], TAG.ACC); });
         stamp(B, ['ggg', 'g.g', 'ggg'], 23, 51, { g: GOLD[1] }, TAG.METAL);
       },
       front: function (P) {
@@ -2048,7 +2054,7 @@
         shadeFill(B, M, HS(['#9a96b0', '#cfcbe0', '#f2f0f8', '#ffffff']), TAG.CLOTH, { cx: 16, cy: 44, rx: 32, ry: 24, edge: 0.3, th: [-0.5, -0.05, 0.55] });
         var vest = M.clone().keep(function (x, y) { var dx = Math.abs(x + 0.5 - 32); return y >= 49 && dx <= 13 + (y - 49) * 0.35; }).sub(M64().poly([[26, 47], [38, 47], [32, 57]]));
         shadeFill(B, vest, VEST, TAG.CLOTH, { cx: 18, cy: 44, rx: 26, ry: 22, edge: 0.4 });
-        vest.each(function (x, y) { if ((x + y) % 2 === 0 && y % 2 === 0) B.set(x, y, mix(B.get(x, y), VEST[0], 0.35), TAG.CLOTH); });
+        vest.each(function (x, y) { if ((ti(x) + tj(y)) % 2 === 0 && tj(y) % 2 === 0) B.set(x, y, mix(B.get(x, y), VEST[0], 0.35), TAG.CLOTH); });
         stamp(B, ['WW.......WW', '.WW.....WW.'], 27, 46, { W: WHITE }, TAG.CLOTH);
         // constellation pin
         [[20, 53], [22, 51], [24, 54], [21, 56]].forEach(function (p) { B.set(p[0], p[1], GOLD[3], TAG.METAL); });
@@ -2208,7 +2214,7 @@
         shadeFill(B, M, COAT, TAG.CLOTH, { cx: 16, cy: 44, rx: 34, ry: 26, edge: 0.35 });
         // heavy fur mantle around the shoulders
         var fur = M64().ellipse(32, 50, 24, 6.5).and(M.clone().or(M64().ellipse(32, 50, 24, 6.5)));
-        fur.each(function (x, y) { var v = sph(x, y, 22, 44, 20, 10) + ((x * 3 + y) % 4 === 0 ? -0.35 : 0); B.set(x, y, v > 0.4 ? FUR[3] : v > -0.05 ? FUR[2] : v > -0.45 ? FUR[1] : FUR[0], TAG.CLOTH); });
+        fur.each(function (x, y) { var v = sph(x, y, 22, 44, 20, 10) + ((ti(x) * 3 + tj(y)) % 4 === 0 ? -0.35 : 0); B.set(x, y, v > 0.4 ? FUR[3] : v > -0.05 ? FUR[2] : v > -0.45 ? FUR[1] : FUR[0], TAG.CLOTH); });
         edgePx(fur, [[0, 1]]).forEach(function (p, i) { if (i % 2) B.set(p[0], p[1] + 1, FUR[1], TAG.CLOTH); });
         // guild emblem: crossed blades over a crescent
         stamp(B, ['s.....s', '.s...s.', '..s.s..', '...S...', '.Ms.sM.', 'M.....M', '.MMMMM.'], 16, 56, { s: SILVER[2], S: SILVER[3], M: H('#e8eeff') }, TAG.METAL);
@@ -2233,7 +2239,7 @@
         var hl = function (x) { var dx = x + 0.5 - 32; return 16 + 0.05 * dx * dx; };
         var hair = M64().ellipse(32, 24, 15, 13).keep(function (x, y) { var dx = Math.abs(x + 0.5 - 32); return y + 0.5 < hl(x) && (dx > 7 || y < 14); });
         hairClumps(B, hair, R, { px: 32, py: 26, aw: 0.3, ph: 0.3, cx: 24, cy: 14, rx: 20, ry: 16, k: 0.4, gap: 0.2 });
-        hair.each(function (x, y) { if ((x + y) % 3 === 0) B.set(x, y, R[1], TAG.HAIR); });
+        hair.each(function (x, y) { if ((ti(x) + tj(y)) % 3 === 0) B.set(x, y, R[1], TAG.HAIR); });
         // white beard with one thick braid and a silver ring
         var top = function (x) { var dx = Math.abs(x + 0.5 - 32); return Math.max(30, 40 - Math.max(0, dx - 6) * 1.6); };
         var beard = M64().poly([[18, 29], [17, 38], [16, 46], [20, 52], [44, 52], [48, 46], [47, 38], [46, 29]]).keep(function (x, y) { return y >= top(x); });
@@ -2315,6 +2321,7 @@
   function renderPortrait(def, expr, opt, style) {
     opt = opt || {};
     var ST = style ? PSTYLES[style] : null;
+    if (ST && ST.human) return renderHuman(def, expr, opt, ST);
     var f0 = ST && ST.round ? roundFace(def.face, ST.round) : def.face;
     var P = { B: new Buf(64, 64), d: def, e: normExpr(expr), blink: !!opt.blink, talk: !!opt.talk, skin: ST ? softSkin(def.skin, ST) : def.skin, f: ST && ST.close ? closeFace(f0) : f0, eyeC: def.eyeC, lash: def.lash, style: ST };
     CUR_STYLE = ST;
@@ -2352,12 +2359,16 @@
     sweet: { name: 'sweet', grow: 1, round: 0.35, blush: 0.42, blushRows: 2, lineless: false, rim: 0.8 },
     soft: { name: 'soft', grow: 1, round: 0.2, blush: 0.36, blushRows: 2, lineless: true, rim: 0.7 },
     close: { name: 'close', close: true, zoom: 1.32, chinY: 52, ew: 7, eh: 3, iwMax: 4, spread: 0.88, eyeDY: -1, grow: 0, round: 0, blush: 0.4, blushRows: 1, lineless: false, rim: 0.8 },
-    close_sweet: { name: 'close_sweet', close: true, zoom: 1.32, chinY: 52, ew: 8, eh: 4, iwMax: 5, spread: 0.88, eyeDY: -1, grow: 1, round: 0.3, blush: 0.5, blushRows: 2, lineless: false, rim: 0.8 }
+    close_sweet: { name: 'close_sweet', close: true, zoom: 1.32, chinY: 52, ew: 8, eh: 4, iwMax: 5, spread: 0.88, eyeDY: -1, grow: 1, round: 0.3, blush: 0.5, blushRows: 2, lineless: false, rim: 0.8 },
+    human: { name: 'human', human: true, W: 64, blushRows: 1, rim: 0.7 },
+    human_hd: { name: 'human_hd', human: true, hd: true, W: 96, zoom: 1.5, blushRows: 2, rim: 0.7 }
   };
   var CUR_STYLE = null;
   // per-character hints for the styled renderer only (the default renderer ignores them)
   [['ronan', 0.35], ['brann', 0.3], ['gideon', 0.25], ['orvyn', 0.4], ['corvin', 0.3], ['lune', 0.4], ['elvis', 0.45], ['caspian', 0.45], ['fennick', 0.6], ['grizelda', 0.3], ['nightmerchant', 0]].forEach(function (h) { if (NPC[h[0]]) NPC[h[0]].blushK = h[1]; });
   NPC.ronan.browKeep = true;
+  // the human styles read these: masc (finer lashes, a smaller iris), old (soft lids)
+  [['brann', { masc: 1 }], ['orvyn', { masc: 1, old: 1 }], ['corvin', { masc: 1 }], ['lune', { masc: 1 }], ['elvis', { masc: 1 }], ['fennick', { masc: 1 }], ['ronan', { masc: 1 }], ['caspian', { masc: 1 }], ['gideon', { masc: 1, old: 1 }], ['mirabel', { old: 1 }], ['grizelda', { old: 1 }], ['isolde', { old: 1 }]].forEach(function (h) { if (NPC[h[0]]) NPC[h[0]].hum = h[1]; });
   function softSkin(S, ST) {
     var o = {}, k;
     for (k in S) if (S.hasOwnProperty(k)) o[k] = S[k];
@@ -2394,6 +2405,7 @@
     }
   }
   function drawEarsS(P) {
+    if (P.style.human) return drawEarsH(P);
     var f = P.f, S = P.skin, B = P.B, y = f.earY, hw = f.hw[y - f.top], lg = { b: S.b, l: S.l, m: S.m, s: S.s };
     stamp(B, ['.bb', 'blm', 'bms', 'bms', 'mss', '.mm', '..m'], 32 - hw - 3, y, lg, TAG.SKIN);
     stamp(B, ['mm.', 'ssm', 'sms', 'sms', 'ssm', 'mm.', 'm..'], 32 + hw, y, lg, TAG.SKIN);
@@ -2468,6 +2480,7 @@
   }
   function drawMouthS(P, dy) { // same shapes, tinted lips instead of dark lines
     if (P.style.close) return drawMouthC(P, dy);
+    if (P.style.human) return drawMouthH(P, dy);
     var rows = mouthRows(P); if (!rows) return;
     var d = P.d, S = P.skin, ST = P.style, w = stampW(rows), x = 32 - Math.ceil(w / 2) + (d.mouthDX || 0), y = P.f.mouthY + (dy || 0);
     var line = ST.lineless ? mix(S.lip, S.b, 0.15) : mix(S.lipD, S.line, 0.25);
@@ -2676,6 +2689,339 @@
     for (var i = 0; i < hits.length; i += 3) { var c2 = B.getF(hits[i], hits[i + 1]); B.setF(hits[i], hits[i + 1], hits[i + 2] === 1 ? (c2 === S.m ? S.s : S.m) : (c2 === S.l ? S.b : S.m), TAG.SKIN); }
   }
 
+  /* ================================================================== human portraits (prototype) */
+  // 'human' (64x64) and 'human_hd' (96x96) keep every character's own back/body/front design and rebuild the
+  // base face so it reads as a real person: an oval head with full cheeks and a gentle chin, ears and a shaded
+  // neck, almond eyes with lashes and catchlit irises, a small nose, tinted lips, soft skin light and a subtle
+  // blush. human_hd zooms the design 1.5x through XF (XF.sym rounds footprints towards the centre line, so
+  // mirrored details stay mirrored) and paints the face features natively at 96px.
+  function FX(x) { return XF ? fxX(x) : x; } // design -> frame, continuous
+  function FY(y) { return XF ? fxY(y) : y; }
+  function DX(X) { return XF ? dzX(X) + 0.5 : X + 0.5; } // frame pixel centre -> design, continuous
+  function DY(Y) { return XF ? dzY(Y) + 0.5 : Y + 0.5; }
+  function sq(v) { return v * v; }
+  function stepsF(M, x, y, dx, dy, max) { for (var s = 1; s <= max; s++) if (!M.hasF(x + dx * s, y + dy * s)) return s; return max + 1; }
+  // lower-face contour per design face: below the cheekbones (jaw rows under the eye centre) the cheeks taper to a
+  // chin of half-width `chin`; p keeps the cheeks full for longer, q softens the jaw, ext adds chin rows
+  var HFACE = {
+    round: { chin: 4.4, p: 1.9, q: 0.8, ext: 1, jaw: 2 }, kid: { chin: 4.4, p: 2.3, q: 0.7, ext: 0, jaw: 2 },
+    oval: { chin: 3.8, p: 1.7, q: 0.85, ext: 1, jaw: 2 }, broad: { chin: 7, p: 2.4, q: 0.7, ext: 0, jaw: 3 },
+    long: { chin: 4.6, p: 2, q: 0.8, ext: 0, jaw: 3 }, angular: { chin: 2.6, p: 1.4, q: 0.95, ext: 0, jaw: 1 },
+    narrow: { chin: 3.6, p: 1.8, q: 0.85, ext: 1, jaw: 2 }, square: { chin: 5.6, p: 2.4, q: 0.7, ext: 0, jaw: 2 },
+    showman: { chin: 4.4, p: 2, q: 0.8, ext: 1, jaw: 2 }, cute: { chin: 4, p: 2.1, q: 0.75, ext: 1, jaw: 2 },
+    player: { chin: 4.2, p: 1.9, q: 0.8, ext: 1, jaw: 2 }
+  };
+  function faceName(f) { for (var k in FACES) if (FACES.hasOwnProperty(k) && FACES[k] === f) return k; return 'round'; }
+  function humanFace(def) {
+    var f = def.face, hp = HFACE[faceName(f)] || HFACE.round, E = EYES[def.eyeStyle] || EYES.std, b = { x0: 99, x1: -1, y0: 99, y1: -1 }, kr = 0, r;
+    eyeCells(E.open).forEach(function (c) { b.x0 = Math.min(b.x0, c[0]); b.x1 = Math.max(b.x1, c[0]); b.y0 = Math.min(b.y0, c[1]); b.y1 = Math.max(b.y1, c[1]); });
+    for (r = 0; r < E.open.length; r++) if (E.open[r].indexOf('K') >= 0) { kr = r; break; }
+    var top = f.top, n0 = f.hw.length, bot = top + n0 + (hp.ext || 0), ecx = f.eyeX + (b.x0 + b.x1 + 1) / 2, ecy = f.eyeY + (b.y0 + b.y1 + 1) / 2;
+    var yA = Math.max(ecy + hp.jaw, f.earY + 4.5);
+    function orig(yc) { var i = yc - top - 0.5; if (i <= 0) return f.hw[0]; if (i >= n0 - 1) return f.hw[n0 - 1]; var a = Math.floor(i), t = i - a; return f.hw[a] + (f.hw[a + 1] - f.hw[a]) * t; }
+    function at(yc) { // half-width at the continuous design row yc
+      if (yc < top || yc > bot) return undefined;
+      if (yc <= yA) return orig(yc);
+      var t = (yc - yA) / (bot - yA), w = hp.chin + (orig(yA) - hp.chin) * Math.pow(Math.max(0, 1 - Math.pow(t, hp.p)), hp.q), rc = hp.rc || 2.5;
+      if (yc > bot - rc) { var u = (yc - (bot - rc)) / rc; w = Math.min(w, (hp.chin + 0.3) * Math.sqrt(Math.max(0, 1 - u * u))); }
+      return w;
+    }
+    var hw = [], i, k, o = {};
+    for (i = 0; i < bot - top; i++) hw.push(at(top + i + 0.5));
+    for (k in f) if (f.hasOwnProperty(k)) o[k] = f[k];
+    o.hw = XF ? new Proxy(hw, { get: function (t, key) { if (typeof key === 'string' && key !== '' && !isNaN(+key)) return at(top + (+key) + 0.5); return t[key]; } }) : hw;
+    o.hwAt = at; o.bot = bot; o.ecx = ecx; o.ecy = ecy; o.kr = kr;
+    return o;
+  }
+  function humanSkin(S0) {
+    var o = {}, k;
+    for (k in S0) if (S0.hasOwnProperty(k)) o[k] = S0[k];
+    o.m = mix(S0.b, S0.s, 0.5);
+    o.d = mix(S0.s, S0.d, 0.55);
+    o.outline = mix(S0.s, H('#3a1420'), 0.62);
+    o.line = mix(S0.s, o.outline, 0.7);
+    o.blush = mix(S0.b, mix(S0.blush, H('#ff6f86'), 0.2), 0.62); // designs paint this directly: keep it gentle
+    o.lip = S0.lip !== mix(S0.s, 0xa03050, 0.22) ? S0.lip : mix(mix(S0.b, S0.s, 0.45), H('#d0586e'), 0.32); // a design's own lip colour wins
+    o.lipD = mix(o.lip, o.outline, 0.4);
+    return o;
+  }
+  function renderHuman(def, expr, opt, ST) {
+    var N = ST.W || 64, P;
+    try {
+      CUR_STYLE = ST;
+      if (ST.hd) XF = { s: ST.zoom, px: 32, PX: N / 2, py: 32, PY: N / 2, W: N, H: N, sym: true };
+      P = { B: new Buf(N, N), d: def, e: normExpr(expr), blink: !!opt.blink, talk: !!opt.talk, skin: humanSkin(def.skin), f: humanFace(def), eyeC: def.eyeC, lash: def.lash, style: ST };
+      P.B.xf = !!XF;
+      if (def.back) def.back(P);
+      drawNeckH(P);
+      if (def.body) def.body(P);
+      if (def.ears !== false) (def.drawEars || drawEars)(P);
+      paintFaceH(P);
+      if (def.skinDetail) def.skinDetail(P);
+      drawEyesH(P);
+      drawBrowsH(P);
+      drawNoseH(P);
+      if (!def.mouthLine) drawMouthH(P, 0);
+      if (def.front) def.front(P);
+      castShadowH(P, def.castRows);
+      blushH(P);
+      if (def.post) def.post(P);
+      rimPass(P.B, N, ST.rim);
+      outlinePassS(P);
+    } finally { CUR_STYLE = null; XF = null; }
+    return P.B;
+  }
+  function drawNeckH(P) {
+    var f = P.f, S = P.skin, B = P.B, nw = (P.d.neckW || 5) - 0.2, y0 = f.bot - 6, y1 = 59;
+    M64().fn(function (x, y) { var yc = y + 0.5; return yc > y0 && yc < y1 && Math.abs(x + 0.5 - 32) < nw + Math.max(0, yc - f.bot - 1) * 0.3; }).eachF(function (X, Y) {
+      var u = (DX(X) - 32) / nw;
+      B.setF(X, Y, u < -0.5 ? S.b : u < 0.25 ? S.m : u < 0.72 ? S.s : S.d, TAG.SKIN);
+    });
+  }
+  function drawEarsH(P) {
+    var f = P.f, S = P.skin, B = P.B, N = B.w, y0 = f.earY, hwE = f.hwAt(y0 + 3.5);
+    if (!XF) {
+      var k = Math.ceil(hwE - 0.5);
+      stampF(B, ['.bb', 'lbm', 'lms', 'lms', 'bbm', '.bm', '..m'], 32 - k - 3, y0, { b: S.b, l: S.l, m: S.m, s: S.s }, TAG.SKIN);
+      stampF(B, ['mm.', 'msm', 'sds', 'sds', 'ssm', 'sm.', 'm..'], 32 + k, y0, { m: S.m, s: S.s, d: S.d }, TAG.SKIN);
+      return;
+    }
+    var s = XF.s, Xc = fxX(32 - hwE - 1.1), Yc = fxY(y0 + 3.4), RX = 2.15 * s, RY = 3.75 * s;
+    M64().ellipseF(Xc, Yc, RX, RY).eachF(function (X, Y) {
+      var u = (X + 0.5 - Xc) / RX, v = (Y + 0.5 - Yc) / RY, d = u * u + v * v, cl = S.b, cr = S.s;
+      if (u > 0.5) { cl = S.m; cr = S.d; } // root, in the head's shadow
+      else if (d > 0.55 && v < 0.5) { cl = S.l; cr = S.m; } // helix rim
+      else if (d < 0.5 && v > -0.55 && v < 0.45) { cl = S.m; cr = S.d; } // bowl of the ear
+      B.setF(X, Y, cl, TAG.SKIN); B.setF(N - 1 - X, Y, cr, TAG.SKIN);
+    });
+  }
+  function paintFaceH(P) { // soft light from the upper left: a shadow band follows the right contour and widens towards the
+    // jaw, the jaw turns under and shades the neck, light gathers on the lit cheek, the brow and the chin
+    var f = P.f, S = P.skin, B = P.B, k = XF ? XF.s : 1, cx = f.ecx, cy = f.ecy, span = Math.max(4, f.bot - cy);
+    var M = M64().fn(function (x, y) { var hw = f.hw[y - f.top]; return hw != null && Math.abs(x + 0.5 - 32) < hw; });
+    P.faceM = M;
+    function blob(x, y, bx, by, rx, ry) { var d = sq((x - bx) / rx) + sq((y - by) / ry); return d < 1 ? 1 - d : 0; }
+    M.eachF(function (X, Y) {
+      var x = DX(X), y = DY(Y), hw = f.hwAt(y), dxr = hw - (x - 32), dyb = (stepsF(M, X, Y, 0, 1, Math.ceil(4 * k)) - 0.5) / k;
+      var j = Math.max(0, Math.min(1, (y - cy + 2) / (span + 2))), wr = 1.6 + 2.6 * j, v = 1;
+      v -= 0.62 * Math.pow(Math.max(0, Math.min(1, (wr - dxr) / wr)), 0.85);
+      v -= 0.55 * Math.max(0, Math.min(1, (2.1 - dyb) / 2.1)) * (x > 32 ? 1 : 0.6);
+      v += 0.42 * blob(x, y, cx - 1.2, cy + 3.6, 3.2, 2.3) + 0.24 * blob(x, y, 28, cy - 6, 3.6, 2) + 0.3 * blob(x, y, 30.8, f.bot - 2.4, 2.2, 1.4) + 0.12 * blob(x, y, 64 - cx, cy + 3.6, 2.6, 2);
+      B.setF(X, Y, v > 1.22 ? S.l : v > 0.78 ? S.b : v > 0.5 ? S.m : v > 0.28 ? S.s : S.d, TAG.SKIN);
+    });
+    var n = Math.max(1, Math.round(2 * k)), x, y, j;
+    for (y = 0; y < B.h; y++) for (x = 0; x < B.w; x++) {
+      if (M.hasF(x, y) || B.tgF(x, y) !== TAG.SKIN) continue;
+      for (j = 1; j <= n + 1; j++) if (M.hasF(x, y - j)) { B.setF(x, y, j <= n ? S.d : S.s, TAG.SKIN); break; }
+    }
+  }
+  // design eye style -> human eye: w/h size steps, lid (heavy lid rows), hood (low crease), smile (raised lower lid),
+  // wing (liner flick), thick (bolder lash line), soft (gentler lashes), bags, lower (lower lashes), lidIn (narrowed inner lid)
+  var HEYE = {
+    std: {}, kind: { hood: 1, smile: 1, soft: 1 }, kid: { w: 1, h: 1 }, almond: { wing: 2, thick: 1 }, small: { w: -1 },
+    twinkle: { smile: 1, soft: 1 }, doe: { w: 1, h: 1, lower: 1 }, beady: { w: -1, bags: 1, soft: 1 }, tired: { lid: 1, bags: 1 },
+    sharp: { thick: 1, lidIn: 1 }, star: { thick: 1 }, lidded: { lid: 1, wing: 1 }, soft: { lid: 1, wing: 1, lower: 1 },
+    cute: { w: 1, h: 1 }, cutewing: { w: 1, h: 1, wing: 2, thick: 1 }, cutelid: { w: 1, h: 1, lid: 1 }
+  };
+  function humanEyeSpec(P) {
+    var c = HEYE[P.d.eyeStyle] || {}, hint = P.d.hum || {}, hd = !!XF, o = { hd: hd }, k;
+    for (k in c) if (c.hasOwnProperty(k)) o[k] = c[k];
+    for (k in hint) if (hint.hasOwnProperty(k)) o[k] = hint[k];
+    o.w = (hd ? 9 : 6) + (c.w || 0);
+    o.h = (hd ? 5 : 3) + (c.h || 0) - (hd && hint.masc ? 1 : 0);
+    o.iw = hd ? (o.w >= 9 && !hint.masc ? 5 : 4) : (o.w >= 7 ? 4 : 3);
+    if (hint.masc) { o.thick = 0; o.wing = Math.min(o.wing || 0, 1); }
+    return o;
+  }
+  // left eye, outer corner at the LEFT. K lash, k soft lash, W/w sclera (lit / under the lid), L lid skin, c crease,
+  // l lower lid, q lower lash, v under-eye shade. The open cells come back for the iris.
+  function humanEyeTpl(st, mode) {
+    var w = st.w, h = st.h, hd = st.hd, L = 4, T = 6, TW = L + w + 2, TH = T + h + 4, g = [], r, c, tops = [], bots = [], open = [];
+    for (r = 0; r < TH; r++) { g.push([]); for (c = 0; c < TW; c++) g[r].push('.'); }
+    function put(cc, rr, ch) { cc += L; rr += T; if (rr >= 0 && rr < TH && cc >= 0 && cc < TW) g[rr][cc] = ch; }
+    function get(cc, rr) { cc += L; rr += T; return rr >= 0 && rr < TH && cc >= 0 && cc < TW ? g[rr][cc] : '.'; }
+    function out() { return { rows: g.map(function (row) { return row.join(''); }), L: L, T: T, w: w, h: h, open: open }; }
+    var thickN = hd ? Math.round(w * (st.thick ? 0.5 : st.masc ? 0.22 : 0.4)) : (st.thick ? 2 : st.masc ? 0 : 1);
+    if (mode === 'happy') { // smiling closed eye: the lash line arches, bolder in the middle, with a little tail at the outer corner
+      for (c = 0; c < w; c++) {
+        var u = (c + 0.5) / w, ar = Math.round((hd ? 2.4 : 1.6) * (1 - Math.sin(Math.PI * u)) + (hd ? 0.9 : 0.3));
+        put(c, ar, 'K');
+        if (hd && c > 0 && c < w - 1 && !st.masc) put(c, ar + 1, 'K');
+        if (c === 0) { put(-1, ar + 1, 'K'); if (hd) put(-1, ar + 2, 'k'); }
+      }
+      if (hd) for (c = 2; c < w - 2; c++) put(c, Math.round(2.4 * (1 - Math.sin(Math.PI * (c + 0.5) / w)) + 0.9) + 3, 'l');
+      return out();
+    }
+    if (mode === 'closed') { // blink: the lid rests on the lower lash line
+      for (c = 0; c < w; c++) {
+        var u2 = (c + 0.5) / w, cr = Math.round(h - (hd ? 1.1 : 1.1) - (hd ? 1.2 : 0.7) * (1 - Math.sin(Math.PI * u2)));
+        put(c, cr, 'K');
+        if (hd && c < thickN + 1) put(c, cr - 1, 'K');
+        if (hd && c > 0 && c < w - 1) put(c, cr + 1, 'k');
+        if (c === 0) put(-1, cr - (hd ? 1 : 0), 'K');
+      }
+      return out();
+    }
+    // almond opening, per column [top, bot): the outer corner sits a little higher and comes to a point
+    for (c = 0; c < w; c++) {
+      var t = (c === 0 || c === w - 1) ? 1 : 0, b = h;
+      if (hd) b = c === 0 ? 2 : c === 1 ? Math.min(h, 3) : c === 2 || c >= w - 2 ? h - 1 : h;
+      else if (c === 0) b = h - 1; else if (c === w - 1) b = h === 3 ? 3 : h - 1;
+      tops.push(t); bots.push(b);
+    }
+    var nat = tops.slice();
+    if (mode === 'wide') for (c = 1; c < w - 1; c++) { tops[c] -= 1; nat[c] -= 1; }
+    if (st.lid && mode !== 'wide') for (c = 0; c < w; c++) tops[c] = Math.min(bots[c] - 1, tops[c] + st.lid);
+    if (st.lidIn && mode !== 'wide') for (c = w - 2; c < w; c++) tops[c] = Math.min(bots[c] - 1, tops[c] + 1);
+    if (st.smile && mode === 'open') for (c = 1; c < w - 1; c++) bots[c] = Math.max(tops[c] + 2, bots[c] - 1);
+    function lower(c, n) { tops[c] = Math.min(bots[c] - (c === 0 || c === w - 1 ? 0 : 1), tops[c] + n); } // a corner may close completely
+    if (mode === 'sad') for (c = 0; c < w; c++) lower(c, hd ? (c < w * 0.34 ? 2 : c < w * 0.67 ? 1 : 0) : (c < w * 0.5 ? 1 : 0));
+    if (mode === 'angry') for (c = 0; c < w; c++) lower(c, hd ? (c >= w * 0.67 ? 2 : c >= w * 0.34 ? 1 : 0) : (c >= w * 0.5 ? 1 : 0));
+    for (c = 0; c < w; c++) {
+      for (r = nat[c]; r < tops[c]; r++) put(c, r, 'L');
+      for (r = tops[c]; r < bots[c]; r++) { put(c, r, r === tops[c] ? 'w' : 'W'); open.push([c, r]); }
+    }
+    // lash line: bolder towards the outer corner, ending in a short tail past it
+    if (mode === 'sad' && !hd) thickN = 0;
+    for (c = 0; c < w; c++) { put(c, tops[c] - 1, 'K'); if (c < thickN) put(c, tops[c] - 2, 'K'); }
+    put(-1, tops[0] - 1, 'K');
+    if (hd && !st.masc) put(-1, tops[0] - 2, 'K');
+    if (st.wing) { put(-2, tops[0] - 2, 'K'); if (st.wing > 1) { put(-3, tops[0] - 3, 'K'); if (hd) put(-2, tops[0] - 3, 'K'); } }
+    if (hd) put(w, tops[w - 1], 'k');
+    // lower lid, lower lashes, crease, bags
+    for (c = 1; c < w - (hd ? 1 : 1); c++) if (get(c, bots[c]) === '.') put(c, bots[c], 'l');
+    if (hd || st.lower) { put(0, bots[0], 'q'); if (hd && !st.masc) put(-1, bots[0] - 1, 'q'); }
+    if (hd || st.hood) for (c = hd ? 1 : 1; c < w - 1; c++) {
+      var cr2 = Math.min(tops[c], nat[c]) - (c < thickN ? 3 : 2) - (hd && !st.hood ? 1 : 0);
+      if (get(c, cr2) === '.' && get(c, cr2 + 1) === '.') put(c, cr2, 'c');
+    }
+    if (st.bags || (hd && st.old)) for (c = 1; c < w - 1; c++) if (get(c, bots[c] + 1) === '.') put(c, bots[c] + 1, 'v');
+    return out();
+  }
+  function humanEyeGeom(P) {
+    var f = P.f, st = humanEyeSpec(P), X0 = Math.round(FX(f.ecx) - st.w / 2), Y0 = Math.round(FY(f.ecy) - st.h / 2);
+    return { st: st, X0: X0, Y0: Y0, Xc: X0 + st.w / 2, lashY: Y0 - 1 };
+  }
+  function humanEyeLegend(P, st) {
+    var S = P.skin, ic = P.eyeC, lash = P.lash != null ? mix(P.lash, H('#2a1420'), 0.25) : mix(H('#3a1a24'), ic[0], 0.22);
+    if (st.soft) lash = mix(lash, S.s, 0.28);
+    return { K: [lash, TAG.EYE], k: [mix(lash, S.s, 0.45), TAG.EYE], W: [mix(H('#eeebf5'), S.b, 0.1), TAG.EYE], w: [mix(H('#c8c4d8'), S.s, 0.15), TAG.EYE], L: [S.m, TAG.SKIN],
+      c: [mix(S.m, S.s, 0.55), TAG.SKIN], l: [mix(S.s, S.m, 0.35), TAG.SKIN], q: [mix(lash, S.s, 0.35), TAG.EYE], v: [mix(S.m, H('#8a6ab0'), 0.2), TAG.SKIN] };
+  }
+  function paintIrisH(B, T, ox, oy, flip, st, ic, gaze, mode) {
+    if (!T.open.length) return;
+    var TW = T.rows[0].length, set = {}, minX = 1e9, maxX = -1e9, x, y;
+    T.open.forEach(function (p) { var tc = p[0] + T.L, X = flip ? ox + (TW - 1 - tc) : ox + tc; set[X + ',' + (oy + p[1] + T.T)] = 1; minX = Math.min(minX, X); maxX = Math.max(maxX, X); });
+    var wide = mode === 'wide', iw = Math.max(2, Math.min(st.iw - (wide ? 1 : 0), maxX - minX + 1)), off = Math.ceil((maxX - minX + 1 - iw) / 2);
+    var ix0 = flip ? maxX - off - iw + 1 : minX + off; // a little more white on the outer side
+    ix0 = Math.max(minX, Math.min(maxX - iw + 1, ix0 + (gaze || 0)));
+    var minY = 1e9, maxY = -1e9;
+    for (x = ix0; x < ix0 + iw; x++) for (y = oy; y < oy + T.rows.length; y++) if (set[x + ',' + y]) { minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+    if (minY > maxY) return;
+    if (wide && maxY - minY >= 2) minY += 1; // white above the iris
+    var ih = maxY - minY + 1, hd = st.hd, mid = mix(ic[0], ic[1], 0.5);
+    for (y = minY; y <= maxY; y++) for (x = ix0; x < ix0 + iw; x++) {
+      if (!set[x + ',' + y]) continue;
+      var r = y - minY;
+      if (hd && ih >= 4 && r === ih - 1 && (x === ix0 || x === ix0 + iw - 1)) continue; // round bottom
+      B.setF(x, y, r === 0 ? ic[0] : r === ih - 1 ? ic[2] : hd && r === 1 ? mid : ic[1], TAG.EYE);
+    }
+    var pc0 = ix0 + Math.floor((iw - 1) / 2), pc1 = ix0 + Math.floor(iw / 2), pr0 = minY + (ih >= 3 ? 1 : 0), pr1 = hd && ih >= 4 ? pr0 + 1 : pr0;
+    for (y = pr0; y <= pr1; y++) for (x = pc0; x <= pc1; x++) if (set[x + ',' + y]) B.setF(x, y, ic[3], TAG.EYE);
+    // catchlight on the upper left of the iris (one light for both eyes), glint lower right
+    var hx = ix0 + (iw >= 4 ? 1 : 0), hy = minY + (hd ? 1 : 0);
+    if (set[hx + ',' + hy]) B.setF(hx, hy, WHITE, TAG.EYE);
+    if (hd) { if (set[(hx + 1) + ',' + hy]) B.setF(hx + 1, hy, WHITE, TAG.EYE); if (set[hx + ',' + (hy + 1)]) B.setF(hx, hy + 1, mix(WHITE, ic[2], 0.3), TAG.EYE); }
+    var gx = ix0 + iw - 1 - (hd ? 1 : 0), gy = maxY - (hd ? 1 : 0);
+    if (ih >= 3 && set[gx + ',' + gy]) B.setF(gx, gy, mix(ic[2], WHITE, 0.55), TAG.EYE);
+  }
+  function drawEyesH(P) {
+    var d = P.d, g = humanEyeGeom(P), st = g.st, e = P.e, B = P.B, N = B.w, wide = e === 'surprised' && !P.blink;
+    P.heye = g;
+    var mode = P.blink ? 'closed' : e === 'happy' ? 'happy' : wide ? 'wide' : e === 'sad' ? 'sad' : e === 'angry' ? 'angry' : 'open';
+    var T = humanEyeTpl(st, mode), TW = T.rows[0].length, ox = g.X0 - T.L, oy = g.Y0 - T.T, oxR = N - 1 - (ox + TW - 1), L = humanEyeLegend(P, st);
+    var gaze = d.gaze ? Math.round(d.gaze(P) * (XF ? XF.s : 1)) : 0;
+    if (!d.hideEyeL) { stampF(B, T.rows, ox, oy, L, TAG.EYE, false); paintIrisH(B, T, ox, oy, false, st, P.eyeC, gaze, mode); }
+    if (!d.hideEyeR) { stampF(B, T.rows, oxR, oy, L, TAG.EYE, true); paintIrisH(B, T, oxR, oy, true, st, P.eyeC, gaze, mode); }
+    if (P.tears) [[1, 1], [1, 2], [0, 3]].forEach(function (q, i) {
+      var y = g.Y0 + st.h + q[1] - 1, c = i % 2 ? H('#8cc4f0') : H('#c4e6ff');
+      if (!d.hideEyeL) B.setF(g.X0 + q[0], y, c, TAG.EYE);
+      if (!d.hideEyeR) B.setF(N - 1 - (g.X0 + q[0]), y, c, TAG.EYE);
+    });
+  }
+  function drawBrowsH(P) { // thin and soft, a shade darker than the hair, kept at the design's distance above the lash line
+    var spec = P.d.brows; if (!spec) return;
+    var g = P.heye || humanEyeGeom(P), S = P.skin, B = P.B, N = B.w, f = P.f, s = XF ? XF.s : 1, pts = browPts(P, spec);
+    var soft = function (c) { return lum(c) < 0.3 ? mix(c, S.m, 0.24) : c; }, col = soft(spec.col), col2 = soft(spec.col2 != null ? spec.col2 : spec.col);
+    var th = s > 1 ? (spec.thick >= 3 ? 3 : 2) : (spec.thick === 3 || (spec.thick === 2 && P.d.browKeep) ? 2 : 1);
+    var fp = pts.map(function (p) { return [Math.round(FX(f.eyeX + p[0] + 0.5) - 0.5), Math.round(g.lashY + (p[1] - f.kr) * s)]; });
+    var path = [], i;
+    for (i = 0; i + 1 < fp.length; i++) { var seg = bezCore([fp[i], fp[i + 1]]); if (path.length) seg = seg.slice(1); path = path.concat(seg); }
+    var minx = 1e9, maxx = -1e9; path.forEach(function (p) { minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); });
+    var aL = Math.round(((spec.asymL && spec.asymL[P.e]) || 0) * s), aR = Math.round(((spec.asymR && spec.asymR[P.e]) || 0) * s), taper = spec.taper != null ? spec.taper : 0.25;
+    path.forEach(function (p) {
+      var u = (p[0] - minx) / Math.max(1, maxx - minx);
+      for (var k = 0; k < th; k++) {
+        if (k > 0 && u <= taper) continue;
+        var c = k === th - 1 && k > 0 ? col2 : col;
+        if (!spec.noL) B.setF(p[0], p[1] + k + aL, c, TAG.BROW);
+        if (!spec.noR) B.setF(N - 1 - p[0], p[1] + k + aR, c, TAG.BROW);
+      }
+    });
+  }
+  function drawNoseH(P) { // a small nose: the bridge catches the light, the far side and the underside shade softly
+    var d = P.d; if (d.nose === false) return;
+    var rows = typeof d.nose === 'object' ? d.nose : NOSES[d.nose || 'button'], S = P.skin, B = P.B, f = P.f;
+    var nx = d.noseX != null ? d.noseX : 31, tip = f.noseY + rows.length - 1;
+    if (!XF) {
+      B.setF(nx, tip - 2, S.l, TAG.SKIN); B.setF(nx + 1, tip - 1, S.m, TAG.SKIN);
+      B.setF(nx, tip, S.m, TAG.SKIN); B.setF(nx + 1, tip, S.s, TAG.SKIN);
+      return;
+    }
+    var X = Math.round(fxX(nx + 1)), Y = ptY(tip);
+    var hl = mix(S.b, S.l, 0.6);
+    [[-1, -3, hl], [0, -2, S.m], [-1, -1, S.l], [0, -1, S.m], [1, -1, S.m], [-2, 0, S.m], [-1, 0, S.m], [0, 0, S.s], [1, 0, S.s]].forEach(function (q) { B.setF(X + q[0], Y + q[1], q[2], TAG.SKIN); });
+  }
+  function widenRows(rows, add) { // stretch a mouth stamp by repeating its centre columns (corners stay crisp)
+    var w = stampW(rows), a = Math.floor(w / 2) - (w % 2 ? 0 : 1), b = Math.floor(w / 2);
+    return rows.map(function (r) { while (r.length < w) r += '.'; var mid = '', i; for (i = 0; i < add; i++) mid += r.charAt(i < add / 2 ? a : b); return r.slice(0, a + 1) + mid + r.slice(a + 1); });
+  }
+  function drawMouthH(P, dy) { // the character's own mouth shapes with lip colour; widened 1:1 frame pixels in human_hd
+    var rows = mouthRows(P); if (!rows) return;
+    if (XF) rows = widenRows(rows, 2 * Math.round(stampW(rows) * 0.14));
+    var d = P.d, S = P.skin, B = P.B, N = B.w, w = stampW(rows), X0 = N / 2 - Math.ceil(w / 2) + Math.round((d.mouthDX || 0) * (XF ? XF.s : 1)), Y0 = XF ? ptY(P.f.mouthY + (dy || 0)) : P.f.mouthY + (dy || 0);
+    var line = mix(S.lipD, S.line, 0.3), lipS = mix(S.lip, S.b, 0.45);
+    stampF(B, rows, X0, Y0, {
+      D: [line, TAG.MOUTH], d: [S.s, TAG.MOUTH], s: [lipS, TAG.SKIN], l: [S.l, TAG.SKIN], m: [H('#5e2434'), TAG.MOUTH], t: [H('#fbf8fc'), TAG.MOUTH],
+      T: [H('#dcd6e6'), TAG.MOUTH], u: [H('#d86a86'), TAG.MOUTH], g: [GOLD[2], TAG.MOUTH], G: [GOLD[1], TAG.MOUTH], p: [S.lip, TAG.MOUTH], P: [S.lipD, TAG.MOUTH],
+      b: [d.mouthLine ? mix(d.mouthLine, S.b, 0.15) : line, TAG.MOUTH], L: [mix(S.lip, WHITE, 0.4), TAG.MOUTH]
+    }, TAG.MOUTH, d.mouthFlip);
+    for (var r = rows.length - 1; r >= 0; r--) { // 1px highlight on the lower lip
+      var cols = []; for (var i = 0; i < rows[r].length; i++) if (rows[r].charAt(i) === 's' || rows[r].charAt(i) === 'p') cols.push(i);
+      if (cols.length >= 2) { var ci = cols[Math.floor((cols.length - 1) / 2)]; B.setF(d.mouthFlip ? X0 + (w - 1 - ci) : X0 + ci, Y0 + r, mix(S.lip, WHITE, 0.38), TAG.MOUTH); break; }
+    }
+  }
+  function blushH(P) { // a soft rosy cheek under the outer half of each eye (skin pixels only)
+    var k = P.d.blushK != null ? P.d.blushK : 1; if (k <= 0) return;
+    var g = P.heye || humanEyeGeom(P), B = P.B, S = P.skin, N = B.w, hd = !!XF, big = P.blushBig || P.e === 'happy';
+    var c1 = mix(S.b, S.blush, Math.min(1, k)), c2 = mix(S.b, S.blush, Math.min(1, k) * 0.5);
+    var cx = g.Xc - 0.5, cy = g.Y0 + g.st.h + (hd ? 2.5 : 1.5), rx = (hd ? 3.6 : 2.3) + (big ? (hd ? 0.8 : 0.4) : 0), ry = (hd ? 1.5 : 0.8) + (big ? (hd ? 0.6 : 0.5) : 0);
+    for (var Y = Math.floor(cy - ry - 1); Y <= Math.ceil(cy + ry + 1); Y++) for (var X = Math.floor(cx - rx - 1); X <= Math.ceil(cx + rx + 1); X++) {
+      var dd = sq((X + 0.5 - cx) / rx) + sq((Y + 0.5 - cy) / ry); if (dd > 1) continue;
+      var c = dd < 0.45 ? c1 : c2;
+      [X, N - 1 - X].forEach(function (xx) { var cc = B.getF(xx, Y); if (B.tgF(xx, Y) === TAG.SKIN && (cc === S.b || cc === S.l || cc === S.m)) B.setF(xx, Y, c, TAG.SKIN); });
+    }
+  }
+  function castShadowH(P, rows) { // hair and hats shade the brow, in frame pixels
+    var B = P.B, S = P.skin, hits = [], n = Math.max(2, Math.round((rows || 2) * (XF ? XF.s : 1))), x, y, k;
+    for (y = 0; y < B.h; y++) for (x = 0; x < B.w; x++) {
+      if (B.tgF(x, y) !== TAG.SKIN) continue;
+      var c = B.getF(x, y); if (c !== S.b && c !== S.l && c !== S.m) continue;
+      for (k = 1; k <= n; k++) { var t = B.tgF(x - (k > 1 ? 1 : 0), y - k); if (t === TAG.HAIR || t === TAG.HAT) { hits.push(x, y, k); break; } }
+    }
+    for (var i = 0; i < hits.length; i += 3) { var c2 = B.getF(hits[i], hits[i + 1]); B.setF(hits[i], hits[i + 1], hits[i + 2] === 1 ? (c2 === S.m ? S.s : S.m) : (c2 === S.l ? S.b : S.m), TAG.SKIN); }
+  }
+
   /* ================================================================== player look tables */
   var LOOKS = {
     skins: ['pale', 'fair', 'tan', 'brown', 'deep', 'moon-pale'],
@@ -2782,7 +3128,7 @@
         var M = faceTop(P, function (x) { return hl(x); }).or(M64().ellipse(32, 24.5, 14.5, 13.2).keep(function (x, y) { return y + 0.5 < hl(x) + 0.5; }));
         M.poly([[22, 16], [42, 16], [42, 20], [36, 20], [30, 21], [24, 21], [21, 22]]);
         hairClumps(B, M, R, { px: 32, py: 24, aw: 0.3, ph: 0.2, cx: 25, cy: 13, rx: 17, ry: 14, k: 0.25, gap: 0.08, th: [-0.2, 0.3] });
-        M.each(function (x, y) { if ((x + y) % 3 === 0 && B.get(x, y) === R[3]) B.set(x, y, R[2], TAG.HAIR); });
+        M.each(function (x, y) { if ((ti(x) + tj(y)) % 3 === 0 && B.get(x, y) === R[3]) B.set(x, y, R[2], TAG.HAIR); });
         innerLine(B, M, R[1], function (t) { return t === TAG.SKIN; });
       }
     }
@@ -2790,7 +3136,7 @@
   function curlFill(B, M, R) { // tight curls: ring texture
     shadeFill(B, M, [R[1], R[2], R[3]], TAG.HAIR, { cx: 24, cy: 16, rx: 22, ry: 20, edge: 0.45, th: [-0.05, 0.45] });
     M.each(function (x, y) {
-      var u = ((x * 5 + (y >> 1) * 3) % 6 + 6) % 6, v = ((y + (x >> 2)) % 3 + 3) % 3;
+      var X = ti(x), Y = tj(y), u = ((X * 5 + (Y >> 1) * 3) % 6 + 6) % 6, v = ((Y + (X >> 2)) % 3 + 3) % 3;
       var c = B.get(x, y);
       if (u === 0 && v !== 1) B.set(x, y, c === R[3] ? R[2] : R[1], TAG.HAIR);
       else if (u === 2 && v === 0 && c === R[3]) B.set(x, y, R[4], TAG.HAIR);
@@ -3677,13 +4023,13 @@
   function paintCloakP(B, M, C) {
     var R = C.R;
     shadeFill(B, M, R, TAG.CLOTH, { cx: 14, cy: 44, rx: 34, ry: 26, edge: 0.4 });
-    if (C.R2) M.each(function (x, y) { if (y >= 56 || (y >= 53 && (x + y) % 2 === 0)) { var i = R.indexOf(B.get(x, y)); if (i >= 0) B.set(x, y, C.R2[i], TAG.CLOTH); } });
+    if (C.R2) M.each(function (x, y) { if (y >= 56 || (y >= 53 && (ti(x) + tj(y)) % 2 === 0)) { var i = R.indexOf(B.get(x, y)); if (i >= 0) B.set(x, y, C.R2[i], TAG.CLOTH); } });
     if (C.feathers) M.each(function (x, y) { // overlapping rows of feather tips with a violet sheen
-      var row = Math.floor(y / 3), ph = (x + row * 2) % 4;
-      if (y % 3 === 2 && ph !== 0) B.set(x, y, R[0], TAG.CLOTH);
-      else if (y % 3 === 0 && ph === 1 && (x + row) % 3 === 0) B.set(x, y, H('#6a47a8'), TAG.CLOTH);
+      var X = ti(x), Y = tj(y), row = Math.floor(Y / 3), ph = (X + row * 2) % 4;
+      if (Y % 3 === 2 && ph !== 0) B.set(x, y, R[0], TAG.CLOTH);
+      else if (Y % 3 === 0 && ph === 1 && (X + row) % 3 === 0) B.set(x, y, H('#6a47a8'), TAG.CLOTH);
     });
-    if (C.deco) M.each(function (x, y) { var c = C.deco(x, y); if (c >= 0) B.set(x, y, c, TAG.CLOTH); });
+    if (C.deco) M.each(function (x, y) { var c = C.deco(ti(x), tj(y)); if (c >= 0) B.set(x, y, c, TAG.CLOTH); });
   }
   function cloakBackP(P, C) {
     var B = P.B, M = torso(42, 13, 29, 9, 32);
@@ -3695,7 +4041,7 @@
     var B = P.B, M = torso(47, 9, 25, 8, 28).keep(function (x, y) { var dx = Math.abs(x + 0.5 - 32); return dx >= 10 + Math.max(0, y - 49) * 0.28; });
     paintCloakP(B, M, C);
     M.each(function (x, y) { if (!M.has(x < 32 ? x + 1 : x - 1, y)) B.set(x, y, C.lin, TAG.CLOTH); });
-    if (C.leafy) M.each(function (x, y) { if (!M.has(x < 32 ? x + 1 : x - 1, y) && y % 3 === 0) { B.set(x + (x < 32 ? 1 : -1), y, H('#4c9061'), TAG.CLOTH); B.set(x + (x < 32 ? 1 : -1), y + 1, H('#337450'), TAG.CLOTH); } });
+    if (C.leafy) M.each(function (x, y) { if (!M.has(x < 32 ? x + 1 : x - 1, y) && tj(y) % 3 === 0) { B.set(x + (x < 32 ? 1 : -1), y, H('#4c9061'), TAG.CLOTH); B.set(x + (x < 32 ? 1 : -1), y + 1, H('#337450'), TAG.CLOTH); } });
     // clasp and chain at the throat
     var K = C.clasp;
     bez([[22, 50], [32, 52], [42, 50]]).forEach(function (p, i) { if (i % 2 === 0) B.set(p[0], p[1], K[1], TAG.METAL); });
@@ -3730,7 +4076,7 @@
     cl_outfit_bard: function (P) {
       var B = P.B, M = torso(47, 9, 25, 8, 28), WINE = HS(['#3a0c1e', '#5e1630', '#86223f', '#a83a58']);
       shadeFill(B, M, WINE, TAG.CLOTH, { cx: 16, cy: 46, rx: 32, ry: 24, edge: 0.35 });
-      M.each(function (x, y) { var dx = Math.abs(x + 0.5 - 32); if (dx > 15.5 && y < 60 && x % 3 === 0) B.set(x, y, y % 2 ? GOLD[1] : GOLD[2], TAG.CLOTH); });
+      M.each(function (x, y) { var dx = Math.abs(x + 0.5 - 32); if (dx > 15.5 && y < 60 && ti(x) % 3 === 0) B.set(x, y, tj(y) % 2 ? GOLD[1] : GOLD[2], TAG.CLOTH); });
       bez([[17, 53], [32, 57], [47, 53]]).forEach(function (p) { B.set(p[0], p[1], GOLD[2], TAG.CLOTH); B.set(p[0], p[1] + 1, GOLD[0], TAG.CLOTH); });
       for (var y = 50; y < 64; y++) { B.set(31, y, GOLD[2], TAG.CLOTH); B.set(32, y, GOLD[1], TAG.CLOTH); }
       [[30, 59], [30, 62]].forEach(function (p) { B.set(p[0], p[1], GOLD[3], TAG.METAL); B.set(p[0] + 3, p[1], GOLD[3], TAG.METAL); });
@@ -3758,7 +4104,7 @@
       shadeFill(B, V, HS(['#2a1848', '#4a2f7a', '#6a47a8']), TAG.CLOTH, { cx: 28, cy: 46, rx: 8, ry: 10 });
       bez([[26, 47], [32, 57]]).forEach(function (p) { B.set(p[0], p[1], SILVER[3], TAG.CLOTH); }); bez([[38, 47], [32, 57]]).forEach(function (p) { B.set(p[0], p[1], SILVER[2], TAG.CLOTH); });
       stamp(B, ['.MM', 'M..', 'M..', '.MM'], 31, 59, { M: H('#e8eeff') }, TAG.METAL);
-      M.each(function (x, y) { var k = (x * 13 + y * 7) % 37; if (k === 0) B.set(x, y, WHITE, TAG.GLASS); else if (k === 19) B.set(x, y, H('#c4f0ff'), TAG.GLASS); });
+      M.each(function (x, y) { var k = (ti(x) * 13 + tj(y) * 7) % 37; if (k === 0) B.set(x, y, WHITE, TAG.GLASS); else if (k === 19) B.set(x, y, H('#c4f0ff'), TAG.GLASS); });
       [[18, 52], [45, 60]].forEach(function (c) { B.set(c[0], c[1], WHITE, TAG.GLASS); B.set(c[0] - 1, c[1], LAV[3], TAG.GLASS); B.set(c[0] + 1, c[1], LAV[3], TAG.GLASS); B.set(c[0], c[1] - 1, LAV[3], TAG.GLASS); B.set(c[0], c[1] + 1, LAV[3], TAG.GLASS); });
     },
     cl_outfit_ranger: function (P) {
@@ -3773,7 +4119,7 @@
       bez([[6, 53], [13, 51], [20, 54]]).forEach(function (p) { B.set(p[0], p[1], LEA[0], TAG.CLOTH); });
       [[9, 55], [13, 54], [17, 55]].forEach(function (p) { B.set(p[0], p[1], SILVER[2], TAG.METAL); });
       var strap = M64().thick(bez([[21, 48], [33, 56], [46, 64]]), 1).and(M);
-      strap.each(function (x, y) { B.set(x, y, (x + y) % 5 === 0 ? LEA[3] : LEA[2], TAG.CLOTH); });
+      strap.each(function (x, y) { B.set(x, y, (ti(x) + tj(y)) % 5 === 0 ? LEA[3] : LEA[2], TAG.CLOTH); });
       stamp(B, ['ggg', 'g.g', 'ggg'], 31, 55, { g: GOLD[1] }, TAG.METAL);
     }
   };
@@ -4127,7 +4473,7 @@
       var key = "ppst|" + style + "|" + lookKey(lk) + "|" + expr + "|" + (opts.blink ? 1 : 0) + (opts.talk ? 1 : 0);
       return cached(key, function () { var r = rawPlayerPortraitStyled(style, lk, expr, opts); return HAS_DOM ? toCanvas(r) : r; });
     },
-    portraitStyles: ['valley', 'sweet', 'soft', 'close', 'close_sweet'],
+    portraitStyles: ['valley', 'sweet', 'soft', 'close', 'close_sweet', 'human', 'human_hd'],
     looks: LOOKS,
     clothes: CLOTHES.map(function (c) { return { id: c.id, slot: c.slot, name: c.name }; }),
     _raw: { portrait: rawPortrait, playerPortrait: rawPlayerPortrait, npcSprites: rawNpcSprites, playerSprites: rawPlayerSprites, playerRide: rawPlayerRide, portraitStyled: rawPortraitStyled, playerPortraitStyled: rawPlayerPortraitStyled, catSprites: catRaw }
