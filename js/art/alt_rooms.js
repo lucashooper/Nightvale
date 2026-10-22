@@ -1928,65 +1928,71 @@
   const PEACH = ['#6a3020', '#a4523a', '#d6805a', '#f2aa80', '#ffd2b0', '#fff0e0'];
   function floorRoseHollow(w, h, seed) {
     const P = new Pix(w, h);
-    // smooth rosy stones fitted together, soft moss in the seams, rose quartz sprouting here and there
+    // big smooth rosy stones worn round, soft moss pooling between them, rose quartz sprouting here and there
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const gx0 = Math.floor(x / 14), gy0 = Math.floor(y / 11);
-      let d1 = 1e9, d2 = 1e9, best = 0;
+      const gx0 = Math.floor(x / 26), gy0 = Math.floor(y / 19);
+      let d1 = 1e9, d2 = 1e9, best = 0, dx1 = 0, dy1 = 0;
       for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-        const gx = gx0 + i, gy = gy0 + j, ox = gx * 14 + 2 + hash(gx, gy, seed) * 10, oy = gy * 11 + 2 + hash(gx, gy, seed + 1) * 7;
-        const d = Math.hypot((x - ox) * 0.8, y - oy);
-        if (d < d1) { d2 = d1; d1 = d; best = hash(gx, gy, seed + 2); } else if (d < d2) d2 = d;
+        const gx = gx0 + i, gy = gy0 + j, ox = gx * 26 + 4 + hash(gx, gy, seed) * 18, oy = gy * 19 + 3 + hash(gx, gy, seed + 1) * 13;
+        const d = Math.hypot((x - ox) * 0.78, y - oy);
+        if (d < d1) { d2 = d1; d1 = d; best = hash(gx, gy, seed + 2); dx1 = x - ox; dy1 = y - oy; } else if (d < d2) d2 = d;
       }
-      const moss = fbm(x / 22, y / 16, seed + 5);
+      const moss = fbm(x / 26, y / 18, seed + 5), gap = d2 - d1;
       let c;
-      if (d2 - d1 < 1.3) c = moss > 0.5 ? MOSS[3] : ROSEROCK[0];
+      if (gap < 1.6) c = moss > 0.46 ? MOSS[2] : ROSEROCK[1];
+      else if (gap < 4 && moss > 0.5) c = rampAt(MOSS, 0.3 + (moss - 0.5) * 1.6 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
       else {
-        let k = best < 0.3 ? 3 : best < 0.8 ? 4 : 5;
-        if (d2 - d1 < 3) k--; else if (d1 < 3) k++;
-        c = rampAt(ROSEROCK, (k + noise(x / 5, y / 5, seed + 3) * 0.8) / 7, x, y);
-        if (moss > 0.62) c = rampAt(MOSS, 0.4 + (moss - 0.62) * 2 + noise(x / 3, y / 3, seed + 6) * 0.2, x, y);
+        const sh = clamp(0.55 + lit(dx1 / 14, dy1 / 10) * 0.35 - (gap < 3 ? 0.12 : 0), 0, 1);
+        c = rampAt(ROSEROCK, 0.28 + best * 0.18 + sh * 0.45 + (noise(x / 6, y / 6, seed + 3) - 0.5) * 0.12, x, y);
+        if (moss > 0.64) c = rampAt(MOSS, 0.4 + (moss - 0.64) * 2 + noise(x / 3, y / 3, seed + 6) * 0.15, x, y);
       }
       P.set(x, y, c);
     }
-    // clover flowers in the moss, glints of quartz, and little rose quartz sprigs
-    for (let k = 0; k < (w * h) / 260; k++) {
+    // clover flowers in the moss and glints of quartz in the stone
+    for (let k = 0; k < (w * h) / 240; k++) {
       const x = Math.floor(hash(k, 1, seed + 7) * w), y = Math.floor(hash(k, 2, seed + 7) * h);
-      if (fbm(x / 22, y / 16, seed + 5) > 0.62) { P.set(x, y, k % 3 ? '#fff4f8' : '#f8c4d4'); P.set(x + 1, y + 1, MOSS[5]); }
-      else if (k % 5 === 0) P.set(x, y, k % 2 ? RQ[5] : '#ffffff');
+      if (fbm(x / 26, y / 18, seed + 5) > 0.55) { P.set(x, y, k % 3 ? '#fff4f8' : '#f8c4d4'); P.set(x + 1, y + 1, MOSS[5]); }
+      else if (k % 4 === 0) P.set(x, y, k % 2 ? RQ[5] : '#ffffff');
     }
-    for (let k = 0; k < (w * h) / 900; k++) {
-      const x = 3 + Math.floor(hash(k, 1, seed + 9) * (w - 6)), y = 6 + Math.floor(hash(k, 2, seed + 9) * (h - 7));
-      for (const [dx, hh] of [[-1, 2], [0, 4], [1, 3]]) for (let j = 0; j < hh; j++) P.set(x + dx, y - j, j === hh - 1 ? RQ[5] : dx < 0 ? RQ[4] : dx > 0 ? RQ[2] : RQ[3]);
-      P.set(x - 1, y + 1, ROSEROCK[0]); P.set(x, y + 1, ROSEROCK[0]); P.set(x + 1, y + 1, ROSEROCK[0]);
+    for (let k = 0; k < (w * h) / 700; k++) {
+      const x = 3 + Math.floor(hash(k, 1, seed + 9) * (w - 6)), y = 6 + Math.floor(hash(k, 2, seed + 9) * (h - 7)), C = k % 3 ? RQ : PEACH;
+      for (const [dx, hh] of [[-1, 2], [0, 4], [1, 3]]) for (let j = 0; j < hh; j++) P.set(x + dx, y - j, j === hh - 1 ? C[5] : dx < 0 ? C[4] : dx > 0 ? C[2] : C[3]);
+      P.set(x - 1, y + 1, ROSEROCK[1]); P.set(x, y + 1, ROSEROCK[1]); P.set(x + 1, y + 1, ROSEROCK[1]);
     }
     return P;
   }
   FLOORS.crystal_b = floorRoseHollow;
 
   def('fairy_fountain_b', 1, () => {
-    const W = 36, H = 48, b = H - 1, cx = 17.5;
+    const W = 40, H = 52, b = H - 1, cx = 19.5, hy = b - 10;
     const WT = ['#7a2a5a', '#b04a7a', '#e078a0', '#f8a8c4', '#ffd8e6', '#fff4f8'];
+    const heart = (x, y, sc) => { const u = (x + 0.5 - cx) / (18 * sc), v = (y + 0.5 - hy) / (11 * sc), X = u * 1.15, Y = -v * 1.3 + 0.28; return Math.pow(X * X + Y * Y - 1, 3) - X * X * Y * Y * Y < 0; };
     const draw = (f) => {
       const P = new Pix(W, H);
-      // a heart-shaped spring carved from rose quartz
-      const inHeart = (x, y, s2) => { const u = (x - cx) / (16 * s2), v = (y - (b - 9)) / (9 * s2); const X = u * 1.1, Y = -v * 1.25 + 0.25; return Math.pow(X * X + Y * Y - 1, 3) - X * X * Y * Y * Y < 0; };
-      for (let y = b - 20; y <= b; y++) for (let x = 0; x < W; x++) {
-        if (inHeart(x, y, 1)) { const inner = inHeart(x, y, 0.8); if (!inner) P.set(x, y, y > b - 6 ? RQ[2] : x < cx ? RQ[5] : RQ[3]); else { const d = Math.hypot((x - cx) / 12, (y - (b - 10)) / 6); let c = rampAt(WT, 0.3 + (1 - d) * 0.5, x, y); if (Math.abs(d * 4 - (f % 4) - 0.4) < 0.25) c = WT[5]; P.set(x, y, c); } }
+      // a heart-shaped spring carved from rose quartz, brimming with warm pink water
+      for (let y = hy - 14; y <= b; y++) for (let x = 0; x < W; x++) {
+        if (!heart(x, y, 1)) continue;
+        if (!heart(x, y, 0.8)) { const lt = !heart(x - 1, y - 1, 1); P.set(x, y, lt ? RQ[5] : !heart(x + 1, y + 1, 1) ? RQ[1] : y > hy + 3 ? RQ[2] : x < cx ? RQ[4] : RQ[3]); continue; }
+        const d = Math.hypot((x - cx) / 14, (y - hy) / 7);
+        let c = rampAt(WT, 0.3 + (1 - Math.min(1, d)) * 0.5, x, y);
+        if (Math.abs(d * 4 - (f % 4) - 0.5) < 0.22) c = WT[5];
+        P.set(x, y, c);
       }
-      for (let x = 2; x < W - 2; x++) for (let y = b - 3; y <= b; y++) if (inHeart(x, y, 1) && !inHeart(x, y + 1, 1)) P.set(x, y, RQ[1]);
-      // a small marble fairy holding up a shell, pink crystal wings, water trickling down
-      for (let y = b - 26; y <= b - 11; y++) { const hw = y > b - 14 ? 2.2 : 1.4; for (let x = Math.round(cx - hw); x <= Math.round(cx + hw) - 1; x++) P.set(x, y, x < cx ? '#ffffff' : '#d8d0e0'); }
-      P.ell(cx, b - 28, 2, 2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? '#ffffff' : '#d8d0e0'));
-      P.ell(cx, b - 30, 2.4, 1, (x, y) => P.set(x, y, '#e8d8a8'));
-      for (const d of [-1, 1]) { shard(P, cx + d * 5, b - 18, 8, 4, RQ, d * 0.9); shard(P, cx + d * 4, b - 15, 5, 3, RQ, d * 1.2); }
-      P.line(cx - 2, b - 24, cx - 4, b - 32, '#e8e0f0'); P.ell(cx - 4.5, b - 34, 3, 1.6, (x, y, nx) => P.set(x, y, nx < 0 ? '#fff0f6' : '#e8c8d8'));
-      for (let k = 0; k < 4; k++) { const y = b - 32 + ((f * 3 + k * 4) % 18); P.set(cx - 6 + (k % 2), y, '#ffe0f0'); }
+      for (let y = hy - 14; y <= b; y++) for (let x = 0; x < W; x++) if (heart(x, y, 1) && !heart(x, y + 1, 1)) { P.set(x, y + 1, RQ[0]); }
+      // a little crystal fairy on a pedestal, holding up a shell that trickles into the spring
+      for (let y = hy - 4; y <= hy + 1; y++) for (let x = Math.round(cx - 3); x <= Math.round(cx + 2); x++) P.set(x, y, y === hy - 4 ? '#ffffff' : x < cx ? '#f0e8f0' : '#cfc4d6');
+      for (const d of [-1, 1]) { shard(P, cx + d * 4.5, hy - 12, 9, 4, RQ, d * 1.1); shard(P, cx + d * 3.5, hy - 9, 6, 3, RQ, d * 1.4); }
+      for (let y = hy - 18; y <= hy - 5; y++) { const hw = y > hy - 9 ? 2.4 : 1.5; for (let x = Math.round(cx - hw); x <= Math.round(cx + hw) - 1; x++) P.set(x, y, x < cx - 0.5 ? '#ffffff' : '#e2d8e8'); }
+      P.ell(cx, hy - 20, 2.2, 2.2, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0 ? '#ffffff' : '#e2d8e8'));
+      P.ell(cx, hy - 22.4, 2.4, 0.9, (x, y) => P.set(x, y, GOLD[5]));
+      P.line(cx - 2, hy - 16, cx - 5, hy - 25, '#f0e8f4'); P.ell(cx - 5.5, hy - 27, 3.2, 1.8, (x, y, nx) => P.set(x, y, (Math.round(nx * 5) & 1) ? '#fff0f6' : '#ecc8da'));
+      for (let k = 0; k < 4; k++) { const y = hy - 25 + ((f * 4 + k * 6) % 24); if (y < hy) P.set(cx - 8 + (k % 2), y, '#ffe8f4'); }
       P.outline(OUT);
-      for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + f * 0.5, r = 9 + (k % 2) * 4; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(b - 24 + Math.sin(a) * r * 0.5); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#ffd0e8' : '#ffffff'); }
-      P.shadow(cx + 1, b, 16, 2);
+      for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2 + f * 0.5, r = 11 + (k % 2) * 5; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(hy - 18 + Math.sin(a) * r * 0.45); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#ffd0e8' : '#ffffff'); }
+      P.shadow(cx + 1, b, 18, 2);
       return P;
     };
-    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(17.5, b - 10, 66, [255, 150, 200], 0.7), L(17.5, b - 26, 30, [255, 220, 240], 0.45, 1)] }, draw, 4, 4);
+    return build({ ax: 18, ay: b, foot: [2, 2], solid: true, lights: [L(19.5, b - 10, 72, [255, 150, 200], 0.75), L(19.5, b - 30, 30, [255, 220, 240], 0.45, 1)] }, draw, 4, 4);
   });
 
   def('crystal_flower_b', 3, (v) => {
@@ -2036,12 +2042,18 @@
   const STREAM = [[184, 70], [160, 92], [134, 118], [112, 140], [86, 160], [62, 186], [40, 224]];
   function floorEmerald(w, h, seed) {
     const P = new Pix(w, h), shimmer = [];
-    // a deep moss carpet over old stone: stones peeping through, a brook running from the spring
+    const STONE2 = ['#1a2226', '#262f34', '#353f44', '#455054', '#566264', '#6a7674'];
+    // a deep moss carpet, soft and even, with old round stones peeping through and a brook running from the spring
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const m = fbm(x / 18, y / 14, seed), st = fbm(x / 9 + 40, y / 7, seed + 2);
-      let c = rampAt(MOSS, 0.25 + m * 0.6 + (noise(x / 2.5, y / 2, seed + 3) - 0.5) * 0.25, x, y);
-      if (st > 0.66) c = rampAt(['#1a2026', '#262e34', '#343e44', '#424e52', '#525e60'], 0.2 + (st - 0.66) * 2.4 + lit(0, 0) * 0, x, y);
+      const m = fbm(x / 24, y / 18, seed);
+      let c = rampAt(MOSS, 0.3 + m * 0.5 + (noise(x / 3.5, y / 3, seed + 3) - 0.5) * 0.12, x, y);
+      if (noise(x / 10, y / 8, seed + 12) > 0.74) c = rampAt(MOSS, 0.62 + (noise(x / 2, y / 2, seed + 13) - 0.5) * 0.2, x, y); // brighter tufts
       P.set(x, y, c);
+    }
+    for (let k = 0; k < (w * h) / 1800; k++) {
+      const sx = 8 + hash(k, 1, seed + 20) * (w - 16), sy = 8 + hash(k, 2, seed + 20) * (h - 16), rx = 4 + hash(k, 3, seed + 20) * 5, ry = rx * 0.7;
+      P.ell(sx, sy, rx, ry, (x, y, nx, ny) => { const d = nx * nx + ny * ny; P.set(x, y, d > 0.75 ? (ny < 0 ? MOSS[4] : STONE2[1]) : rampAt(STONE2, 0.45 + lit(nx, ny) * 0.4, x, y)); });
+      P.set(Math.round(sx - rx * 0.4), Math.round(sy - ry * 0.5), STONE2[5]);
     }
     // the brook
     const segD = (x, y) => { let d = 1e9; for (let k = 0; k + 1 < STREAM.length; k++) { const [x0, y0] = STREAM[k], [x1, y1] = STREAM[k + 1], vx = x1 - x0, vy = y1 - y0, t = clamp(((x - x0) * vx + (y - y0) * vy) / (vx * vx + vy * vy), 0, 1); d = Math.min(d, Math.hypot(x - x0 - vx * t, y - y0 - vy * t)); } return d; };
@@ -2065,34 +2077,31 @@
   FLOORS.crystal_c = floorEmerald;
 
   def('fairy_fountain_c', 1, () => {
-    const W = 40, H = 54, b = H - 1, cx = 19.5;
+    const W = 42, H = 52, b = H - 1, cx = 20.5;
     const WT = ['#06302a', '#0c4a40', '#14665a', '#228a78', '#40b09a', '#80dcc4', '#d4fff0'];
-    const ROCK = ['#1a2226', '#262f34', '#353f44', '#455054', '#566264', '#6a7674'];
+    const ROCK = ['#1a2226', '#262f34', '#353f44', '#455054', '#566264', '#6a7674', '#7e8a86'];
     const draw = (f) => {
       const P = new Pix(W, H);
-      // a mossy rock spring: a little waterfall tumbling into a stone-ringed pool, ferns and emeralds on the rocks
-      P.ell(cx, b - 7, 18, 6.4, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.72 ? (lit(nx, ny) > 0 ? ROCK[5] : ROCK[3]) : ROCK[1]));
-      P.ell(cx, b - 7.4, 15, 4.8, (x, y, nx, ny) => { const d = Math.sqrt(nx * nx + ny * ny); let c = rampAt(WT, 0.25 + (1 - d) * 0.55, x, y); if (Math.abs(d * 4 - (f % 4) - 0.3) < 0.22) c = WT[6]; P.set(x, y, c); });
-      for (const [rx, ry, rr] of [[cx - 15, b - 6, 3], [cx + 15, b - 7, 3.4], [cx - 9, b - 2, 2.6], [cx + 9, b - 2, 2.8], [cx, b - 1, 2.4]]) P.ell(rx, ry, rr, rr * 0.7, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? ROCK[5] : lit(nx, ny) > -0.3 ? ROCK[4] : ROCK[2]));
-      // the rock outcrop behind, capped with moss
-      for (let y = 4; y <= b - 11; y++) for (let x = 6; x <= 33; x++) {
-        const nx = (x - cx) / 14, ny = (y - (b - 11)) / (b - 15); if (nx * nx + ny * ny > 1 || (y < 12 && Math.abs(nx) > 0.6 + (y - 4) * 0.05)) continue;
-        let c = rampAt(ROCK, 0.35 + lit(nx, ny) * 0.4 + noise(x / 4, y / 4, 3) * 0.25, x, y);
-        if (noise(x / 5, y / 4, 9) > 0.58 || y < 10 + Math.sin(x * 0.7) * 2) c = rampAt(MOSS, 0.45 + lit(nx, ny) * 0.3 + noise(x / 2, y / 2, 4) * 0.2, x, y);
-        P.set(x, y, c);
-      }
-      // the falling water, animated
-      for (let y = 12; y <= b - 10; y++) for (let x = Math.round(cx - 2); x <= Math.round(cx + 2); x++) { const k = (y * 2 - f * 3 + x) % 6; P.set(x, y, k < 2 ? WT[6] : k < 4 ? WT[5] : WT[4]); }
+      // mossy boulders heaped round a cleft; a little waterfall spills into a stone-ringed pool
+      const boulder = (bx, by, rx, ry) => P.ell(bx, by, rx, ry, (x, y, nx, ny) => { let c = rampAt(ROCK, 0.3 + lit(nx, ny) * 0.45 + noise(x / 3, y / 3, 5) * 0.15, x, y); if (ny < -0.35 + noise(x / 3, 1, 7) * 0.3) c = rampAt(MOSS, 0.45 + lit(nx, ny) * 0.35 + noise(x / 2, y / 2, 8) * 0.15, x, y); P.set(x, y, c); });
+      boulder(cx - 10, b - 22, 9, 8); boulder(cx + 10, b - 21, 9.5, 8.5); boulder(cx - 4, b - 30, 7, 6.5); boulder(cx + 5, b - 31, 7.5, 6.5); boulder(cx + 15, b - 14, 5, 4.4); boulder(cx - 16, b - 13, 4.6, 4);
+      // the cleft and the falling water
+      for (let y = b - 33; y <= b - 13; y++) for (let x = Math.round(cx - 2); x <= Math.round(cx + 1); x++) { const k = ((y * 2 - f * 3 + x * 3) % 6 + 6) % 6; P.set(x, y, k < 2 ? WT[6] : k < 4 ? WT[5] : WT[4]); }
+      for (let y = b - 34; y <= b - 13; y++) { P.set(Math.round(cx - 3), y, ROCK[1]); P.set(Math.round(cx + 2), y, ROCK[2]); }
+      // the pool
+      P.ell(cx, b - 7, 18.5, 6.6, (x, y, nx, ny) => P.set(x, y, nx * nx + ny * ny > 0.74 ? (lit(nx, ny) > 0 ? ROCK[5] : ROCK[3]) : ROCK[1]));
+      P.ell(cx, b - 7.4, 15.5, 5, (x, y, nx, ny) => { const d = Math.sqrt(nx * nx + ny * ny); let c = rampAt(WT, 0.25 + (1 - d) * 0.55, x, y); if (Math.abs(d * 4 - (f % 4) - 0.3) < 0.22) c = WT[6]; P.set(x, y, c); });
+      for (const [rx, ry, rr] of [[cx - 16, b - 6, 3], [cx + 16, b - 7, 3.4], [cx - 9, b - 2, 2.6], [cx + 9, b - 2, 2.8], [cx + 1, b - 1, 2.4]]) P.ell(rx, ry, rr, rr * 0.7, (x, y, nx, ny) => P.set(x, y, lit(nx, ny) > 0.3 ? ROCK[5] : lit(nx, ny) > -0.3 ? ROCK[4] : ROCK[2]));
       for (let k = 0; k < 5; k++) { const sx = Math.round(cx - 4 + ((k * 3 + f * 2) % 9)), sy = b - 11 - ((k + f) % 3); P.set(sx, sy, '#e8fff8'); }
-      // emeralds and glowing fern tips on the rock
-      shard(P, cx - 9, b - 22, 9, 4, GEMC[1], -0.8); shard(P, cx - 6, b - 21, 6, 3, GEMC[1], -0.2); shard(P, cx + 10, b - 19, 8, 4, GEMC[1], 0.9);
-      for (const [fx, fy, d] of [[cx + 5, 8, 1], [cx - 4, 7, -1], [cx + 9, 11, 1]]) for (let t = 0; t < 7; t++) { P.set(fx + d * t * 0.6, fy - Math.sin(t / 7 * Math.PI) * 3 + t * 0.4, t > 5 ? '#b4ffd0' : LEAF[4]); }
+      // emeralds and glowing fern tips on the stones
+      shard(P, cx - 12, b - 26, 9, 4, GEMC[1], -0.8); shard(P, cx - 9, b - 25, 6, 3, GEMC[1], -0.2); shard(P, cx + 13, b - 24, 8, 4, GEMC[1], 0.9); shard(P, cx + 7, b - 35, 5, 3, GEMC[1], 0.4);
+      for (const [fx, fy, d] of [[cx + 9, b - 36, 1], [cx - 7, b - 35, -1], [cx + 16, b - 26, 1], [cx - 16, b - 24, -1]]) for (let t = 0; t < 8; t++) { P.set(fx + d * t * 0.7, fy - Math.sin(t / 8 * Math.PI) * 3 + t * 0.4, t > 6 ? '#b4ffd0' : LEAF[4]); if (t > 1 && t < 7 && t % 2) P.set(fx + d * t * 0.7, fy - Math.sin(t / 8 * Math.PI) * 3 + t * 0.4 - 1, LEAF[5]); }
       P.outline(OUT);
-      for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 + f * 0.6, r = 10 + (k % 2) * 6; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(b - 22 + Math.sin(a) * r * 0.45); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#c8ffe0' : '#ffffff'); }
-      P.shadow(cx + 1, b, 18, 2);
+      for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 + f * 0.6, r = 11 + (k % 2) * 6; const x = Math.round(cx + Math.cos(a) * r), y = Math.round(b - 26 + Math.sin(a) * r * 0.45); if (!P.has(x, y)) P.set(x, y, k % 2 ? '#c8ffe0' : '#ffffff'); }
+      P.shadow(cx + 1, b, 19, 2);
       return P;
     };
-    return build({ ax: 16, ay: b, foot: [2, 2], solid: true, lights: [L(19.5, b - 8, 70, [90, 240, 190], 0.7), L(19.5, b - 24, 34, [190, 255, 230], 0.45, 1)] }, draw, 4, 5);
+    return build({ ax: 20, ay: b, foot: [2, 2], solid: true, lights: [L(20.5, b - 8, 72, [90, 240, 190], 0.72), L(20.5, b - 26, 34, [190, 255, 230], 0.45, 1)] }, draw, 4, 5);
   });
 
   def('crystal_flower_c', 3, (v) => {
