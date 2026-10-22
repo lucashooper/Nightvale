@@ -266,9 +266,9 @@
   function seedPaddock(map) {
     const r = map.paddock; if (!r) return;
     Mg.paddock = [
-      { id: 'horse_chestnut', x: (r[0] + 2) * 16, y: (r[1] + 4) * 16, dir: 'right', anim: 'idle', t: 0, wait: 2 },
+      { id: 'horse_chestnut', x: (r[0] + 1.6) * 16, y: (r[1] + 6.2) * 16, dir: 'right', anim: 'idle', t: 0, wait: 2 },
       { id: 'horse_silver', x: (r[0] + 5) * 16, y: (r[1] + 7) * 16, dir: 'left', anim: 'idle', t: 1, wait: 5 },
-      { id: 'dragon_emerald', x: (r[0] + 5.5) * 16, y: (r[1] + 3.2) * 16, dir: 'down', anim: 'idle', t: 0, wait: 1e9, still: true },
+      { id: 'dragon_emerald', x: (r[0] + 4.2) * 16, y: (r[1] + 4.4) * 16, dir: 'down', anim: 'idle', t: 0, wait: 1e9, still: true },
     ];
   }
   function updatePaddock(a, dt, map) {
@@ -279,7 +279,12 @@
       if (d < 2) { a.anim = 'idle'; a.wait = 3 + Math.random() * 6; return; }
       a.x += (dx / d) * 18 * dt; a.y += (dy / d) * 18 * dt; a.dir = G.dirFromVec(dx, dy);
     } else if ((a.wait -= dt) <= 0) {
-      const r = map.paddock; a.tx = (r[0] + 1 + Math.random() * (r[2] - 2)) * 16; a.ty = (r[1] + 2 + Math.random() * (r[3] - 3)) * 16; a.anim = 'walk';
+      const r = map.paddock, rest = Mg.paddock.find((b) => b.still), half = rest ? ((mountInfo(rest.id) || { w: 32 }).w / 2 + 10) : 0;
+      for (let k = 0; k < 8; k++) { // somewhere to graze, clear of the dragon resting by its perch
+        a.tx = (r[0] + 1 + Math.random() * (r[2] - 2)) * 16; a.ty = (r[1] + 2 + Math.random() * (r[3] - 3)) * 16;
+        if (!rest || Math.abs(a.tx - rest.x) > half || a.ty > rest.y + 14 || a.ty < rest.y - 30) break;
+      }
+      a.anim = 'walk';
     }
   }
   Mg.paddockAt = function (map, wx, wy) { return map.id === 'village' && Mg.paddock.find((a) => Math.abs(a.x - wx) < 14 && wy > a.y - 26 && wy < a.y + 4); };
