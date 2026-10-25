@@ -48153,6 +48153,31 @@ canvas.mirror { width: 96px; height: 96px; image-rendering: pixelated; border-ra
     });
     btn('Water all', () => { for (const id in W.maps) { const m = W.maps[id]; if (m.farm) for (const f of m.farm.values()) f.watered = true; } UI.toast('Every tilled tile is watered.'); });
     btn('Next day', () => { UI.closeAll(); W.rollDay(); });
+    // mounts, pets and the Guild without the grind
+    const owned = (cat) => Object.keys(G.ITEMS).filter((id) => G.ITEMS[id].cat === cat);
+    btn('All mounts & pets', () => {
+      S.mounts = S.mounts || []; S.pets = S.pets || []; S.gear = S.gear || {};
+      for (const id of owned('mount')) if (!S.mounts.includes(id)) S.mounts.push(id);
+      for (const id of owned('pet')) if (!S.pets.includes(id)) S.pets.push(id);
+      for (const id of owned('gear')) S.gear[id] = true;
+      if (!S.petOut && S.pets.length) S.petOut = S.pets[0];
+      if (G.Menagerie && G.Menagerie.place) G.Menagerie.place();
+      UI.toast('Every horse, dragon, pet and saddle is yours. Press R outdoors to ride.');
+    });
+    const ride = (kind) => () => {
+      S.mounts = S.mounts || [];
+      const id = owned('mount').find((m) => (kind === 'dragon') === m.startsWith('dragon'));
+      if (!id) return;
+      if (!S.mounts.includes(id)) S.mounts.push(id);
+      S.mountSel = id; UI.closeAll();
+      if (!W.map || W.map.interior || W.map.id === 'depths' || W.map.outdoor === false) W.changeMap('village', 'plaza', { instant: true });
+      if (G.Menagerie.ride) G.Menagerie.dismount(true);
+      G.Menagerie.mount(id);
+      UI.toast(kind === 'dragon' ? 'Flying! Steer with WASD, R to land on clear ground.' : 'Riding! R to hop off.');
+    };
+    btn('Fly a dragon now', ride('dragon'));
+    btn('Ride a horse now', ride('horse'));
+    btn('Top Guild rank', () => { if (G.Guild && G.Guild.state) G.Guild.state(); S.guild = S.guild || { rank: 0, pts: 0, cycle: -1, board: [], active: [], done: {}, slain: {}, seen: true, completed: 0 }; S.guild.rank = G.GUILD_RANKS.length - 1; S.guild.pts = G.GUILD_RANKS[S.guild.rank].pts; S.guild.seen = true; UI.toast('Moonsteel Guild rank: every contract and every mount is open to you.'); });
     inner.appendChild(tools);
     // time of day
     const tr = el('div', 'slider');
