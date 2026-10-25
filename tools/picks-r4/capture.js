@@ -19,7 +19,7 @@ const ROOMS = [
     for (const v of ['a', 'b', 'c']) {
       // the room exactly fills the view: homes (14x10 tiles) at 3x, rare floors (28x20) at 2x
       const page = await browser.newPage({ viewport: kind === 'home' ? { width: 672, height: 480 } : { width: 896, height: 640 } });
-      await page.goto('http://127.0.0.1:8767/index.html', { waitUntil: 'load' });
+      await page.goto('http://127.0.0.1:8767/play.html', { waitUntil: 'load' });
       await page.waitForFunction(() => window.G && G.Main && G.Main.mode === 'title', null, { timeout: 20000 });
       const ok = await page.evaluate(([key, kind, id, v]) => {
         const S = G.World.freshState('Wren', {}); G.World.start(S, false); G.Main.mode = 'play';

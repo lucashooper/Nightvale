@@ -148,6 +148,18 @@
     show();
   };
 
+  // the website's character picker: skip the title screen (and the creator) and go straight in
+  Screens.quick = function (q) {
+    if (Screens.titleEl) Screens.titleEl.remove();
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    history.replaceState(null, '', location.pathname); // reloading comes back to the title screen, with Continue
+    if (q.get('continue') && G.Save.has()) { Screens.continueGame(); return; }
+    const L = (window.CharArt && CharArt.looks) || LOOK_NAMES, v = String(q.get('look') || '').split(',').map((n) => n | 0);
+    const fit = (i, names) => Math.max(0, Math.min(names.length - 1, v[i] || 0));
+    const look = { skin: fit(0, L.skins), hair: fit(1, L.hairStyles), hairColor: fit(2, L.hairColors), robe: fit(3, L.robes), eyes: fit(4, L.eyes) };
+    Screens.intro(String(q.get('name') || '').trim().slice(0, 14) || 'Rowan', look);
+  };
+
   Screens.startNew = async function (name, look) {
     await UI.fadeTo(1, 0.6);
     const S = G.World.freshState(name, look);

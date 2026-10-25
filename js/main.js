@@ -30,6 +30,9 @@
     G.World.focusOverride = { x: 32 * 16, y: 19 * 16 };
     Main.mode = 'title';
     G.Screens.title();
+    // from the website: play.html?new=1&name=Rowan&look=1,0,1,0,0 starts that character, play.html?continue=1 the saved game
+    const q = new URLSearchParams(location.search);
+    if (q.get('new') || q.get('continue')) G.Screens.quick(q);
     requestAnimationFrame(frame);
   };
 

@@ -7,7 +7,7 @@ potions, befriend the villagers of Hollowmere, and descend fifty floors of the U
 
 - **Easiest:** open `dist/nightvale.html` in a browser (Chrome, Edge, Firefox or Safari). It is one
   self-contained file. Fonts load from Google Fonts when online; everything else is built in.
-- **From source:** serve this folder (for example `python3 -m http.server`) and open `index.html`.
+- **From source:** serve this folder (for example `python3 -m http.server`) and open `index.html` (the website: pick a character and press Begin) or `play.html` (the game's own title screen).
 
 Progress saves automatically each night when you go to bed.
 

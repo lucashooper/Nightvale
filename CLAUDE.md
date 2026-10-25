@@ -1,6 +1,6 @@
 # Nightvale: handoff notes
 
-A cosy 2D Stardew-like game (vanilla JS, canvas). Open `index.html` through a local server (`.claude/launch.json` → "game-dev", port 8767). `python3 tools/build.py` writes the single-file builds `dist/nightvale.html` and `dist/nightvale-artifact.html`. The playable artifact is https://claude.ai/artifact/M57YuEsbGu3qDcEPCFvRyo (publish the artifact build there, keep its `db`/`user` capabilities).
+A cosy 2D Stardew-like game (vanilla JS, canvas). The repo root is a static website: `index.html` is the marketing page (`site/` holds its CSS, JS and screenshots, refreshed by `node tools/site-shots.js`), and `play.html` is the game. The site's character picker opens `play.html?new=1&name=…&look=skin,hair,hairColor,robe,eyes` (or `?continue=1`), handled by `G.Screens.quick`. Serve the folder locally (`.claude/launch.json` → "game-dev", port 8767). `python3 tools/build.py` writes the single-file builds `dist/nightvale.html` and `dist/nightvale-artifact.html`. The playable artifact is https://claude.ai/artifact/M57YuEsbGu3qDcEPCFvRyo (publish the artifact build there, keep its `db`/`user` capabilities).
 
 ## Layout
 - `js/art/*`: procedural pixel art modules, each one global (`CharArt`, `MobArt`, `ItemArt`, `InteriorArt`, `WildArt`, `GothicArt`, ...).

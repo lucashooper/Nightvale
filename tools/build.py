@@ -17,7 +17,7 @@ def read(rel):
 
 
 def main():
-    index = read("index.html")
+    index = read("play.html")
     css = read("css/game.css")
     scripts = re.findall(r'<script src="([^"]+)"></script>', index)
     parts = []

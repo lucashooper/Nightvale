@@ -4,76 +4,171 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nightvale</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/game.css">
+<meta name="description" content="Nightvale is a cosy pixel-art life sim you play in your browser: grow a moonlit garden, brew potions, befriend a valley and descend into the Umbral Depths.">
+<meta property="og:title" content="Nightvale">
+<meta property="og:description" content="A cosy life in a valley where the moon hangs a little too close. Free, in your browser.">
+<meta property="og:image" content="site/img/hero.webp">
+<meta name="theme-color" content="#0b0916">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,50;1,9..144,300..700,50&family=Figtree:wght@400;500;600;700&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site/site.css">
 </head>
 <body>
-<canvas id="game" aria-label="Nightvale game world"></canvas>
-<div id="ui"></div>
-<!-- engine -->
-<script src="js/core.js"></script>
-<script src="js/input.js"></script>
-<!-- art & sound (procedural) -->
-<script src="js/art/terrain.js"></script>
-<script src="js/art/nature.js"></script>
-<script src="js/art/structures.js"></script>
-<script src="js/art/gothic.js"></script>
-<script src="js/art/wild.js"></script>
-<script src="js/art/interiors.js"></script>
-<script src="js/art/furniture.js"></script>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top" aria-label="Nightvale, back to top"><span class="moon" aria-hidden="true"></span>Nightvale</a>
+    <nav aria-label="Sections">
+      <a href="#valley">The valley</a>
+      <a href="#howto">How to play</a>
+      <a class="pill" href="#play">Play free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-art" aria-hidden="true"><img src="site/img/hero.webp" alt="" width="1920" height="1080" fetchpriority="high"><canvas id="motes"></canvas></div>
+    <div class="hero-in">
+      <p class="eyebrow">A cosy pixel-art life sim</p>
+      <h1 id="hero-title">A little life in a valley where the <em>moon hangs too close</em>.</h1>
+      <p class="lede">Wake a forgotten temple garden, brew potions from what you grow, befriend twenty villagers, and descend fifty floors of the Umbral Depths. It plays right here in your browser, for free.</p>
+      <div class="cta">
+        <a class="btn gold" href="#play">Choose your character</a>
+        <a class="btn ghost" href="#howto">How to play</a>
+      </div>
+      <ul class="facts" aria-label="At a glance">
+        <li>No download or account</li>
+        <li>Saves on this computer</li>
+        <li>Keyboard, mouse or touch</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="play" id="play" aria-labelledby="play-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Step one</p>
+        <h2 id="play-title">Choose your keeper</h2>
+        <p class="sub">You're Morwenna's old apprentice, coming home to a garden that has forgotten you. Pick someone, give them a name, and begin. You can change how they look later in the game.</p>
+      </div>
+      <div class="picker">
+        <div class="roster" id="roster" role="radiogroup" aria-label="Characters"></div>
+        <aside class="chosen" aria-live="polite">
+          <div class="stage-walk"><canvas id="walk" width="40" height="40" aria-label="Your character walking"></canvas></div>
+          <label class="lbl" for="pname">Their name</label>
+          <input id="pname" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Rowan">
+          <a class="btn gold big" id="begin" href="play.html">Begin your story</a>
+          <a class="btn ghost" id="continue" href="play.html?continue=1" hidden>Continue</a>
+          <button class="link" id="shuffle" type="button">Surprise me with a new look</button>
+          <p class="hint">The game opens in this tab. It teaches you as you go, and saves each night when you go to bed.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="valley" id="valley" aria-labelledby="valley-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">What you'll do</p>
+        <h2 id="valley-title">Days in Nightvale</h2>
+      </div>
+
+      <article class="feature">
+        <figure class="shot"><img src="site/img/sanctum.webp" alt="The walled temple garden, planted with glowing crops" width="1280" height="800" loading="lazy"></figure>
+        <div class="copy">
+          <p class="num">Grow</p>
+          <h3>Wake a forgotten garden</h3>
+          <p>Till the soil inside the old moon temple and plant moonpetals, glowcaps and mandrakes. Water them before bed: crops only grow on nights they've had a drink. The full moon speeds everything up.</p>
+        </div>
+      </article>
+
+      <article class="feature flip">
+        <figure class="shot"><img src="site/img/tavern.webp" alt="The Gilded Owl tavern at night, lit by candles, with villagers at the tables" width="1280" height="800" loading="lazy"></figure>
+        <div class="copy">
+          <p class="num">Befriend</p>
+          <h3>A village that remembers you</h3>
+          <p>Twenty villagers keep their own hours: the baker, the runesmith, the dragon tamer, the barkeep with opinions. Talk to them each day and bring the gifts they love, and they'll open up.</p>
+          <div class="faces" id="faces" aria-label="Some of the villagers"></div>
+        </div>
+      </article>
+
+      <article class="feature">
+        <figure class="shot room"><img src="site/img/jasmine.webp" alt="Jasmine's cottage: a honey-yellow bakery with a bread oven and a giant teddy bear" width="672" height="480" loading="lazy"></figure>
+        <div class="copy">
+          <p class="num">Visit</p>
+          <h3>Homes full of personality</h3>
+          <p>Knock on doors. Jasmine bakes in a honey-coloured cottage, Amara maps the stars from her attic, and the Gilded Owl tavern stays warm long after dark. Everyone's home is worth a look around.</p>
+        </div>
+      </article>
+
+      <article class="feature flip">
+        <figure class="shot"><img src="site/img/depths.webp" alt="The Sunstone Hall, a rare floor of the Depths with a glowing sun mosaic" width="1280" height="800" loading="lazy"></figure>
+        <div class="copy">
+          <p class="num">Descend</p>
+          <h3>Fifty floors of the Umbral Depths</h3>
+          <p>Below Starfall Ridge the caves go down and down. Mine ore and gems, take Guild bounties against legendary beasts, and now and then stumble on a rare floor: a forgotten library, a witch's hollow, a sunken observatory.</p>
+        </div>
+      </article>
+
+      <article class="feature ride">
+        <div class="ride-stage"><canvas id="ride" width="300" height="110" aria-label="Your character riding a horse and flying a dragon"></canvas></div>
+        <div class="copy">
+          <p class="num">Ride</p>
+          <h3>Saddle up, then take to the sky</h3>
+          <p>Caspian's Menagerie sells pets, gentle Shire horses and, once the Guild trusts you, sky dragons that fly over rooftops and rivers. That's your character up there.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="howto" id="howto" aria-labelledby="howto-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Before you start</p>
+        <h2 id="howto-title">How to play</h2>
+        <p class="sub">Everything is explained in the game as you go. These are the keys worth knowing.</p>
+      </div>
+      <div class="howto-grid">
+        <dl class="keys">
+          <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</dt><dd>Walk</dd></div>
+          <div><dt><kbd>Space</kbd> or left click</dt><dd>Use the tool in your hand: hoe, watering can, axe, sword</dd></div>
+          <div><dt><kbd>E</kbd> or right click</dt><dd>Talk, open doors, harvest, look at things</dd></div>
+          <div><dt><kbd>1</kbd>–<kbd>9</kbd> or the scroll wheel</dt><dd>Pick something from your toolbar</dd></div>
+          <div><dt><kbd>I</kbd></dt><dd>Your satchel, recipes, villagers and the Handbook</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>Pause, sound and settings</dd></div>
+        </dl>
+        <ol class="steps">
+          <li><b>Plant something.</b> Follow the arrow to the garden, till the soil, plant a seed and water it.</li>
+          <li><b>Go to bed.</b> Sleep in the cottage to end the day. That's when your game saves.</li>
+          <li><b>Say hello.</b> Walk into the village and press <kbd>E</kbd> beside anyone.</li>
+        </ol>
+      </div>
+      <p class="note">On a phone or tablet, touch controls appear: a joystick on the left, buttons on the right.</p>
+    </div>
+  </section>
+
+  <section class="last" aria-labelledby="last-title">
+    <div class="wrap">
+      <h2 id="last-title">Your garden is waiting.</h2>
+      <div class="cta">
+        <a class="btn gold big" href="#play">Choose your character</a>
+        <a class="btn ghost" href="dist/nightvale.html" download="nightvale.html">Download to play offline</a>
+      </div>
+      <p class="hint">The download is a single 3 MB file. Open it in Chrome, Edge, Firefox or Safari, no internet needed.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="brand small"><span class="moon" aria-hidden="true"></span>Nightvale</span>
+    <span>Every pixel and every note is made by code: there isn't a single image or sound file in the game.</span>
+  </div>
+</footer>
+
 <script src="js/art/characters.js"></script>
 <script src="js/art/mobs.js"></script>
-<script src="js/art/items.js"></script>
 <script src="js/art/alt_mounts.js"></script>
-<script src="js/art/alt_bosses.js"></script>
-<script src="js/art/alt_rooms.js"></script>
-<script src="js/audio.js"></script>
-<!-- data -->
-<script src="js/data/items.js"></script>
-<script src="js/data/items2.js"></script>
-<script src="js/data/items3.js"></script>
-<script src="js/data/text.js"></script>
-<script src="js/data/text3.js"></script>
-<!-- world -->
-<script src="js/systems/inventory.js"></script>
-<script src="js/systems/stats.js"></script>
-<script src="js/systems/farming.js"></script>
-<script src="js/world/map.js"></script>
-<script src="js/world/buildings.js"></script>
-<script src="js/world/maps.js"></script>
-<script src="js/world/interiors.js"></script>
-<script src="js/world/entities.js"></script>
-<script src="js/world/npcs.js"></script>
-<script src="js/world/mobs.js"></script>
-<script src="js/world/dungeon.js"></script>
-<script src="js/world/rare.js"></script>
-<!-- systems -->
-<script src="js/systems/fishing.js"></script>
-<script src="js/systems/save.js"></script>
-<script src="js/systems/quests.js"></script>
-<script src="js/render.js"></script>
-<script src="js/game.js"></script>
-<script src="js/world/forest.js"></script>
-<!-- interface -->
-<script src="js/ui/ui.js"></script>
-<script src="js/ui/panels.js"></script>
-<script src="js/ui/panels3.js"></script>
-<script src="js/ui/designs.js"></script>
-<script src="js/ui/worldmap.js"></script>
-<script src="js/systems/tutorial.js"></script>
-<script src="js/systems/encounters.js"></script>
-<script src="js/systems/familiars.js"></script>
-<script src="js/systems/magic.js"></script>
-<script src="js/systems/festival.js"></script>
-<script src="js/systems/decorate.js"></script>
-<script src="js/systems/guild.js"></script>
-<script src="js/systems/smithy.js"></script>
-<script src="js/systems/menagerie.js"></script>
-<script src="js/systems/romance.js"></script>
-<script src="js/systems/nightmarket.js"></script>
-<script src="js/ui/screens.js"></script>
-<script src="js/main.js"></script>
+<script src="site/site.js"></script>
 </body>
 </html>
